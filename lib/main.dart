@@ -20,12 +20,12 @@ void main() async {
   // Run your app
   runApp(const MyApp());
 }
-
+//
 class MyApp extends StatelessWidget {
   bool name() {
     return true;
   }
- //
+
   const MyApp({super.key});
 
   @override
@@ -34,7 +34,7 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       home: SplashScreen(), //MainPage(), //main page
       routes: {
-        '/homepage': (context) => HomePage(),
+        '/homepage': (context) => HomePage(), //init
         '/forgotpassword': (context) => ForgotPasswordPage(),
         '/auth': (context) => AuthPage(), //yhy
         '/home': (context) => Home(),
