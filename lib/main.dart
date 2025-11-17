@@ -10,6 +10,7 @@ import 'package:final_project/main_page.dart';
 import 'package:final_project/report.dart';
 import 'package:final_project/single_budget.dart';
 import 'package:final_project/single_saving.dart';
+import 'package:final_project/splash.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 
@@ -32,11 +33,11 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: ReportPage(), //SplashScreen(), //MainPage(), //main page
+      home: SplashScreen(), //MainPage(), //main page
       routes: {
         '/homepage': (context) => HomePage(),
         '/forgotpassword': (context) => ForgotPasswordPage(),
-        '/auth': (context) => AuthPage(),
+        '/auth': (context) => AuthPage(), //yhy
         '/home': (context) => Home(),
         '/singlebudget': (context) => SingleBudget(),
         '/singlesaving': (context) => SingleSaving(),
