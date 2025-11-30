@@ -1,6 +1,7 @@
 import 'package:final_project/auth_page.dart';
 import 'package:final_project/balance.dart';
 import 'package:final_project/bottomnav.dart';
+import 'package:final_project/constants.dart';
 import 'package:final_project/forgot_pwd_page.dart';
 import 'package:final_project/hme.dart';
 import 'package:final_project/home.dart';
@@ -32,6 +33,10 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        scaffoldBackgroundColor: primaryBg,
+        textTheme: kTextTheme,
+      ),
       home: SplashScreen(), //MainPage(), //main page
       routes: {
         '/homepage': (context) => HomePage(), //init
@@ -49,4 +54,3 @@ class MyApp extends StatelessWidget {
     );
   }
 }
-// hjj

@@ -1,5 +1,6 @@
 import 'package:final_project/auth_services.dart';
 import 'package:final_project/component/button.dart';
+import 'package:final_project/constants.dart';
 import 'package:final_project/start.dart';
 // import 'package:firebase/auth_services.dart';
 // import 'package:firebase/component/button.dart';
@@ -34,17 +35,17 @@ class _LoginState extends State<Login> {
       // Show a toast or an alert if fields are empty
       ToastService.showToast(
         context,
-        backgroundColor: Color.fromARGB(154, 229, 56, 53),
+        backgroundColor: Colors.red,
         dismissDirection: DismissDirection.endToStart,
         expandedHeight: 80,
         isClosable: true,
-        leading: Icon(Icons.error_outline),
+        leading: const Icon(Icons.error_outline),
         message: 'Please enter both email and password!',
         length: ToastLength.medium,
         positionCurve: Curves.bounceInOut,
-        messageStyle: TextStyle(fontSize: 18, color: Colors.white),
+        messageStyle: kTextTheme.bodyLarge?.copyWith(color: primaryBg),
         slideCurve: Curves.easeInOut,
-        shadowColor: Color.fromARGB(199, 153, 151, 151),
+        shadowColor: primaryText.withOpacity(0.5),
       );
       return; // Prevent further execution if fields are empty
     }
@@ -61,13 +62,17 @@ class _LoginState extends State<Login> {
         context: context,
         builder: (context) {
           return AlertDialog(
-            content: Text('Wrong password or email!'),
+            backgroundColor: primaryBg,
+            content:
+                Text('Wrong password or email!', style: kTextTheme.bodyMedium),
             actions: [
               TextButton(
                 onPressed: () {
                   Navigator.of(context).pop();
                 },
-                child: Text('OK'),
+                child: Text('OK',
+                    style:
+                        kTextTheme.bodyMedium?.copyWith(color: brandGreen)),
               ),
             ],
           );
@@ -79,7 +84,7 @@ class _LoginState extends State<Login> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color(0xFF052224),
+      backgroundColor: primaryBg,
       body: SingleChildScrollView(
         child: Column(
           children: [
@@ -90,43 +95,36 @@ class _LoginState extends State<Login> {
                   'assets/svg/penny.svg',
                   height: 120,
                   width: 120,
-                  color: Color(0xff00D09E),
+                  colorFilter:
+                      const ColorFilter.mode(brandGreen, BlendMode.srcIn),
                 ),
               ),
             ),
             Text(
               'Penny Wise',
-              style: TextStyle(
-                fontSize: 36,
-                fontWeight: FontWeight.bold,
-                color: Colors.white70,
-              ),
+              style: kTextTheme.displayMedium,
             ),
-            SizedBox(height: 2),
+            const SizedBox(height: 2),
             Text(
               "Wise Choices For Financial Freedom",
-              style: TextStyle(
-                fontSize: 18,
-                color: Colors.white70,
-                fontWeight: FontWeight.normal,
-              ),
+              style: kTextTheme.titleMedium,
             ),
-            SizedBox(height: 20),
+            const SizedBox(height: 20),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 25),
               child: TextField(
                 controller: _emailcontroller,
                 decoration: InputDecoration(
                   hintText: 'Email',
-                  border: OutlineInputBorder(
+                  border: const OutlineInputBorder(
                     borderRadius: BorderRadius.all(Radius.circular(12)),
                   ),
-                  fillColor: Color.fromARGB(183, 255, 255, 255),
+                  fillColor: primaryText.withOpacity(0.1),
                   filled: true,
                 ),
               ),
             ),
-            SizedBox(height: 10),
+            const SizedBox(height: 10),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 25),
               child: TextField(
@@ -134,15 +132,15 @@ class _LoginState extends State<Login> {
                 obscureText: true,
                 decoration: InputDecoration(
                   hintText: 'Password',
-                  border: OutlineInputBorder(
+                  border: const OutlineInputBorder(
                     borderRadius: BorderRadius.all(Radius.circular(12)),
                   ),
-                  fillColor: Color.fromARGB(183, 255, 255, 255),
+                  fillColor: primaryText.withOpacity(0.1),
                   filled: true,
                 ),
               ),
             ),
-            SizedBox(height: 5),
+            const SizedBox(height: 5),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 30),
               child: Align(
@@ -153,36 +151,36 @@ class _LoginState extends State<Login> {
                   },
                   child: Text(
                     'Forgot password?',
-                    style: TextStyle(fontSize: 16, color: Colors.blue),
+                    style: kTextTheme.bodyMedium?.copyWith(color: Colors.blue),
                   ),
                 ),
               ),
             ),
-            SizedBox(height: 35),
+            const SizedBox(height: 35),
             GestureDetector(
-              child: Button(h: 50, s: 380, text: 'Sign in'),
+              child: const Button(h: 50, s: 380, text: 'Sign in'),
               onTap: () async {
                 await signin(); // Use the updated signin method
               },
             ),
-            SizedBox(height: 32),
-            Row(
+            const SizedBox(height: 32),
+            const Row(
               children: [
-                Expanded(child: Divider()),
+                Expanded(child: Divider(color: primaryText)),
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  padding: EdgeInsets.symmetric(horizontal: 16),
                   child: Text(
                     'or sign in with',
                     style: TextStyle(
-                      color: Colors.white70,
+                      color: primaryText,
                       fontWeight: FontWeight.normal,
                     ),
                   ),
                 ),
-                Expanded(child: Divider()),
+                Expanded(child: Divider(color: primaryText)),
               ],
             ),
-            SizedBox(height: 32),
+            const SizedBox(height: 32),
             GestureDetector(
               onTap: () async {
                 try {
@@ -197,7 +195,9 @@ class _LoginState extends State<Login> {
                     context: context,
                     builder: (context) {
                       return AlertDialog(
-                        content: Text('Unknown error occured'),
+                        backgroundColor: primaryBg,
+                        content: Text('Unknown error occured',
+                            style: kTextTheme.bodyMedium),
                       );
                     },
                   );
@@ -205,37 +205,35 @@ class _LoginState extends State<Login> {
 
                 Navigator.pushReplacement(
                   context,
-                  MaterialPageRoute(builder: (context) => MainLoader()),
+                  MaterialPageRoute(builder: (context) => const MainLoader()),
                 ); //'/homepage'
               },
               child: Container(
                 height: 50,
                 width: 50,
                 decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.all(Radius.circular(6)),
+                  color: primaryBg,
+                  borderRadius: const BorderRadius.all(Radius.circular(6)),
+                  border: Border.all(color: primaryText),
                 ),
-                child: Image(image: AssetImage('assets/image/google.png')),
+                child: const Image(
+                    image: AssetImage('assets/image/google.png')),
               ),
             ),
-            SizedBox(height: 32),
+            const SizedBox(height: 32),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
                   'Not a member?',
-                  style: TextStyle(
-                    fontSize: 18,
-                    color: Colors.white70,
-                    fontWeight: FontWeight.normal,
-                  ),
+                  style: kTextTheme.bodyLarge,
                 ),
-                SizedBox(width: 8),
+                const SizedBox(width: 8),
                 GestureDetector(
                   onTap: widget.showSignupPage,
                   child: Text(
                     'Register now',
-                    style: TextStyle(color: Colors.blue, fontSize: 18),
+                    style: kTextTheme.bodyLarge?.copyWith(color: Colors.blue),
                   ),
                 ),
               ],

@@ -1,3 +1,4 @@
+import 'package:final_project/constants.dart';
 import 'package:flutter/material.dart';
 
 class AddExpenseScreen extends StatelessWidget {
@@ -6,7 +7,7 @@ class AddExpenseScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xff052224),
+      backgroundColor: primaryBg,
       body: SafeArea(
         child: Column(
           children: [
@@ -19,13 +20,9 @@ class AddExpenseScreen extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  const Text(
+                  Text(
                     "Add Expense",
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xffDFF7E2),
-                    ),
+                    style: kTextTheme.headlineSmall,
                   ),
                   const Spacer(),
                   Container(
@@ -33,11 +30,11 @@ class AddExpenseScreen extends StatelessWidget {
                     width: 30,
                     decoration: const BoxDecoration(
                       shape: BoxShape.circle,
-                      color: Color(0xffDFF7E2),
+                      color: primaryText,
                     ),
                     child: const Icon(
                       Icons.notifications_none_outlined,
-                      color: Color(0xff093030),
+                      color: primaryBg,
                     ),
                   ),
                 ],
@@ -54,7 +51,7 @@ class AddExpenseScreen extends StatelessWidget {
                       topLeft: Radius.circular(50),
                       topRight: Radius.circular(50),
                     ),
-                    color: Color(0xff093030),
+                    color: primaryText,
                   ),
                   child: Padding(
                     padding: const EdgeInsets.only(
@@ -72,35 +69,29 @@ class AddExpenseScreen extends StatelessWidget {
                               bottom: 8.0), // Reduced padding for label
                           child: Text(
                             'Date',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w600,
-                              color: Color(0xffD2EAD7),
-                              fontSize: 15,
-                            ),
+                            style: kTextTheme.bodyMedium
+                                ?.copyWith(color: primaryBg),
                           ),
                         ),
-                        SizedBox(
+                        const SizedBox(
                           height: 2,
                         ),
                         TextField(
                           decoration: InputDecoration(
                             hintText:
                                 'April 30, 2024', // Placeholder inside the field
-                            suffixIcon: Icon(Icons.calendar_today),
+                            suffixIcon: const Icon(Icons.calendar_today),
                             filled: true,
-                            fillColor: Color(
-                                0xffDFF7E2), // White background inside the field
+                            fillColor: primaryBg, // White background inside the field
                             border: OutlineInputBorder(
                               borderRadius:
                                   BorderRadius.circular(32), // Rounded corners
                             ),
                           ),
-                          style: TextStyle(
-                              color: Color(0xff163D3B),
-                              fontWeight:
-                                  FontWeight.w600), // Black and bold text
+                          style: kTextTheme.bodyMedium
+                              ?.copyWith(fontWeight: FontWeight.w600), // Black and bold text
                         ),
-                        SizedBox(
+                        const SizedBox(
                           height: 15,
                         ),
                         Padding(
@@ -108,105 +99,85 @@ class AddExpenseScreen extends StatelessWidget {
                               bottom: 8.0), // Reduced padding for label
                           child: Text(
                             'Category',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w600,
-                              color: Color(0xffD2EAD7),
-                              fontSize: 15,
-                            ),
+                            style: kTextTheme.bodyMedium
+                                ?.copyWith(color: primaryBg),
                           ),
                         ),
                         TextField(
                           decoration: InputDecoration(
                             hintText: 'Select the category',
                             filled: true,
-                            fillColor: Color(
-                                0xffDFF7E2), // White background inside the field
+                            fillColor: primaryBg, // White background inside the field
                             border: OutlineInputBorder(
                               borderRadius:
                                   BorderRadius.circular(32), // Rounded corners
                             ),
                           ),
-                          style: TextStyle(
-                              color: Color(0xff163D3B),
-                              fontWeight:
-                                  FontWeight.w600), // Black and bold text
+                          style: kTextTheme.bodyMedium
+                              ?.copyWith(fontWeight: FontWeight.w600), // Black and bold text
                         ),
-                        SizedBox(height: 15),
+                        const SizedBox(height: 15),
                         Padding(
                           padding: const EdgeInsets.only(
                               bottom: 8.0), // Reduced padding for label
                           child: Text(
                             'Amount',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w600,
-                              color: Color(0xffD2EAD7),
-                              fontSize: 15,
-                            ),
+                            style: kTextTheme.bodyMedium
+                                ?.copyWith(color: primaryBg),
                           ),
                         ),
                         TextField(
                           decoration: InputDecoration(
                             hintText: '\$25.00',
                             filled: true,
-                            fillColor: Color(
-                                0xffDFF7E2), // White background inside the field
+                            fillColor: primaryBg, // White background inside the field
                             border: OutlineInputBorder(
                               borderRadius:
                                   BorderRadius.circular(32), // Rounded corners
                             ),
                           ),
-                          style: TextStyle(
-                              color: Color(0xff163D3B),
-                              fontWeight:
-                                  FontWeight.w600), // Black and bold text
+                          style: kTextTheme.bodyMedium
+                              ?.copyWith(fontWeight: FontWeight.w600), // Black and bold text
                         ),
-                        SizedBox(height: 15),
+                        const SizedBox(height: 15),
                         Padding(
                           padding: const EdgeInsets.only(
                               bottom: 8.0), // Reduced padding for label
                           child: Text(
                             'Expense Title',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w600,
-                              color: Color(0xffD2EAD7),
-                              fontSize: 15,
-                            ),
+                            style: kTextTheme.bodyMedium
+                                ?.copyWith(color: primaryBg),
                           ),
                         ),
                         TextField(
                           decoration: InputDecoration(
                             hintText: 'Dinner',
                             filled: true,
-                            fillColor: Color(0xffD2EAD7),
+                            fillColor: primaryBg,
                             border: OutlineInputBorder(
                               borderRadius:
                                   BorderRadius.circular(32), // Rounded corners
                             ),
                           ),
-                          style: TextStyle(
-                            color: Color(0xff163D3B),
-                            fontWeight: FontWeight.w600,
-                          ),
+                          style: kTextTheme.bodyMedium
+                              ?.copyWith(fontWeight: FontWeight.w600),
                         ),
-                        SizedBox(height: 15),
+                        const SizedBox(height: 15),
                         TextField(
                           maxLines: 4,
                           decoration: InputDecoration(
                             hintText: 'Write any additional notes here',
                             filled: true,
-                            fillColor: Color(
-                                0xffD2EAD7), // White background inside the field
+                            fillColor: primaryBg, // White background inside the field
                             border: OutlineInputBorder(
                               borderRadius:
                                   BorderRadius.circular(12), // Rounded corners
                             ),
                           ),
-                          style: TextStyle(
-                            color: Color(0xff163D3B),
-                            fontWeight: FontWeight.w600,
-                          ),
+                          style: kTextTheme.bodyMedium
+                              ?.copyWith(fontWeight: FontWeight.w600),
                         ),
-                        SizedBox(height: 15),
+                        const SizedBox(height: 15),
                         Center(
                           child: SizedBox(
                             height: 36,
@@ -214,17 +185,15 @@ class AddExpenseScreen extends StatelessWidget {
                             child: ElevatedButton(
                               onPressed: () {},
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: Color(0xff00D09E),
-                                padding: EdgeInsets.symmetric(
+                                backgroundColor: brandGreen,
+                                padding: const EdgeInsets.symmetric(
                                     horizontal: 20, vertical: 10),
                               ),
                               child: Text(
                                 'Save',
-                                style: TextStyle(
-                                  color: Color(0xff093030),
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w600,
-                                ),
+                                style: kTextTheme.bodyMedium?.copyWith(
+                                    color: primaryText,
+                                    fontWeight: FontWeight.w600),
                               ),
                             ),
                           ),
@@ -238,36 +207,6 @@ class AddExpenseScreen extends StatelessWidget {
           ],
         ),
       ),
-     /* bottomNavigationBar: BottomNavigationBar(
-        type: BottomNavigationBarType.fixed,
-        backgroundColor: const Color(0xFF0E3E3E),
-        selectedItemColor: Colors.greenAccent,
-        unselectedItemColor: Colors.white70,
-        selectedFontSize: 12,
-        unselectedFontSize: 12,
-        showSelectedLabels: false,
-        showUnselectedLabels: false,
-        items: const [
-          BottomNavigationBarItem(
-            icon: SizedBox(width: 24, height: 24, child: Icon(Icons.home)),
-            label: 'Home',
-          ),
-          BottomNavigationBarItem(
-            icon: SizedBox(width: 24, height: 24, child: Icon(Icons.pie_chart)),
-            label: 'Stats',
-          ),
-          BottomNavigationBarItem(
-            icon:
-                SizedBox(width: 24, height: 24, child: Icon(Icons.swap_horiz)),
-            label: 'Transactions',
-          ),
-          BottomNavigationBarItem(
-            icon: SizedBox(
-                width: 24, height: 24, child: Icon(Icons.account_circle)),
-            label: 'Profile',
-          ),
-        ],
-      ),*/
     );
   }
 }

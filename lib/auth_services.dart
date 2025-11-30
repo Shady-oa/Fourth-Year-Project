@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:final_project/constants.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
@@ -46,7 +47,7 @@ class AuthService {
         toastLength: Toast.LENGTH_LONG,
         gravity: ToastGravity.BOTTOM,
         timeInSecForIosWeb: 5,
-        backgroundColor: const Color.fromARGB(193, 29, 143, 61),
+        backgroundColor: brandGreen,
         textColor: Colors.white,
         fontSize: 16.0,
       );
@@ -59,7 +60,7 @@ class AuthService {
         toastLength: Toast.LENGTH_SHORT,
         gravity: ToastGravity.BOTTOM,
         timeInSecForIosWeb: 3,
-        backgroundColor: const Color.fromARGB(193, 244, 67, 54),
+        backgroundColor: Colors.red,
         textColor: Colors.white,
         fontSize: 16.0,
       );
@@ -69,7 +70,7 @@ class AuthService {
         toastLength: Toast.LENGTH_SHORT,
         gravity: ToastGravity.BOTTOM,
         timeInSecForIosWeb: 3,
-        backgroundColor: const Color.fromARGB(193, 244, 67, 54),
+        backgroundColor: Colors.red,
         textColor: Colors.white,
         fontSize: 16.0,
       );
@@ -79,7 +80,7 @@ class AuthService {
         toastLength: Toast.LENGTH_SHORT,
         gravity: ToastGravity.BOTTOM,
         timeInSecForIosWeb: 3,
-        backgroundColor: const Color.fromARGB(193, 244, 67, 54),
+        backgroundColor: Colors.red,
         textColor: Colors.white,
         fontSize: 16.0,
       );
@@ -89,7 +90,7 @@ class AuthService {
         toastLength: Toast.LENGTH_SHORT,
         gravity: ToastGravity.BOTTOM,
         timeInSecForIosWeb: 3,
-        backgroundColor: const Color.fromARGB(193, 244, 67, 54),
+        backgroundColor: Colors.red,
         textColor: Colors.white,
         fontSize: 16.0,
       );
@@ -112,7 +113,7 @@ class AuthService {
           toastLength: Toast.LENGTH_LONG,
           gravity: ToastGravity.BOTTOM,
           timeInSecForIosWeb: 5,
-          backgroundColor: Color.fromARGB(193, 244, 67, 54),
+          backgroundColor: Colors.red,
           textColor: Colors.white,
           fontSize: 16.0,
         );
@@ -124,7 +125,7 @@ class AuthService {
         toastLength: Toast.LENGTH_SHORT,
         gravity: ToastGravity.BOTTOM,
         timeInSecForIosWeb: 3,
-        backgroundColor: Color.fromARGB(193, 29, 143, 61),
+        backgroundColor: brandGreen,
         textColor: Colors.white,
         fontSize: 16.0,
       );
@@ -134,7 +135,7 @@ class AuthService {
         toastLength: Toast.LENGTH_SHORT,
         gravity: ToastGravity.BOTTOM,
         timeInSecForIosWeb: 3,
-        backgroundColor: Color.fromARGB(193, 244, 67, 54),
+        backgroundColor: Colors.red,
         textColor: Colors.white,
         fontSize: 16.0,
       );

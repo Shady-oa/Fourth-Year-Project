@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:final_project/constants.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
@@ -9,7 +10,7 @@ class Income extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xff052224),
+      backgroundColor: primaryBg,
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -23,13 +24,9 @@ class Income extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  const Text(
+                  Text(
                     "Income",
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xffDFF7E2),
-                    ),
+                    style: kTextTheme.headlineSmall,
                   ),
                   const Spacer(),
                   Container(
@@ -37,11 +34,11 @@ class Income extends StatelessWidget {
                     width: 30,
                     decoration: const BoxDecoration(
                       shape: BoxShape.circle,
-                      color: Color(0xffDFF7E2),
+                      color: primaryText,
                     ),
                     child: const Icon(
                       Icons.notifications_none_outlined,
-                      color: Color(0xff093030),
+                      color: primaryBg,
                     ),
                   ),
                 ],
@@ -52,7 +49,8 @@ class Income extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Text(
                 'Total Income',
-                style: TextStyle(color: Colors.white70, fontSize: 14),
+                style: kTextTheme.bodyMedium
+                    ?.copyWith(color: primaryText.withOpacity(0.7)),
               ),
             ),
             Padding(
@@ -65,20 +63,16 @@ class Income extends StatelessWidget {
                     .snapshots(),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Text(
+                    return Text(
                       'Calculating...',
-                      style: TextStyle(color: Colors.white, fontSize: 24),
+                      style: kTextTheme.headlineMedium,
                     );
                   }
 
                   if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                    return const Text(
+                    return Text(
                       '\$0.00',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                      ),
+                      style: kTextTheme.headlineMedium,
                     );
                   }
 
@@ -97,16 +91,12 @@ class Income extends StatelessWidget {
 
                   return Text(
                     '\$${totalIncome.toStringAsFixed(2)}',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: kTextTheme.headlineMedium,
                   );
                 },
               ),
             ),
-            SizedBox(height: 40),
+            const SizedBox(height: 40),
             Expanded(
               child: Container(
                 width: double.infinity,
@@ -115,7 +105,7 @@ class Income extends StatelessWidget {
                     topLeft: Radius.circular(50),
                     topRight: Radius.circular(50),
                   ),
-                  color: Color(0xff093030),
+                  color: primaryText,
                 ),
                 child: Padding(
                   padding: const EdgeInsets.only(
@@ -142,19 +132,16 @@ class Income extends StatelessWidget {
                             height: 36,
                             width: 169,
                             decoration: const BoxDecoration(
-                              color: Color(0xff00D09E),
+                              color: brandGreen,
                               borderRadius: BorderRadius.all(
                                 Radius.circular(30),
                               ),
                             ),
-                            child: const Center(
+                            child: Center(
                               child: Text(
                                 "Add Income",
-                                style: TextStyle(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w500,
-                                  color: Color(0xff093030),
-                                ),
+                                style: kTextTheme.bodyMedium
+                                    ?.copyWith(color: primaryText),
                               ),
                             ),
                           ),
@@ -174,10 +161,10 @@ class Income extends StatelessWidget {
   Widget _buildIncomeList() {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
-      return const Center(
+      return Center(
         child: Text(
           "User not authenticated!",
-          style: TextStyle(color: Colors.white),
+          style: kTextTheme.bodyLarge?.copyWith(color: primaryBg),
         ),
       );
     }
@@ -197,10 +184,10 @@ class Income extends StatelessWidget {
         }
 
         if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-          return const Center(
+          return Center(
             child: Text(
               "No income transactions found.",
-              style: TextStyle(color: Colors.white),
+              style: kTextTheme.bodyLarge?.copyWith(color: primaryBg),
             ),
           );
         }
@@ -224,16 +211,16 @@ class Income extends StatelessWidget {
             return ListTile(
               title: Text(
                 description,
-                style: const TextStyle(color: Colors.white),
+                style: kTextTheme.bodyLarge?.copyWith(color: primaryBg),
               ),
               subtitle: Text(
                 dateTimeString,
-                style: const TextStyle(color: Colors.grey),
+                style: kTextTheme.bodySmall
+                    ?.copyWith(color: primaryBg.withOpacity(0.7)),
               ),
               trailing: Text(
                 "\$$amount",
-                style: const TextStyle(
-                    color: Colors.green, fontWeight: FontWeight.bold),
+                style: kTextTheme.bodyLarge?.copyWith(color: brandGreen),
               ),
             );
           },
@@ -250,7 +237,8 @@ class Income extends StatelessWidget {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text("Add Income"),
+          backgroundColor: primaryBg,
+          title: Text("Add Income", style: kTextTheme.headlineSmall),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -259,6 +247,7 @@ class Income extends StatelessWidget {
                 decoration: const InputDecoration(
                   labelText: "Description",
                 ),
+                style: kTextTheme.bodyMedium,
               ),
               TextField(
                 controller: amountController,
@@ -266,13 +255,14 @@ class Income extends StatelessWidget {
                 decoration: const InputDecoration(
                   labelText: "Amount",
                 ),
+                style: kTextTheme.bodyMedium,
               ),
             ],
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text("Cancel"),
+              child: Text("Cancel", style: kTextTheme.bodyMedium),
             ),
             TextButton(
               onPressed: () async {
@@ -290,7 +280,8 @@ class Income extends StatelessWidget {
                 await _addIncome(description, amount);
                 Navigator.pop(context);
               },
-              child: const Text("Add"),
+              child: Text("Add",
+                  style: kTextTheme.bodyMedium?.copyWith(color: brandGreen)),
             ),
           ],
         );

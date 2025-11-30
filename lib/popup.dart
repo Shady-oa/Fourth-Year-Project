@@ -1,20 +1,5 @@
+import 'package:final_project/constants.dart';
 import 'package:flutter/material.dart';
-
-void main() {
-  runApp(PopUp());
-}
-
-class PopUp extends StatelessWidget {
-  const PopUp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      home: Save(),
-    );
-  }
-}
 
 class Save extends StatelessWidget {
   const Save({super.key});
@@ -22,10 +7,11 @@ class Save extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color(0xFF0E1D2C),
+      backgroundColor: primaryBg,
       appBar: AppBar(
-        title: Text("Savings"),
-        backgroundColor: Color(0xFF0E1D2C),
+        title: Text("Savings",
+            style: kTextTheme.headlineSmall?.copyWith(color: primaryBg)),
+        backgroundColor: primaryText,
       ),
       body: Center(
         child: ElevatedButton(
@@ -33,9 +19,10 @@ class Save extends StatelessWidget {
             _showAddCategoryDialog(context);
           },
           style: ElevatedButton.styleFrom(
-            backgroundColor: Color(0xFF00B686),
+            backgroundColor: brandGreen,
           ),
-          child: Text("Add Category"),
+          child: Text("Add Category",
+              style: kTextTheme.bodyMedium?.copyWith(color: primaryText)),
         ),
       ),
     );
@@ -46,65 +33,65 @@ class Save extends StatelessWidget {
       context: context,
       builder: (BuildContext context) {
         return Dialog(
-          backgroundColor: Color(0xFF0E1D2C),
+          backgroundColor: primaryBg,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
           ),
           child: Padding(
-            padding: EdgeInsets.all(20),
+            padding: const EdgeInsets.all(20),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
                   "New Category",
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: kTextTheme.headlineSmall,
                 ),
-                SizedBox(height: 15),
+                const SizedBox(height: 15),
                 TextField(
                   decoration: InputDecoration(
                     hintText: "Write...",
                     filled: true,
-                    fillColor: Color(0xFF124152),
+                    fillColor: primaryText.withOpacity(0.1),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
                       borderSide: BorderSide.none,
                     ),
-                    hintStyle: TextStyle(color: Colors.grey),
+                    hintStyle: TextStyle(color: primaryText.withOpacity(0.5)),
                   ),
-                  style: TextStyle(color: Colors.white),
+                  style: const TextStyle(color: primaryText),
                 ),
-                SizedBox(height: 15),
+                const SizedBox(height: 15),
                 ElevatedButton(
                   onPressed: () {
                     // Save action
                     Navigator.of(context).pop();
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Color(0xFF00B686),
-                    minimumSize: Size(double.infinity, 40),
+                    backgroundColor: brandGreen,
+                    minimumSize: const Size(double.infinity, 40),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
                     ),
                   ),
-                  child: Text("Save"),
+                  child: Text("Save",
+                      style:
+                          kTextTheme.bodyMedium?.copyWith(color: primaryText)),
                 ),
-                SizedBox(height: 10),
+                const SizedBox(height: 10),
                 ElevatedButton(
                   onPressed: () {
                     Navigator.of(context).pop();
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Color(0xFF124152),
-                    minimumSize: Size(double.infinity, 40),
+                    backgroundColor: primaryText.withOpacity(0.1),
+                    minimumSize: const Size(double.infinity, 40),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
                     ),
                   ),
-                  child: Text("Cancel"),
+                  child: Text("Cancel",
+                      style: kTextTheme.bodyMedium
+                          ?.copyWith(color: primaryText)),
                 ),
               ],
             ),

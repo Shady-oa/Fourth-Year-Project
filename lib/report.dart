@@ -1,3 +1,4 @@
+import 'package:final_project/constants.dart';
 import 'package:flutter/material.dart';
 
 class ReportPage extends StatelessWidget {
@@ -17,6 +18,7 @@ class ReportPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: primaryBg,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.only(top: 20),
@@ -26,28 +28,24 @@ class ReportPage extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Row(
                   children: [
-                    Spacer(),
+                    const Spacer(),
                     Text(
                       'Quickly Analysis',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xffF1FFF3),
-                      ),
+                      style: kTextTheme.headlineSmall,
                     ),
-                    Spacer(),
-                    CircleAvatar(
+                    const Spacer(),
+                    const CircleAvatar(
                       radius: 15,
-                      backgroundColor: Color(0xffF1FFF3),
+                      backgroundColor: primaryText,
                       child: Icon(
                         Icons.notifications_outlined,
-                        color: Colors.black,
+                        color: primaryBg,
                       ),
                     ),
                   ],
                 ),
               ),
-              SizedBox(height: 20),
+              const SizedBox(height: 20),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Row(
@@ -58,18 +56,11 @@ class ReportPage extends StatelessWidget {
                       children: [
                         Text(
                           'Total Balance',
-                          style: TextStyle(
-                            color: Color(0xffF1FFF3),
-                            fontSize: 14,
-                          ),
+                          style: kTextTheme.bodyMedium,
                         ),
                         Text(
                           '\$7,783.00',
-                          style: TextStyle(
-                            color: Color(0xffF1FFF3),
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                          ),
+                          style: kTextTheme.headlineMedium,
                         ),
                       ],
                     ),
@@ -78,18 +69,12 @@ class ReportPage extends StatelessWidget {
                       children: [
                         Text(
                           'Total Expense',
-                          style: TextStyle(
-                            color: Color(0xffF1FFF3),
-                            fontSize: 14,
-                          ),
+                          style: kTextTheme.bodyMedium,
                         ),
                         Text(
                           '-\$1,187.40',
-                          style: TextStyle(
-                            color: Color(0xff3299FF),
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                          ),
+                          style: kTextTheme.headlineMedium
+                              ?.copyWith(color: Colors.blue),
                         ),
                       ],
                     ),
@@ -104,14 +89,15 @@ class ReportPage extends StatelessWidget {
                     Expanded(
                       child: LinearProgressIndicator(
                         value: 0.3,
-                        backgroundColor: Color(0xffF1FFF3),
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.black),
+                        backgroundColor: primaryText.withOpacity(0.2),
+                        valueColor:
+                            const AlwaysStoppedAnimation<Color>(brandGreen),
                       ),
                     ),
                     const SizedBox(width: 10),
                     Text(
                       '\$20,000.00',
-                      style: TextStyle(color: Color(0xffF1FFF3), fontSize: 14),
+                      style: kTextTheme.bodyMedium,
                     ),
                   ],
                 ),
@@ -119,23 +105,29 @@ class ReportPage extends StatelessWidget {
               const SizedBox(height: 10),
               Text(
                 '30% Of Your Expenses, Looks Good.',
-                style: TextStyle(color: Color(0xffF1FFF3), fontSize: 14),
+                style: kTextTheme.bodyMedium,
               ),
-              SizedBox(height: 40),
+              const SizedBox(height: 40),
               Expanded(
                 child: Container(
-                  decoration: BoxDecoration(
+                  decoration: const BoxDecoration(
                     borderRadius: BorderRadius.only(
                       topLeft: Radius.circular(50),
                       topRight: Radius.circular(50),
                     ),
-                    color: Color(0xFF093030),
+                    color: primaryText,
                   ),
-                  child: Column(
+                  child: const Column(
                     children: [
-                      DefaultTabController(length:4, child: TabBar(tabs: [
-                        
-                      ])),
+                      DefaultTabController(
+                          length: 4,
+                          child: TabBar(
+                              tabs: [
+                                Tab(text: 'Tab 1'),
+                                Tab(text: 'Tab 2'),
+                                Tab(text: 'Tab 3'),
+                                Tab(text: 'Tab 4'),
+                              ])),
                     ],
                   ),
                 ),
@@ -144,7 +136,6 @@ class ReportPage extends StatelessWidget {
           ),
         ),
       ),
-      backgroundColor: Color(0xFF031314),
     );
   }
 }

@@ -1,3 +1,4 @@
+import 'package:final_project/constants.dart';
 import 'package:flutter/material.dart';
 
 class Button extends StatelessWidget {
@@ -13,15 +14,15 @@ class Button extends StatelessWidget {
       child: Container(
         height: h,
         width: s,
-        decoration: BoxDecoration(
+        decoration: const BoxDecoration(
           borderRadius: BorderRadius.all(Radius.circular(10)),
-          color: Color(0xff00D09E),
+          color: brandGreen,
         ),
-        child: Center(child: Text(text,style: TextStyle(
-          fontSize: 24,
-          fontWeight: FontWeight.bold,
-          color: Color(0xff093030),
-        ),)),
+        child: Center(
+            child: Text(
+          text,
+          style: kTextTheme.headlineSmall?.copyWith(color: primaryText),
+        )),
       ),
     );
   }

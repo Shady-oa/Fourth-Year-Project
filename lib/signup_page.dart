@@ -5,6 +5,7 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:final_project/auth_services.dart';
 import 'package:final_project/component/button.dart';
+import 'package:final_project/constants.dart';
 import 'package:final_project/start.dart';
 // import 'package:firebase/auth_services.dart';
 // import 'package:firebase/component/button.dart';
@@ -62,7 +63,7 @@ class _SignUpState extends State<SignUp> {
         _lastnamecontroller.text.isEmpty) {
       ToastService.showToast(
         context,
-        backgroundColor: Color.fromARGB(154, 229, 56, 53),
+        backgroundColor: Colors.red,
         dismissDirection: DismissDirection.endToStart,
         expandedHeight: 80,
         isClosable: true,
@@ -70,27 +71,27 @@ class _SignUpState extends State<SignUp> {
         message: 'fill in all details',
         length: ToastLength.medium,
         positionCurve: Curves.bounceInOut,
-        messageStyle: TextStyle(fontSize: 18, color: Colors.white),
+        messageStyle: kTextTheme.bodyLarge?.copyWith(color: primaryBg),
         slideCurve: Curves.easeInOut,
-        shadowColor: Color.fromARGB(199, 153, 151, 151),
+        shadowColor: primaryText.withOpacity(0.5),
       );
     } else {
       ToastService.showToast(
         context,
-        backgroundColor: Color.fromARGB(199, 153, 151, 151),
+        backgroundColor: primaryText.withOpacity(0.5),
         dismissDirection: DismissDirection.endToStart,
         expandedHeight: 80,
         isClosable: true,
         leading: Icon(
           Icons.error_outline,
-          color: const Color.fromARGB(179, 239, 83, 80),
+          color: Colors.red,
         ),
         message: 'Password not the same!!',
         length: ToastLength.medium,
         positionCurve: Curves.bounceInOut,
-        messageStyle: TextStyle(fontSize: 18, color: Colors.white),
+        messageStyle: kTextTheme.bodyLarge?.copyWith(color: primaryBg),
         slideCurve: Curves.easeInOut,
-        shadowColor: Color.fromARGB(199, 153, 151, 151),
+        shadowColor: primaryText.withOpacity(0.5),
       );
     }
   }
@@ -106,11 +107,14 @@ class _SignUpState extends State<SignUp> {
         context: context,
         builder: (BuildContext context) {
           return AlertDialog(
-            title: Text('Alert Title'),
-            content: Text('password is not the same'),
+            backgroundColor: primaryBg,
+            title: Text('Alert Title', style: kTextTheme.headlineSmall),
+            content: Text('password is not the same', style: kTextTheme.bodyMedium),
             actions: <Widget>[
               TextButton(
-                child: Text('OK'),
+                child: Text('OK',
+                    style:
+                        kTextTheme.bodyMedium?.copyWith(color: brandGreen)),
                 onPressed: () {
                   Navigator.of(context).pop();
                 },
@@ -164,7 +168,7 @@ class _SignUpState extends State<SignUp> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color(0xFF052224),
+      backgroundColor: primaryBg,
       body: Center(
         child: SingleChildScrollView(
           child: Column(
@@ -175,80 +179,20 @@ class _SignUpState extends State<SignUp> {
                     'assets/svg/penny.svg',
                     height: 120,
                     width: 120,
-                    color: Color(0xff00D09E),
+                    colorFilter: ColorFilter.mode(brandGreen, BlendMode.srcIn),
                   ),
                 ),
               ),
               Text(
                 'Penny Wise',
-                style: TextStyle(
-                  fontSize: 36,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white70,
-                ),
+                style: kTextTheme.displayMedium,
               ),
               SizedBox(height: 2),
               Text(
                 "Wise Choices For Financial Freedom",
-                style: TextStyle(
-                  fontSize: 18,
-                  color: Colors.white70,
-                  fontWeight: FontWeight.normal,
-                ),
+                style: kTextTheme.titleMedium,
               ),
               SizedBox(height: 35),
-              /*
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 25),
-                child: TextField(
-                  controller: _firstnamecontroller,
-                  decoration: InputDecoration(
-                    hintText: 'First name',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.all(Radius.circular(12)),
-                    ),
-                    fillColor: Color.fromARGB(183, 255, 255, 255),
-                    filled: true,
-                  ),
-                ),
-              ),
-              SizedBox(
-                height: 10,
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 25),
-                child: TextField(
-                  controller: _lastnamecontroller,
-                  decoration: InputDecoration(
-                    hintText: 'Last name',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.all(Radius.circular(12)),
-                    ),
-                    fillColor: Color.fromARGB(183, 255, 255, 255),
-                    filled: true,
-                  ),
-                ),
-              ),
-              SizedBox(
-                height: 10,
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 25),
-                child: TextField(
-                  controller: _agecontroller,
-                  decoration: InputDecoration(
-                    hintText: 'Age',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.all(Radius.circular(12)),
-                    ),
-                    fillColor: Color.fromARGB(183, 255, 255, 255),
-                    filled: true,
-                  ),
-                ),
-              ),
-              SizedBox(
-                height: 10,
-              ),*/
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 25),
                 child: TextField(
@@ -258,7 +202,7 @@ class _SignUpState extends State<SignUp> {
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.all(Radius.circular(12)),
                     ),
-                    fillColor: Color.fromARGB(183, 255, 255, 255),
+                    fillColor: primaryText.withOpacity(0.1),
                     filled: true,
                   ),
                 ),
@@ -274,7 +218,7 @@ class _SignUpState extends State<SignUp> {
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.all(Radius.circular(12)),
                     ),
-                    fillColor: Color.fromARGB(183, 255, 255, 255),
+                    fillColor: primaryText.withOpacity(0.1),
                     filled: true,
                   ),
                 ),
@@ -290,7 +234,7 @@ class _SignUpState extends State<SignUp> {
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.all(Radius.circular(12)),
                     ),
-                    fillColor: Color.fromARGB(183, 255, 255, 255),
+                    fillColor: primaryText.withOpacity(0.1),
                     filled: true,
                   ),
                 ),
@@ -305,19 +249,15 @@ class _SignUpState extends State<SignUp> {
               SizedBox(height: 32),
               Row(
                 children: [
-                  Expanded(child: Divider()),
+                  Expanded(child: Divider(color: primaryText)),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: Text(
                       'or signup with',
-                      style: TextStyle(
-                        fontSize: 18,
-                        color: Colors.white70,
-                        fontWeight: FontWeight.normal,
-                      ),
+                      style: kTextTheme.bodyLarge,
                     ),
                   ),
-                  Expanded(child: Divider()),
+                  Expanded(child: Divider(color: primaryText)),
                 ],
               ),
               SizedBox(height: 32),
@@ -335,7 +275,9 @@ class _SignUpState extends State<SignUp> {
                           context: context,
                           builder: (context) {
                             return AlertDialog(
-                              content: Text('Unknown error occured'),
+                              backgroundColor: primaryBg,
+                              content: Text('Unknown error occured',
+                                  style: kTextTheme.bodyMedium),
                             );
                           },
                         );
@@ -350,8 +292,9 @@ class _SignUpState extends State<SignUp> {
                       height: 50,
                       width: 50,
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: primaryBg,
                         borderRadius: BorderRadius.all(Radius.circular(6)),
+                        border: Border.all(color: primaryText),
                       ),
                       child: Image(
                         image: AssetImage('assets/image/google.png'),
@@ -367,8 +310,9 @@ class _SignUpState extends State<SignUp> {
                       height: 50,
                       width: 50,
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: primaryBg,
                         borderRadius: BorderRadius.all(Radius.circular(6)),
+                        border: Border.all(color: primaryText),
                       ),
                       child: Image(image: AssetImage('assets/image/FB.jpeg')),
                     ),
@@ -382,18 +326,15 @@ class _SignUpState extends State<SignUp> {
                   children: [
                     Text(
                       'I am a member?',
-                      style: TextStyle(
-                        fontSize: 18,
-                        color: Colors.white70,
-                        fontWeight: FontWeight.normal,
-                      ),
+                      style: kTextTheme.bodyLarge,
                     ),
                     SizedBox(width: 8),
                     GestureDetector(
                       onTap: widget.showLoginpage,
                       child: Text(
                         'Sign In',
-                        style: TextStyle(color: Colors.blue, fontSize: 18),
+                        style:
+                            kTextTheme.bodyLarge?.copyWith(color: Colors.blue),
                       ),
                     ),
                   ],

@@ -1,18 +1,6 @@
+import 'package:final_project/constants.dart';
 import 'package:final_project/transaction.dart';
 import 'package:flutter/material.dart';
-
-void main() {
-  runApp(Hmp());
-}
-
-class Hmp extends StatelessWidget {
-  const Hmp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(debugShowCheckedModeBanner: false, home: HomePage());
-  }
-}
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -20,7 +8,7 @@ class HomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color(0xFF031314),
+      backgroundColor: primaryBg,
       body: Column(
         children: [
           // Header Section
@@ -36,29 +24,22 @@ class HomePage extends StatelessWidget {
                       children: [
                         Text(
                           'Hi, Welcome Back',
-                          style: TextStyle(
-                            color: Color(0xffF1FFF3),
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                          ),
+                          style: kTextTheme.headlineSmall,
                         ),
                         const SizedBox(height: 4),
                         Text(
                           'Good Morning',
-                          style: TextStyle(
-                            color: Color(0xffF1FFF3),
-                            fontSize: 16,
-                          ),
+                          style: kTextTheme.bodyLarge,
                         ),
                       ],
                     ),
-                    Spacer(),
-                    CircleAvatar(
+                    const Spacer(),
+                    const CircleAvatar(
                       radius: 15,
-                      backgroundColor: Color(0xffF1FFF3),
+                      backgroundColor: primaryText,
                       child: Icon(
                         Icons.notifications_outlined,
-                        color: Colors.black,
+                        color: primaryBg,
                       ),
                     ),
                   ],
@@ -74,18 +55,11 @@ class HomePage extends StatelessWidget {
                       children: [
                         Text(
                           'Total Balance',
-                          style: TextStyle(
-                            color: Color(0xffF1FFF3),
-                            fontSize: 14,
-                          ),
+                          style: kTextTheme.bodyMedium,
                         ),
                         Text(
                           '\$7,783.00',
-                          style: TextStyle(
-                            color: Color(0xffF1FFF3),
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                          ),
+                          style: kTextTheme.headlineMedium,
                         ),
                       ],
                     ),
@@ -94,18 +68,12 @@ class HomePage extends StatelessWidget {
                       children: [
                         Text(
                           'Total Expense',
-                          style: TextStyle(
-                            color: Color(0xffF1FFF3),
-                            fontSize: 14,
-                          ),
+                          style: kTextTheme.bodyMedium,
                         ),
                         Text(
                           '-\$1,187.40',
-                          style: TextStyle(
-                            color: Color(0xff3299FF),
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                          ),
+                          style: kTextTheme.headlineMedium
+                              ?.copyWith(color: Colors.blue),
                         ),
                       ],
                     ),
@@ -117,21 +85,22 @@ class HomePage extends StatelessWidget {
                     Expanded(
                       child: LinearProgressIndicator(
                         value: 0.3,
-                        backgroundColor: Color(0xffF1FFF3),
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.black),
+                        backgroundColor: primaryText.withOpacity(0.2),
+                        valueColor:
+                            const AlwaysStoppedAnimation<Color>(brandGreen),
                       ),
                     ),
                     const SizedBox(width: 10),
                     Text(
                       '\$20,000.00',
-                      style: TextStyle(color: Color(0xffF1FFF3), fontSize: 14),
+                      style: kTextTheme.bodyMedium,
                     ),
                   ],
                 ),
                 const SizedBox(height: 10),
                 Text(
                   '30% Of Your Expenses, Looks Good.',
-                  style: TextStyle(color: Color(0xffF1FFF3), fontSize: 14),
+                  style: kTextTheme.bodyMedium,
                 ),
               ],
             ),
@@ -140,8 +109,8 @@ class HomePage extends StatelessWidget {
           Expanded(
             child: Container(
               padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Color(0xFF093030),
+              decoration: const BoxDecoration(
+                color: primaryText,
                 borderRadius: BorderRadius.only(
                   topLeft: Radius.circular(50),
                   topRight: Radius.circular(50),
@@ -153,14 +122,13 @@ class HomePage extends StatelessWidget {
                   // Savings Section
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
-
                     children: [
                       Container(
                         height: 130,
-                       // width: MediaQuery.of(context).size.width*0.4,
-                        decoration: BoxDecoration(
+                        // width: MediaQuery.of(context).size.width*0.4,
+                        decoration: const BoxDecoration(
                           borderRadius: BorderRadius.all(Radius.circular(15)),
-                          color: Color(0xFF00D09E),
+                          color: brandGreen,
                         ),
                         child: Padding(
                           padding: const EdgeInsets.symmetric(
@@ -170,18 +138,16 @@ class HomePage extends StatelessWidget {
                           child: Center(
                             child: Column(
                               children: [
-                                Icon(
+                                const Icon(
                                   Icons.directions_car,
-                                  color: Colors.black,
+                                  color: primaryText,
                                   //size: 40,
                                 ),
                                 const SizedBox(height: 10),
                                 Text(
                                   'Savings On Goals',
-                                  style: TextStyle(
-                                    color: Colors.black,
-                                    fontSize: 14,
-                                  ),
+                                  style: kTextTheme.bodyMedium
+                                      ?.copyWith(color: primaryText),
                                   textAlign: TextAlign.center,
                                 ),
                               ],
@@ -189,12 +155,12 @@ class HomePage extends StatelessWidget {
                           ),
                         ),
                       ),
-                      Spacer(),
+                      const Spacer(),
                       Container(
                         height: 130,
-                        decoration: BoxDecoration(
+                        decoration: const BoxDecoration(
                           borderRadius: BorderRadius.all(Radius.circular(15)),
-                          color: Color(0xFF00D09E),
+                          color: brandGreen,
                         ),
                         child: Padding(
                           padding: const EdgeInsets.symmetric(
@@ -206,34 +172,24 @@ class HomePage extends StatelessWidget {
                               children: [
                                 Text(
                                   'Revenue Last Week',
-                                  style: TextStyle(
-                                    color: Colors.black,
-                                    fontSize: 14,
-                                  ),
+                                  style: kTextTheme.bodyMedium
+                                      ?.copyWith(color: primaryText),
                                 ),
                                 Text(
                                   '\$4,000.00',
-                                  style: TextStyle(
-                                    color: Colors.black,
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                                  style: kTextTheme.bodyLarge
+                                      ?.copyWith(color: primaryText),
                                 ),
-                                SizedBox(height: 5),
+                                const SizedBox(height: 5),
                                 Text(
                                   'Food Last Week',
-                                  style: TextStyle(
-                                    color: Colors.black,
-                                    fontSize: 14,
-                                  ),
+                                  style: kTextTheme.bodyMedium
+                                      ?.copyWith(color: primaryText),
                                 ),
                                 Text(
                                   '-\$100.00',
-                                  style: TextStyle(
-                                    color: Color(0xff3299FF),
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                                  style: kTextTheme.bodyLarge
+                                      ?.copyWith(color: Colors.blue),
                                 ),
                               ],
                             ),
@@ -252,75 +208,55 @@ class HomePage extends StatelessWidget {
                           Container(
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(12),
-                              color: Color(0xff0E3E3E),
+                              color: primaryText.withOpacity(0.8),
                             ),
                             child: Padding(
                               padding: const EdgeInsets.all(5),
                               child: TabBar(
                                 //isScrollable: true,
                                 dividerColor: Colors.transparent,
-                                labelStyle: TextStyle(color: Colors.black),
-                                unselectedLabelColor: Color(0xffF1FFF3),
+                                labelStyle:
+                                    kTextTheme.bodyMedium?.copyWith(color: primaryText),
+                                unselectedLabelColor: primaryBg,
                                 indicator: BoxDecoration(
                                   borderRadius: BorderRadius.circular(12),
-                                  color: Color(0xff00D09E),
+                                  color: brandGreen,
                                 ),
                                 //labelColor: Colors.amber,
-                                tabs: [
+                                tabs: const [
                                   Tab(
                                     child: Padding(
-                                      padding: const EdgeInsets.symmetric(
+                                      padding: EdgeInsets.symmetric(
                                         horizontal: 15,
                                         vertical: 8,
                                       ),
-                                      child: Text(
-                                        'Daily',
-                                        style: TextStyle(
-                                          //color: Colors.white70,
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
+                                      child: Text('Daily'),
                                     ),
                                   ),
                                   Tab(
                                     child: Padding(
-                                      padding: const EdgeInsets.symmetric(
+                                      padding: EdgeInsets.symmetric(
                                         horizontal: 8,
                                         vertical: 8,
                                       ),
-                                      child: Text(
-                                        'Weekly',
-                                        style: TextStyle(
-                                          //color: Colors.white70,
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
+                                      child: Text('Weekly'),
                                     ),
                                   ),
                                   Tab(
                                     child: Padding(
-                                      padding: const EdgeInsets.symmetric(
+                                      padding: EdgeInsets.symmetric(
                                         horizontal: 8,
                                         vertical: 8,
                                       ),
-                                      child: Text(
-                                        'Monthly',
-                                        style: TextStyle(
-                                          //color: Colors.white70,
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
+                                      child: Text('Monthly'),
                                     ),
                                   ),
                                 ],
                               ),
                             ),
                           ),
-                          SizedBox(height: 20),
-                          Expanded(
+                          const SizedBox(height: 20),
+                          const Expanded(
                             child: TabBarView(
                               children: [
                                 Transaction(),
@@ -333,41 +269,6 @@ class HomePage extends StatelessWidget {
                       ),
                     ),
                   ),
-                  /* Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      TabButton(text: 'Daily'),
-                      TabButton(text: 'Weekly'),
-                      TabButton(text: 'Monthly', isSelected: true),
-                    ],
-                  ),*/
-                  /* const SizedBox(height: 20),
-                  // Transactions List
-                  Expanded(
-                    child: ListView(
-                      children: [
-                        TransactionItem(
-                          icon: Icons.attach_money,
-                          title: 'Salary',
-                          date: 'April 30',
-                          amount: '\$4,000.00',
-                          isIncome: true,
-                        ),
-                        TransactionItem(
-                          icon: Icons.shopping_cart,
-                          title: 'Groceries',
-                          date: 'April 24',
-                          amount: '-\$100.00',
-                        ),
-                        TransactionItem(
-                          icon: Icons.home,
-                          title: 'Rent',
-                          date: 'April 15',
-                          amount: '-\$674.40',
-                        ),
-                      ],
-                    ),
-                  ),*/
                 ],
               ),
             ),
@@ -402,8 +303,8 @@ class TransactionItem extends StatelessWidget {
       child: Row(
         children: [
           CircleAvatar(
-            backgroundColor: isIncome ? Colors.blueAccent : Colors.greenAccent,
-            child: Icon(icon, color: Colors.white),
+            backgroundColor: isIncome ? brandGreen : Colors.red,
+            child: Icon(icon, color: primaryText),
           ),
           const SizedBox(width: 16),
           Column(
@@ -411,23 +312,16 @@ class TransactionItem extends StatelessWidget {
             children: [
               Text(
                 title,
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: kTextTheme.bodyLarge?.copyWith(color: primaryBg),
               ),
-              Text(date, style: TextStyle(color: Colors.white54, fontSize: 12)),
+              Text(date, style: kTextTheme.bodySmall?.copyWith(color: primaryBg.withOpacity(0.7))),
             ],
           ),
-          Spacer(),
+          const Spacer(),
           Text(
             amount,
-            style: TextStyle(
-              color: isIncome ? Colors.greenAccent : Colors.redAccent,
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
+            style: kTextTheme.bodyLarge?.copyWith(
+                color: isIncome ? brandGreen : Colors.red),
           ),
         ],
       ),

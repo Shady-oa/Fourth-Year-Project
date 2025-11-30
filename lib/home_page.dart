@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:final_project/constants.dart';
 import 'package:final_project/get_user_data.dart';
 // import 'package:firebase/get_user_data.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -36,10 +37,12 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: primaryBg,
       appBar: AppBar(
+        backgroundColor: primaryText,
         actions: [
           GestureDetector(
-            child: Icon(Icons.exit_to_app),
+            child: const Icon(Icons.exit_to_app, color: primaryBg),
             onTap: () async {
               await FirebaseAuth.instance.signOut();
               await GoogleSignIn().signOut();
@@ -53,7 +56,7 @@ class _HomePageState extends State<HomePage> {
         children: [
           SafeArea(
             child: Center(
-              child: Text('Logged in as  '),
+              child: Text('Logged in as  ', style: kTextTheme.bodyLarge),
             ),
           ),
           Padding(
@@ -62,10 +65,10 @@ class _HomePageState extends State<HomePage> {
               controller: _updateLastController,
               decoration: InputDecoration(
                 hintText: 'Last name',
-                border: OutlineInputBorder(
+                border: const OutlineInputBorder(
                   borderRadius: BorderRadius.all(Radius.circular(12)),
                 ),
-                fillColor: Color.fromARGB(183, 255, 255, 255),
+                fillColor: primaryBg.withOpacity(0.8),
                 filled: true,
               ),
             ),
@@ -86,37 +89,19 @@ class _HomePageState extends State<HomePage> {
                   ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                     content: Text(
                       'update successful !!',
-                      style: TextStyle(
-                        fontSize: 18,
-                        color: const Color.fromARGB(181, 76, 175, 79),
-                      ),
+                      style: kTextTheme.bodyLarge?.copyWith(color: brandGreen),
                     ),
                     backgroundColor: Colors.transparent,
                     elevation: 0,
-                    padding: EdgeInsets.symmetric(horizontal:45 ,vertical: 50),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 45, vertical: 50),
                   ));
-                  /*await FirebaseFirestore.instance
-                      .collection('users')
-                      .doc(user)
-                      .update({'last name': _updateLastController.text.trim()});
-
-                      await FirebaseFirestore.instance.collection('users').doc(Uer).update({
-                        'last name': _updateLastController.text.trim()
-                      });
-
-                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                    content: Text(
-                      'Succesful',
-                      style: TextStyle(color: Colors.black),
-                    ),
-                    elevation: 0,
-                    backgroundColor: Colors.transparent,
-                  )); */
                 },
                 style: TextButton.styleFrom(
-                  backgroundColor: Colors.white,
+                  backgroundColor: brandGreen,
                 ),
-                child: Text('Update'),
+                child: Text('Update',
+                    style: kTextTheme.bodyMedium?.copyWith(color: primaryText)),
               ),
             ),
           ),

@@ -1,3 +1,4 @@
+import 'package:final_project/constants.dart';
 import 'package:flutter/material.dart';
 
 class SavingsPage extends StatelessWidget {
@@ -6,7 +7,7 @@ class SavingsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color(0xff08090A),
+      backgroundColor: primaryBg,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -18,23 +19,19 @@ class SavingsPage extends StatelessWidget {
                 padding: const EdgeInsets.only(top: 16.0, bottom: 20.0),
                 child: Row(
                   children: [
-                    CircleAvatar(
+                    const CircleAvatar(
                       radius: 24,
                       backgroundImage: AssetImage('assets/image/cat.jpg'),
                     ),
-                    Spacer(),
+                    const Spacer(),
                     Text(
                       'Savings',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
+                      style: kTextTheme.headlineSmall,
                     ),
-                    Spacer(),
-                    Icon(
+                    const Spacer(),
+                    const Icon(
                       Icons.notifications_none_outlined,
-                      color: Colors.white,
+                      color: primaryText,
                     ),
                   ],
                 ),
@@ -43,9 +40,9 @@ class SavingsPage extends StatelessWidget {
               // Balance section
               Container(
                 width: double.infinity,
-                padding: EdgeInsets.all(16),
+                padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Color(0xFF424247),
+                  color: primaryText.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Column(
@@ -53,21 +50,15 @@ class SavingsPage extends StatelessWidget {
                   children: [
                     Text(
                       'Ksh 20,000',
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
+                      style: kTextTheme.headlineMedium,
                     ),
-                    SizedBox(height: 8),
+                    const SizedBox(height: 8),
                     Text(
                       'In My Total goals',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Color(0xff9A9B98),
-                      ),
+                      style: kTextTheme.bodyLarge
+                          ?.copyWith(color: primaryText.withOpacity(0.7)),
                     ),
-                    SizedBox(height: 16),
+                    const SizedBox(height: 16),
                     Center(
                       child: SizedBox(
                         height: 40,
@@ -75,30 +66,28 @@ class SavingsPage extends StatelessWidget {
                         child: ElevatedButton(
                           onPressed: () {},
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.amber,
+                            backgroundColor: brandGreen,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8),
                             ),
                           ),
-                          child: Text("ADD GOAL"),
+                          child: Text("ADD GOAL",
+                              style: kTextTheme.bodyMedium
+                                  ?.copyWith(color: primaryText)),
                         ),
                       ),
                     ),
                   ],
                 ),
               ),
-              SizedBox(height: 20),
+              const SizedBox(height: 20),
 
               // Goals section
               Text(
                 'My Goals',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
+                style: kTextTheme.titleLarge,
               ),
-              SizedBox(height: 8),
+              const SizedBox(height: 8),
               Expanded(
                 child: ListView.builder(
                   itemCount: 4, // Number of goals
@@ -132,9 +121,9 @@ class SavingsPage extends StatelessWidget {
                     return Padding(
                       padding: const EdgeInsets.symmetric(vertical: 8.0),
                       child: Container(
-                        padding: EdgeInsets.all(16),
+                        padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: Color(0xFF424247),
+                          color: primaryText.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Column(
@@ -147,56 +136,48 @@ class SavingsPage extends StatelessWidget {
                                   children: [
                                     Icon(
                                       getIconForGoal(goals[index]),
-                                      color: Colors.amber,
+                                      color: brandGreen,
                                     ),
-                                    SizedBox(width: 10),
+                                    const SizedBox(width: 10),
                                     Text(
                                       goals[index],
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.white,
-                                      ),
+                                      style: kTextTheme.titleMedium,
                                     ),
                                   ],
                                 ),
                                 Text(
                                   '${(1 - progress[index]) * 100}% left',
-                                  style: TextStyle(
-                                    color: Colors.grey,
-                                    fontSize: 14,
-                                  ),
+                                  style: kTextTheme.bodySmall?.copyWith(
+                                      color: primaryText.withOpacity(0.7)),
                                 ),
                                 Icon(
                                   Icons.more_vert,
-                                  color: Colors.grey,
+                                  color: primaryText.withOpacity(0.7),
                                 ),
                               ],
                             ),
-                            SizedBox(height: 8),
+                            const SizedBox(height: 8),
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 Text(
                                   'Ksh ${amounts[index]} / ${targets[index]}',
-                                  style: TextStyle(
-                                    color: Colors.green,
-                                    fontSize: 14,
-                                  ),
+                                  style: kTextTheme.bodyMedium
+                                      ?.copyWith(color: brandGreen),
                                 ),
                               ],
                             ),
-                            SizedBox(height: 8),
+                            const SizedBox(height: 8),
                             ClipRRect(
                               borderRadius: BorderRadius.circular(4),
                               child: LinearProgressIndicator(
                                 value: progress[index],
-                                backgroundColor: Colors.grey,
-                                color: Colors.green,
+                                backgroundColor: primaryText.withOpacity(0.2),
+                                color: brandGreen,
                                 minHeight: 8,
                               ),
                             ),
-                            SizedBox(height: 8),
+                            const SizedBox(height: 8),
                             SizedBox(
                               height: 40,
                               child: ElevatedButton(
@@ -204,12 +185,14 @@ class SavingsPage extends StatelessWidget {
                                   // Add functionality for the button
                                 },
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.amber,
+                                  backgroundColor: brandGreen,
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                 ),
-                                child: Text("Add Money"),
+                                child: Text("Add Money",
+                                    style: kTextTheme.bodyMedium
+                                        ?.copyWith(color: primaryText)),
                               ),
                             ),
                           ],
@@ -222,62 +205,6 @@ class SavingsPage extends StatelessWidget {
             ],
           ),
         ),
-      ),
-      /*bottomNavigationBar: BottomNavigationBar(
-        backgroundColor: Color(0xff14BE9C),
-        items: [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Home',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.account_balance_wallet),
-            label: 'Budget',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.savings),
-            label: 'Savings',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.insert_chart),
-            label: 'Report',
-          ),
-        ],
-      ),*/
-      bottomNavigationBar: BottomNavigationBar(
-        backgroundColor: Color(0xff14BE9C),
-        type: BottomNavigationBarType.shifting,
-        selectedItemColor: Colors.amber[300],
-        unselectedItemColor: Colors.white,
-        showSelectedLabels: true,
-        showUnselectedLabels: true,
-        selectedFontSize: 14.0,
-        unselectedFontSize: 12.0,
-        selectedLabelStyle:
-            TextStyle(fontWeight: FontWeight.bold), // Style for selected label
-        unselectedLabelStyle: TextStyle(fontWeight: FontWeight.normal),
-        items: [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home_outlined),
-            label: 'Home',
-            backgroundColor: Color(0xff14BE9C),
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.account_balance_outlined),
-            label: 'Budget',
-            backgroundColor: Color(0xff14BE9C),
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.savings_outlined),
-            label: 'Savings',
-            backgroundColor: Color(0xff14BE9C),
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.insert_chart_outlined_outlined),
-            label: 'Report',
-            backgroundColor: Color(0xff14BE9C), // Background color for the item
-          ),
-        ],
       ),
     );
   }

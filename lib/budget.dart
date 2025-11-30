@@ -1,3 +1,4 @@
+import 'package:final_project/constants.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -105,18 +106,21 @@ class _BudgetsPageState extends State<BudgetsPage> {
     await showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text("Add New Budget"),
+        backgroundColor: primaryBg,
+        title: Text("Add New Budget", style: kTextTheme.headlineSmall),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             TextField(
               controller: categoryController,
               decoration: const InputDecoration(labelText: "Category"),
+              style: kTextTheme.bodyMedium,
             ),
             TextField(
               controller: amountController,
               keyboardType: TextInputType.number,
               decoration: const InputDecoration(labelText: "Budgeted Amount"),
+              style: kTextTheme.bodyMedium,
             ),
             const SizedBox(height: 16),
             TextButton(
@@ -137,6 +141,7 @@ class _BudgetsPageState extends State<BudgetsPage> {
                 selectedDate == null
                     ? "Select End Date"
                     : "Selected: ${selectedDate?.toLocal()}".split(' ')[0],
+                style: kTextTheme.bodyMedium?.copyWith(color: brandGreen),
               ),
             ),
           ],
@@ -146,9 +151,10 @@ class _BudgetsPageState extends State<BudgetsPage> {
             onPressed: () {
               Navigator.pop(context);
             },
-            child: const Text("Cancel"),
+            child: Text("Cancel", style: kTextTheme.bodyMedium),
           ),
           ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: brandGreen),
             onPressed: () async {
               if (categoryController.text.isNotEmpty &&
                   amountController.text.isNotEmpty &&
@@ -169,7 +175,8 @@ class _BudgetsPageState extends State<BudgetsPage> {
                 Navigator.pop(context);
               }
             },
-            child: const Text("Add"),
+            child: Text("Add",
+                style: kTextTheme.bodyMedium?.copyWith(color: primaryText)),
           ),
         ],
       ),
@@ -189,7 +196,7 @@ class _BudgetsPageState extends State<BudgetsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xff052224),
+      backgroundColor: primaryBg,
       body: SafeArea(
         child: Column(
           children: [
@@ -200,14 +207,10 @@ class _BudgetsPageState extends State<BudgetsPage> {
                 children: [
                   Row(
                     children: [
-                      const Center(
+                      Center(
                         child: Text(
                           "Budgets",
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xffDFF7E2),
-                          ),
+                          style: kTextTheme.headlineSmall,
                         ),
                       ),
                       const Spacer(),
@@ -216,11 +219,11 @@ class _BudgetsPageState extends State<BudgetsPage> {
                         width: 30,
                         decoration: const BoxDecoration(
                           shape: BoxShape.circle,
-                          color: Color(0xffDFF7E2),
+                          color: primaryText,
                         ),
                         child: const Icon(
                           Icons.notifications_none,
-                          color: Color(0xff093030),
+                          color: primaryBg,
                         ),
                       )
                     ],
@@ -237,44 +240,35 @@ class _BudgetsPageState extends State<BudgetsPage> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text("Total Budget",
-                          style: TextStyle(color: Colors.white)),
-                      SizedBox(height: 4),
+                      Text("Total Budget", style: kTextTheme.bodyLarge),
+                      const SizedBox(height: 4),
                       Text(
                         "\$${totalBudget.toStringAsFixed(2)}",
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                        ),
+                        style: kTextTheme.headlineMedium,
                       ),
                     ],
                   ),
                   Container(
                     height: 50,
                     width: 1,
-                    color: Color(0xffDFF7E2),
+                    color: primaryText,
                   ),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text("Total Expense",
-                          style: TextStyle(color: Colors.white)),
-                      SizedBox(height: 4),
+                      Text("Total Expense", style: kTextTheme.bodyLarge),
+                      const SizedBox(height: 4),
                       Text(
                         "\$${totalExpenses.toStringAsFixed(2)}",
-                        style: TextStyle(
-                          color: Colors.blue,
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                        ),
+                        style: kTextTheme.headlineMedium
+                            ?.copyWith(color: Colors.blue),
                       ),
                     ],
                   ),
                 ],
               ),
             ),
-            SizedBox(height: 10),
+            const SizedBox(height: 10),
             // Budgets Section
             Expanded(
               child: Container(
@@ -284,7 +278,7 @@ class _BudgetsPageState extends State<BudgetsPage> {
                     topLeft: Radius.circular(50),
                     topRight: Radius.circular(50),
                   ),
-                  color: Color(0xff093030),
+                  color: primaryText,
                 ),
                 child: Padding(
                   padding: const EdgeInsets.all(20.0),
@@ -298,7 +292,7 @@ class _BudgetsPageState extends State<BudgetsPage> {
                           margin: const EdgeInsets.only(bottom: 16),
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
-                            color: const Color(0xff1A4D4A),
+                            color: primaryText.withOpacity(0.8),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Column(
@@ -306,24 +300,19 @@ class _BudgetsPageState extends State<BudgetsPage> {
                             children: [
                               Text(
                                 budget['category'],
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                ),
+                                style: kTextTheme.titleLarge
+                                    ?.copyWith(color: primaryBg),
                               ),
                               const SizedBox(height: 8),
                               Text(
                                 "Amount: \$${budget['amount']}",
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                ),
+                                style: kTextTheme.bodyMedium
+                                    ?.copyWith(color: primaryBg),
                               ),
                               Text(
                                 "End Date: ${budget['endDate']}",
-                                style: const TextStyle(
-                                  color: Colors.white70,
-                                ),
+                                style: kTextTheme.bodyMedium
+                                    ?.copyWith(color: primaryBg.withOpacity(0.7)),
                               ),
                             ],
                           ),
@@ -340,7 +329,7 @@ class _BudgetsPageState extends State<BudgetsPage> {
               child: Center(
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xff00D09E),
+                    backgroundColor: brandGreen,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(30),
                     ),
@@ -350,13 +339,9 @@ class _BudgetsPageState extends State<BudgetsPage> {
                     ),
                   ),
                   onPressed: addBudget,
-                  child: const Text(
-                    "Add Expense",
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w500,
-                      color: Color(0xff093030),
-                    ),
+                  child: Text(
+                    "Add Budget",
+                    style: kTextTheme.bodyMedium?.copyWith(color: primaryText),
                   ),
                 ),
               ),
@@ -439,18 +424,21 @@ class _BudgetDetailsPageState extends State<BudgetDetailsPage> {
     await showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text("Add Expense"),
+        backgroundColor: primaryBg,
+        title: Text("Add Expense", style: kTextTheme.headlineSmall),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             TextField(
               controller: descriptionController,
               decoration: const InputDecoration(labelText: "Description"),
+              style: kTextTheme.bodyMedium,
             ),
             TextField(
               controller: amountController,
               keyboardType: TextInputType.number,
               decoration: const InputDecoration(labelText: "Amount"),
+              style: kTextTheme.bodyMedium,
             ),
           ],
         ),
@@ -459,9 +447,10 @@ class _BudgetDetailsPageState extends State<BudgetDetailsPage> {
             onPressed: () {
               Navigator.pop(context);
             },
-            child: const Text("Cancel"),
+            child: Text("Cancel", style: kTextTheme.bodyMedium),
           ),
           ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: brandGreen),
             onPressed: () async {
               if (descriptionController.text.isNotEmpty &&
                   amountController.text.isNotEmpty) {
@@ -483,7 +472,8 @@ class _BudgetDetailsPageState extends State<BudgetDetailsPage> {
                 Navigator.pop(context);
               }
             },
-            child: const Text("Add"),
+            child: Text("Add",
+                style: kTextTheme.bodyMedium?.copyWith(color: primaryText)),
           ),
         ],
       ),
@@ -493,7 +483,7 @@ class _BudgetDetailsPageState extends State<BudgetDetailsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xff052224),
+      backgroundColor: primaryBg,
       body: SafeArea(
         child: Column(
           children: [
@@ -504,11 +494,7 @@ class _BudgetDetailsPageState extends State<BudgetDetailsPage> {
                 children: [
                   Text(
                     "${budgetDetails['Category']} Budget",
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xffDFF7E2),
-                    ),
+                    style: kTextTheme.headlineSmall,
                   ),
                   const Spacer(),
                   Container(
@@ -516,11 +502,11 @@ class _BudgetDetailsPageState extends State<BudgetDetailsPage> {
                     width: 30,
                     decoration: const BoxDecoration(
                       shape: BoxShape.circle,
-                      color: Color(0xffDFF7E2),
+                      color: primaryText,
                     ),
                     child: const Icon(
                       Icons.notifications_none,
-                      color: Color(0xff093030),
+                      color: primaryBg,
                     ),
                   )
                 ],
@@ -534,44 +520,35 @@ class _BudgetDetailsPageState extends State<BudgetDetailsPage> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text("Total Budget",
-                          style: TextStyle(color: Colors.white)),
-                      SizedBox(height: 4),
+                      Text("Total Budget", style: kTextTheme.bodyLarge),
+                      const SizedBox(height: 4),
                       Text(
                         "\$${budgetDetails['Total amount']}",
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                        ),
+                        style: kTextTheme.headlineMedium,
                       ),
                     ],
                   ),
                   Container(
                     height: 50,
                     width: 1,
-                    color: Color(0xffDFF7E2),
+                    color: primaryText,
                   ),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text("Total Expense",
-                          style: TextStyle(color: Colors.white)),
-                      SizedBox(height: 4),
+                      Text("Total Expense", style: kTextTheme.bodyLarge),
+                      const SizedBox(height: 4),
                       Text(
                         " \$${totalExpenses.toStringAsFixed(2)}",
-                        style: TextStyle(
-                          color: Colors.blue,
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                        ),
+                        style: kTextTheme.headlineMedium
+                            ?.copyWith(color: Colors.blue),
                       ),
                     ],
                   ),
                 ],
               ),
             ),
-            SizedBox(height: 10),
+            const SizedBox(height: 10),
             // Budget Details Section
             Expanded(
               child: Container(
@@ -581,7 +558,7 @@ class _BudgetDetailsPageState extends State<BudgetDetailsPage> {
                     topLeft: Radius.circular(50),
                     topRight: Radius.circular(50),
                   ),
-                  color: Color(0xff093030),
+                  color: primaryText,
                 ),
                 child: Padding(
                   padding: const EdgeInsets.all(20.0),
@@ -596,16 +573,16 @@ class _BudgetDetailsPageState extends State<BudgetDetailsPage> {
 
                             // Parse the string to DateTime before formatting
                             final date = DateTime.parse(expense['date']);
-                            final formattedDate = DateFormat.yMMMd()
-                                .format(date); // Format the Date
+                            final formattedDate =
+                                DateFormat.yMMMd().format(date); // Format the Date
                             final formattedTime =
                                 DateFormat.Hm().format(date); // Format the Time
 
                             return Container(
-                              margin: EdgeInsets.symmetric(vertical: 8.0),
-                              padding: EdgeInsets.all(16.0),
+                              margin: const EdgeInsets.symmetric(vertical: 8.0),
+                              padding: const EdgeInsets.all(16.0),
                               decoration: BoxDecoration(
-                                color: Color(0xff0E3E3E),
+                                color: primaryText.withOpacity(0.8),
                                 borderRadius: BorderRadius.circular(8.0),
                               ),
                               child: Row(
@@ -618,13 +595,10 @@ class _BudgetDetailsPageState extends State<BudgetDetailsPage> {
                                       children: [
                                         Text(
                                           expense['description'],
-                                          style: TextStyle(
-                                            fontSize: 18.0,
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.white,
-                                          ),
+                                          style: kTextTheme.titleLarge
+                                              ?.copyWith(color: primaryBg),
                                         ),
-                                        SizedBox(height: 8.0),
+                                        const SizedBox(height: 8.0),
                                         Row(
                                           children: [
                                             Column(
@@ -633,18 +607,18 @@ class _BudgetDetailsPageState extends State<BudgetDetailsPage> {
                                               children: [
                                                 Text(
                                                   formattedDate,
-                                                  style: TextStyle(
-                                                    fontSize: 14.0,
-                                                    color: Colors.white70,
-                                                  ),
+                                                  style: kTextTheme.bodySmall
+                                                      ?.copyWith(
+                                                          color: primaryBg
+                                                              .withOpacity(0.7)),
                                                 ),
-                                                SizedBox(height: 4.0),
+                                                const SizedBox(height: 4.0),
                                                 Text(
                                                   formattedTime,
-                                                  style: TextStyle(
-                                                    fontSize: 14.0,
-                                                    color: Colors.white70,
-                                                  ),
+                                                  style: kTextTheme.bodySmall
+                                                      ?.copyWith(
+                                                          color: primaryBg
+                                                              .withOpacity(0.7)),
                                                 ),
                                               ],
                                             ),
@@ -655,15 +629,13 @@ class _BudgetDetailsPageState extends State<BudgetDetailsPage> {
                                   ),
                                   // Amount aligned to the far right
                                   Padding(
-                                    padding: EdgeInsets.only(
+                                    padding: const EdgeInsets.only(
                                         left:
                                             8.0), // Add padding for space between amount and text
                                     child: Text(
                                       "\$${expense['amount']}",
-                                      style: TextStyle(
-                                        fontSize: 16.0,
-                                        color: Colors.white70,
-                                      ),
+                                      style: kTextTheme.bodyMedium
+                                          ?.copyWith(color: primaryBg.withOpacity(0.7)),
                                     ),
                                   ),
                                 ],
@@ -677,7 +649,7 @@ class _BudgetDetailsPageState extends State<BudgetDetailsPage> {
                         child: Center(
                           child: ElevatedButton(
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xff00D09E),
+                              backgroundColor: brandGreen,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(30),
                               ),
@@ -687,13 +659,10 @@ class _BudgetDetailsPageState extends State<BudgetDetailsPage> {
                               ),
                             ),
                             onPressed: addExpense,
-                            child: const Text(
+                            child: Text(
                               "Add Expense",
-                              style: TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w500,
-                                color: Color(0xff093030),
-                              ),
+                              style: kTextTheme.bodyMedium
+                                  ?.copyWith(color: primaryText),
                             ),
                           ),
                         ),

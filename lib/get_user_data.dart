@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:final_project/constants.dart';
 import 'package:flutter/material.dart';
 
 class GetUserData extends StatelessWidget {
@@ -16,9 +17,10 @@ class GetUserData extends StatelessWidget {
           if (snapshot.connectionState == ConnectionState.done) {
             Map<String, dynamic> data =
                 snapshot.data!.data() as Map<String, dynamic>;
-            return Text('First Name: ${data['first name']} ${data['last name']}');
+            return Text('First Name: ${data['first name']} ${data['last name']}',
+                style: kTextTheme.bodyLarge);
           }
-          return Text('loading...');
+          return Text('loading...', style: kTextTheme.bodyMedium);
         }));
   }
 }

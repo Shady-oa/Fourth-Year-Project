@@ -1,3 +1,4 @@
+import 'package:final_project/constants.dart';
 import 'package:flutter/material.dart';
 
 class HomePg extends StatefulWidget {
@@ -41,7 +42,7 @@ class _HomePgState extends State<HomePg> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color(0xff08090A),
+      backgroundColor: primaryBg,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -53,38 +54,32 @@ class _HomePgState extends State<HomePg> {
                 padding: const EdgeInsets.symmetric(vertical: 20),
                 child: Row(
                   children: [
-                    CircleAvatar(
+                    const CircleAvatar(
                       radius: 30,
                       backgroundImage: AssetImage('assets/image/coin.jpg'),
                     ),
-                    SizedBox(width: 10),
+                    const SizedBox(width: 10),
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           "Welcome back,",
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xffF2F2F2),
-                          ),
+                          style: kTextTheme.titleLarge,
                         ),
                         Text(
                           "John",
-                          style: TextStyle(
-                            fontSize: 18,
-                            color: Color(0xff9A9B98),
-                          ),
+                          style: kTextTheme.bodyLarge
+                              ?.copyWith(color: primaryText.withOpacity(0.7)),
                         ),
                       ],
                     ),
-                    Spacer(),
+                    const Spacer(),
                     IconButton(
                       onPressed: () {},
-                      icon: Icon(
+                      icon: const Icon(
                         Icons.notifications_none_outlined,
                         size: 30,
-                        color: Colors.white,
+                        color: primaryText,
                       ),
                     ),
                   ],
@@ -96,38 +91,38 @@ class _HomePgState extends State<HomePg> {
                 height: 34,
                 decoration: BoxDecoration(
                   color: Colors.transparent,
-                  border: Border.all(color: Colors.white, width: 1),
+                  border: Border.all(color: primaryText, width: 1),
                   borderRadius: BorderRadius.circular(50),
                 ),
                 child: TextField(
                   controller: _searchController,
                   decoration: InputDecoration(
                     hintText: 'Search',
-                    hintStyle: TextStyle(color: Colors.white54),
-                    prefixIcon: Icon(Icons.search, color: Colors.white),
+                    hintStyle: TextStyle(color: primaryText.withOpacity(0.5)),
+                    prefixIcon: const Icon(Icons.search, color: primaryText),
                     suffixIcon: _searchController.text.isNotEmpty
                         ? IconButton(
-                            icon: Icon(Icons.clear, color: Colors.white),
+                            icon: const Icon(Icons.clear, color: primaryText),
                             onPressed: () {
                               _searchController.clear();
                             },
                           )
                         : null,
                     border: InputBorder.none,
-                    contentPadding: EdgeInsets.symmetric(horizontal: 32),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 32),
                   ),
-                  style: TextStyle(color: Colors.white),
+                  style: const TextStyle(color: primaryText),
                   autofocus: true,
                 ),
               ),
-              SizedBox(height: 20),
+              const SizedBox(height: 20),
 
               // Balance Section
               Container(
-                padding: EdgeInsets.all(20),
+                padding: const EdgeInsets.all(20),
                 width: double.infinity,
                 decoration: BoxDecoration(
-                  color: Color(0xFF424247),
+                  color: primaryText.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Column(
@@ -135,20 +130,15 @@ class _HomePgState extends State<HomePg> {
                   children: [
                     Text(
                       "Ksh 32,423",
-                      style: TextStyle(
-                        fontSize: 24,
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
+                      style: kTextTheme.displaySmall,
                     ),
-                    SizedBox(height: 5),
+                    const SizedBox(height: 5),
                     Text(
                       "Your Balance",
-                      style: TextStyle(
-                        color: Color(0xff9A9B98),
-                      ),
+                      style: kTextTheme.bodyLarge
+                          ?.copyWith(color: primaryText.withOpacity(0.7)),
                     ),
-                    SizedBox(height: 10),
+                    const SizedBox(height: 10),
                     Center(
                       child: SizedBox(
                         height: 40,
@@ -156,14 +146,15 @@ class _HomePgState extends State<HomePg> {
                         child: ElevatedButton(
                           onPressed: () {},
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.amber,
+                            backgroundColor: brandGreen,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8),
                             ),
                           ),
                           child: Text(
                             "ADD FUNDS",
-                            style: TextStyle(fontSize: 16),
+                            style: kTextTheme.bodyMedium
+                                ?.copyWith(color: primaryText),
                           ),
                         ),
                       ),
@@ -171,18 +162,21 @@ class _HomePgState extends State<HomePg> {
                   ],
                 ),
               ),
-              SizedBox(height: 10),
+              const SizedBox(height: 10),
               ElevatedButton(
                 onPressed: () {},
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.amber,
+                  backgroundColor: brandGreen,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
                 ),
-                child: Center(child: Text("View Report")),
+                child: Center(
+                    child: Text("View Report",
+                        style: kTextTheme.bodyMedium
+                            ?.copyWith(color: primaryText))),
               ),
-              SizedBox(height: 20),
+              const SizedBox(height: 20),
 
               // Saving Goals & Budget Section
               Row(
@@ -190,21 +184,18 @@ class _HomePgState extends State<HomePg> {
                 children: [
                   Text(
                     "Saving Goals & Budget",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: kTextTheme.titleLarge,
                   ),
                   TextButton(
                     onPressed: () {},
                     child: Text(
                       "see all",
-                      style: TextStyle(color: Colors.amber),
+                      style: kTextTheme.bodyMedium?.copyWith(color: brandGreen),
                     ),
                   ),
                 ],
               ),
-              Row(
+              const Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
                   GoalCard(
@@ -224,15 +215,12 @@ class _HomePgState extends State<HomePg> {
                   ),
                 ],
               ),
-              SizedBox(height: 20),
+              const SizedBox(height: 20),
 
               // Recent Activities Section
               Text(
                 "Recent Activities",
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: kTextTheme.titleLarge,
               ),
               Column(
                 children: filteredActivities.map((activity) {
@@ -247,40 +235,6 @@ class _HomePgState extends State<HomePg> {
           ),
         ),
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        backgroundColor: Color(0xff14BE9C),
-        type: BottomNavigationBarType.shifting,
-        selectedItemColor: Colors.amber[300],
-        unselectedItemColor: Colors.white,
-        showSelectedLabels: true,
-        showUnselectedLabels: true,
-        selectedFontSize: 14.0,
-        unselectedFontSize: 12.0,
-        selectedLabelStyle: TextStyle(fontWeight: FontWeight.bold),
-        unselectedLabelStyle: TextStyle(fontWeight: FontWeight.normal),
-        items: [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home_outlined),
-            label: 'Home',
-            backgroundColor: Color(0xff14BE9C),
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.account_balance_outlined),
-            label: 'Budget',
-            backgroundColor: Color(0xff14BE9C),
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.savings_outlined),
-            label: 'Savings',
-            backgroundColor: Color(0xff14BE9C),
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.insert_chart_outlined_outlined),
-            label: 'Report',
-            backgroundColor: Color(0xff14BE9C),
-          ),
-        ],
-      ),
     );
   }
 }
@@ -292,30 +246,35 @@ class GoalCard extends StatelessWidget {
   final String title;
   final String progress;
 
-  const GoalCard({super.key, required this.icon, required this.title, required this.progress});
+  const GoalCard(
+      {super.key,
+      required this.icon,
+      required this.title,
+      required this.progress});
 
   @override
   Widget build(BuildContext context) {
     return Container(
       width: 114,
       height: 114,
-      padding: EdgeInsets.all(8),
+      padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
-        color: Color(0xFF424247),
+        color: primaryText.withOpacity(0.1),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, color: Colors.amber, size: 30),
-          SizedBox(height: 10),
+          Icon(icon, color: brandGreen, size: 30),
+          const SizedBox(height: 10),
           Text(
             title,
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+            style: kTextTheme.bodyLarge,
           ),
           Text(
             progress,
-            style: TextStyle(color: Color(0xff9A9B98), fontSize: 12),
+            style: kTextTheme.bodySmall
+                ?.copyWith(color: primaryText.withOpacity(0.7)),
           ),
         ],
       ),
@@ -328,23 +287,28 @@ class ActivityTile extends StatelessWidget {
   final String date;
   final String amount;
 
-  const ActivityTile({super.key, required this.title, required this.date, required this.amount});
+  const ActivityTile(
+      {super.key,
+      required this.title,
+      required this.date,
+      required this.amount});
 
   @override
   Widget build(BuildContext context) {
     return ListTile(
       title: Text(
         title,
-        style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        style: kTextTheme.bodyLarge,
       ),
       subtitle: Text(
         date,
-        style: TextStyle(color: Colors.grey),
+        style:
+            kTextTheme.bodySmall?.copyWith(color: primaryText.withOpacity(0.7)),
       ),
       trailing: Text(
         amount,
-        style: TextStyle(
-          color: amount.contains('-') ? Colors.red : Colors.green,
+        style: kTextTheme.bodyLarge?.copyWith(
+          color: amount.contains('-') ? Colors.red : brandGreen,
         ),
       ),
     );

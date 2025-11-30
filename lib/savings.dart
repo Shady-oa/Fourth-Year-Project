@@ -1,20 +1,5 @@
+import 'package:final_project/constants.dart';
 import 'package:flutter/material.dart';
-
-void main() {
-  runApp(Savings());
-}
-
-class Savings extends StatelessWidget {
-  const Savings({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      home: SavingsPage(),
-    );
-  }
-}
 
 class SavingsPage extends StatelessWidget {
   const SavingsPage({super.key});
@@ -22,7 +7,7 @@ class SavingsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color(0xFF0D1B2A),
+      backgroundColor: primaryBg,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
@@ -33,19 +18,15 @@ class SavingsPage extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Icon(Icons.arrow_back, color: Colors.white),
+                  const Icon(Icons.arrow_back, color: primaryText),
                   Text(
                     "Savings",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: kTextTheme.headlineSmall,
                   ),
-                  Icon(Icons.notifications_none, color: Colors.white),
+                  const Icon(Icons.notifications_none, color: primaryText),
                 ],
               ),
-              SizedBox(height: 20),
+              const SizedBox(height: 20),
 
               // Balance Info
               Row(
@@ -54,38 +35,29 @@ class SavingsPage extends StatelessWidget {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text("Total Balance",
-                          style: TextStyle(color: Colors.white)),
-                      SizedBox(height: 4),
+                      Text("Total Balance", style: kTextTheme.bodyLarge),
+                      const SizedBox(height: 4),
                       Text(
                         "\$7,783.00",
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                        ),
+                        style: kTextTheme.headlineMedium,
                       ),
                     ],
                   ),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text("Total Expense",
-                          style: TextStyle(color: Colors.white)),
-                      SizedBox(height: 4),
+                      Text("Total Expense", style: kTextTheme.bodyLarge),
+                      const SizedBox(height: 4),
                       Text(
                         "-\$1,187.40",
-                        style: TextStyle(
-                          color: Colors.blue,
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                        ),
+                        style: kTextTheme.headlineMedium
+                            ?.copyWith(color: Colors.blue),
                       ),
                     ],
                   ),
                 ],
               ),
-              SizedBox(height: 20),
+              const SizedBox(height: 20),
 
               // Progress bar
               Row(
@@ -94,7 +66,7 @@ class SavingsPage extends StatelessWidget {
                     child: Container(
                       height: 10,
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
+                        color: primaryText.withOpacity(0.2),
                         borderRadius: BorderRadius.circular(5),
                       ),
                       child: FractionallySizedBox(
@@ -103,26 +75,27 @@ class SavingsPage extends StatelessWidget {
                             0.3, // Adjust this factor based on progress
                         child: Container(
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: brandGreen,
                             borderRadius: BorderRadius.circular(5),
                           ),
                         ),
                       ),
                     ),
                   ),
-                  SizedBox(width: 10),
+                  const SizedBox(width: 10),
                   Text(
                     "\$20,000.00",
-                    style: TextStyle(color: Colors.white),
+                    style: kTextTheme.bodyMedium,
                   ),
                 ],
               ),
-              SizedBox(height: 10),
+              const SizedBox(height: 10),
               Text(
                 "30% Of Your Expenses, Looks Good.",
-                style: TextStyle(color: Colors.white70),
+                style: kTextTheme.bodyMedium
+                    ?.copyWith(color: primaryText.withOpacity(0.7)),
               ),
-              SizedBox(height: 20),
+              const SizedBox(height: 20),
 
               // Savings Goals Grid
               Expanded(
@@ -138,47 +111,30 @@ class SavingsPage extends StatelessWidget {
                   ],
                 ),
               ),
-              SizedBox(height: 20),
+              const SizedBox(height: 20),
 
               // Add More Button
               Center(
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.greenAccent,
+                    backgroundColor: brandGreen,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(20),
                     ),
-                    padding: EdgeInsets.symmetric(horizontal: 40, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 40, vertical: 12),
                   ),
                   onPressed: () {},
                   child: Text(
                     "Add More",
-                    style: TextStyle(
-                      color: Colors.black,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: kTextTheme.bodyMedium?.copyWith(color: primaryText),
                   ),
                 ),
               ),
-              SizedBox(height: 20),
+              const SizedBox(height: 20),
             ],
           ),
         ),
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-        type: BottomNavigationBarType.fixed,
-        backgroundColor: Color(0xFF0D1B2A),
-        selectedItemColor: Colors.greenAccent,
-        unselectedItemColor: Colors.white70,
-        showSelectedLabels: false,
-        showUnselectedLabels: false,
-        items: [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-          BottomNavigationBarItem(icon: Icon(Icons.pie_chart), label: 'Stats'),
-          BottomNavigationBarItem(
-              icon: Icon(Icons.swap_horiz), label: 'Transfer'),
-          BottomNavigationBarItem(icon: Icon(Icons.savings), label: 'Savings'),
-        ],
       ),
     );
   }
@@ -186,17 +142,17 @@ class SavingsPage extends StatelessWidget {
   Widget savingsGoalItem(String title, IconData icon) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.blue.withOpacity(0.8),
+        color: primaryText.withOpacity(0.1),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, color: Colors.white, size: 40),
-          SizedBox(height: 8),
+          Icon(icon, color: brandGreen, size: 40),
+          const SizedBox(height: 8),
           Text(
             title,
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+            style: kTextTheme.bodyLarge,
           ),
         ],
       ),

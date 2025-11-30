@@ -1,18 +1,6 @@
+import 'package:final_project/constants.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-
-void main() {
-  runApp(MaterialApp(home: Balance(), debugShowCheckedModeBanner: false));
-}
-
-class Balance extends StatelessWidget {
-  const Balance({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(body: BalancePage());
-  }
-}
 
 class BalancePage extends StatefulWidget {
   const BalancePage({super.key});
@@ -28,7 +16,7 @@ class _BalancePageState extends State<BalancePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color(0xFF052224),
+      backgroundColor: primaryBg,
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -48,52 +36,43 @@ class _BalancePageState extends State<BalancePage> {
                             'assets/svg/penny.svg',
                             height: 35,
                             width: 35,
-                            color: Color(0xff00D09E),
+                            colorFilter: const ColorFilter.mode(
+                                brandGreen, BlendMode.srcIn),
                           ),
-                          SizedBox(width: 5),
+                          const SizedBox(width: 5),
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
                                 "Penny",
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  color: Color(0xff00D09E),
-                                  fontWeight: FontWeight.bold,
-                                ),
+                                style: kTextTheme.bodyLarge
+                                    ?.copyWith(color: brandGreen),
                               ),
                               Text(
                                 'Wise',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  color: Color(0xff00D09E),
-                                  fontWeight: FontWeight.bold,
-                                ),
+                                style: kTextTheme.bodyLarge
+                                    ?.copyWith(color: brandGreen),
                               ),
                             ],
                           ),
                         ],
                       ),
-                      Spacer(),
+                      const Spacer(),
                       Text(
                         'Transactions',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xffF1FFF3),
-                        ),
+                        style: kTextTheme.headlineSmall,
                       ),
-                      Spacer(),
+                      const Spacer(),
                       Container(
                         height: 30,
                         width: 30,
-                        decoration: BoxDecoration(
+                        decoration: const BoxDecoration(
                           shape: BoxShape.circle,
-                          color: Color(0xffDFF7E2),
+                          color: primaryText,
                         ),
-                        child: Icon(
+                        child: const Icon(
                           Icons.notifications_none,
-                          color: Color(0xff093030),
+                          color: primaryBg,
                         ),
                       ),
                     ],
@@ -108,18 +87,12 @@ class _BalancePageState extends State<BalancePage> {
                         children: [
                           Text(
                             'Total Balance',
-                            style: TextStyle(
-                              color: Colors.white70,
-                              fontSize: 14,
-                            ),
+                            style: kTextTheme.bodyMedium
+                                ?.copyWith(color: primaryText.withOpacity(0.7)),
                           ),
                           Text(
                             '\$7,783.00',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                            ),
+                            style: kTextTheme.headlineMedium,
                           ),
                         ],
                       ),
@@ -128,18 +101,13 @@ class _BalancePageState extends State<BalancePage> {
                         children: [
                           Text(
                             'Total Expense',
-                            style: TextStyle(
-                              color: Colors.white70,
-                              fontSize: 14,
-                            ),
+                            style: kTextTheme.bodyMedium
+                                ?.copyWith(color: primaryText.withOpacity(0.7)),
                           ),
                           Text(
                             '-\$1,187.40',
-                            style: TextStyle(
-                              color: Colors.blue,
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                            ),
+                            style: kTextTheme.headlineMedium
+                                ?.copyWith(color: Colors.blue),
                           ),
                         ],
                       ),
@@ -151,23 +119,23 @@ class _BalancePageState extends State<BalancePage> {
                       Expanded(
                         child: LinearProgressIndicator(
                           value: 0.3,
-                          backgroundColor: Colors.white24,
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            Colors.greenAccent,
-                          ),
+                          backgroundColor: primaryText.withOpacity(0.2),
+                          valueColor:
+                              const AlwaysStoppedAnimation<Color>(brandGreen),
                         ),
                       ),
                       const SizedBox(width: 10),
                       Text(
                         '\$20,000.00',
-                        style: TextStyle(color: Colors.white, fontSize: 14),
+                        style: kTextTheme.bodyMedium,
                       ),
                     ],
                   ),
                   const SizedBox(height: 10),
                   Text(
                     '30% Of Your Expenses, Looks Good.',
-                    style: TextStyle(color: Colors.white70, fontSize: 14),
+                    style: kTextTheme.bodyMedium
+                        ?.copyWith(color: primaryText.withOpacity(0.7)),
                   ),
                 ],
               ),
@@ -187,57 +155,51 @@ class _BalancePageState extends State<BalancePage> {
                         Navigator.pushNamed(context, '/income');
                       },
                       child: Container(
-                        padding: EdgeInsets.all(16),
+                        padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.1),
+                          color: primaryText.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Column(
                           children: [
-                            Icon(Icons.arrow_upward, color: Colors.green),
-                            SizedBox(height: 8),
+                            const Icon(Icons.arrow_upward, color: brandGreen),
+                            const SizedBox(height: 8),
                             Text(
                               "Income",
-                              style: TextStyle(color: Colors.white70),
+                              style: kTextTheme.bodyMedium
+                                  ?.copyWith(color: primaryText.withOpacity(0.7)),
                             ),
-                            SizedBox(height: 4),
+                            const SizedBox(height: 4),
                             Text(
                               "\$${latestTransactionAmount.toStringAsFixed(2)}", // Dynamically display the latest transaction
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                              ),
+                              style: kTextTheme.titleLarge,
                             ),
                           ],
                         ),
                       ),
                     ),
                   ),
-                  SizedBox(width: 16),
+                  const SizedBox(width: 16),
                   Expanded(
                     child: Container(
-                      padding: EdgeInsets.all(16),
+                      padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.1),
+                        color: primaryText.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Column(
                         children: [
-                          Icon(Icons.arrow_downward, color: Colors.blue),
-                          SizedBox(height: 8),
+                          const Icon(Icons.arrow_downward, color: Colors.blue),
+                          const SizedBox(height: 8),
                           Text(
                             "Expense",
-                            style: TextStyle(color: Colors.white70),
+                            style: kTextTheme.bodyMedium
+                                ?.copyWith(color: primaryText.withOpacity(0.7)),
                           ),
-                          SizedBox(height: 4),
+                          const SizedBox(height: 4),
                           Text(
                             "\$1,187.40",
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
+                            style: kTextTheme.titleLarge,
                           ),
                         ],
                       ),
@@ -246,13 +208,13 @@ class _BalancePageState extends State<BalancePage> {
                 ],
               ),
             ),
-            SizedBox(height: 20),
+            const SizedBox(height: 20),
 
             // Main Content Container for Transactions
             Expanded(
               child: Container(
-                decoration: BoxDecoration(
-                  color: Color(0xFF093030),
+                decoration: const BoxDecoration(
+                  color: primaryText,
                   borderRadius: BorderRadius.only(
                     topLeft: Radius.circular(50),
                     topRight: Radius.circular(50),
@@ -269,13 +231,11 @@ class _BalancePageState extends State<BalancePage> {
                         children: [
                           Text(
                             "Transactions",
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
+                            style: kTextTheme.titleLarge?.copyWith(color: primaryBg),
                           ),
-                          Text("See all", style: TextStyle(color: Colors.blue)),
+                          Text("See all",
+                              style: kTextTheme.bodyMedium
+                                  ?.copyWith(color: Colors.blue)),
                         ],
                       ),
                       const SizedBox(height: 16),
@@ -289,7 +249,7 @@ class _BalancePageState extends State<BalancePage> {
                               "Gig",
                               "18:27 - April 30",
                               "\$4,000.00",
-                              Colors.green,
+                              brandGreen,
                             ),
                             transactionItem(
                               "Groceries",
@@ -345,23 +305,20 @@ class _BalancePageState extends State<BalancePage> {
       child: Row(
         children: [
           Icon(Icons.circle, color: color, size: 40),
-          SizedBox(width: 16),
+          const SizedBox(width: 16),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(title, style: TextStyle(color: Colors.white, fontSize: 16)),
-              Text(description, style: TextStyle(color: Colors.white70)),
-              Text(date, style: TextStyle(color: Colors.white70)),
+              Text(title, style: kTextTheme.bodyLarge?.copyWith(color: primaryBg)),
+              Text(description,
+                  style: kTextTheme.bodySmall?.copyWith(color: primaryBg.withOpacity(0.7))),
+              Text(date, style: kTextTheme.bodySmall?.copyWith(color: primaryBg.withOpacity(0.7))),
             ],
           ),
-          Spacer(),
+          const Spacer(),
           Text(
             amount,
-            style: TextStyle(
-              color: color,
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
+            style: kTextTheme.bodyLarge?.copyWith(color: color),
           ),
         ],
       ),

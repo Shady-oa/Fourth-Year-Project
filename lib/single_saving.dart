@@ -1,3 +1,4 @@
+import 'package:final_project/constants.dart';
 import 'package:flutter/material.dart';
 
 class SingleSaving extends StatelessWidget {
@@ -6,10 +7,9 @@ class SingleSaving extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xff052224),
+      backgroundColor: primaryBg,
       body: SafeArea(
         child: Column(
-          
           children: [
             // Header Section
             Padding(
@@ -25,16 +25,12 @@ class SingleSaving extends StatelessWidget {
                     onPressed: () {
                       Navigator.pop(context);
                     },
-                    icon: Icon(Icons.arrow_back, color: Color(0xffDFF7E2)),
+                    icon: const Icon(Icons.arrow_back, color: primaryText),
                   ),
-                  SizedBox(width: 5),
-                  const Text(
+                  const SizedBox(width: 5),
+                  Text(
                     "Travel",
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xffDFF7E2),
-                    ),
+                    style: kTextTheme.headlineSmall,
                   ),
                   const Spacer(),
                   Container(
@@ -42,11 +38,11 @@ class SingleSaving extends StatelessWidget {
                     width: 30,
                     decoration: const BoxDecoration(
                       shape: BoxShape.circle,
-                      color: Color(0xffDFF7E2),
+                      color: primaryText,
                     ),
                     child: const Icon(
                       Icons.notifications_none_outlined,
-                      color: Color(0xff093030),
+                      color: primaryBg,
                     ),
                   ),
                 ],
@@ -61,7 +57,7 @@ class SingleSaving extends StatelessWidget {
                     topLeft: Radius.circular(50),
                     topRight: Radius.circular(50),
                   ),
-                  color: Color(0xff093030),
+                  color: primaryText,
                 ),
                 child: Padding(
                   padding: const EdgeInsets.only(
@@ -81,40 +77,28 @@ class SingleSaving extends StatelessWidget {
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               mainAxisAlignment: MainAxisAlignment.center,
-                              children: const [
+                              children: [
                                 Text(
                                   "Goal",
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w400,
-                                    color: Color(0xffDFF7E2),
-                                  ),
+                                  style: kTextTheme.bodySmall
+                                      ?.copyWith(color: primaryBg),
                                 ),
-                                SizedBox(height: 5),
+                                const SizedBox(height: 5),
                                 Text(
                                   "\$1,900.00",
-                                  style: TextStyle(
-                                    fontSize: 24,
-                                    fontWeight: FontWeight.bold,
-                                    color: Color(0xffDFF7E2),
-                                  ),
+                                  style: kTextTheme.headlineMedium
+                                      ?.copyWith(color: primaryBg),
                                 ),
-                                SizedBox(height: 10),
+                                const SizedBox(height: 10),
                                 Text(
                                   "Amount Saved",
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w400,
-                                    color: Color(0xffDFF7E2),
-                                  ),
+                                  style: kTextTheme.bodySmall
+                                      ?.copyWith(color: primaryBg),
                                 ),
                                 Text(
                                   "\$654.00",
-                                  style: TextStyle(
-                                    fontSize: 24,
-                                    fontWeight: FontWeight.bold,
-                                    color: Color(0xffDFF7E2),
-                                  ),
+                                  style: kTextTheme.headlineMedium
+                                      ?.copyWith(color: primaryBg),
                                 ),
                               ],
                             ),
@@ -122,26 +106,23 @@ class SingleSaving extends StatelessWidget {
                             Expanded(
                               child: Container(
                                 decoration: const BoxDecoration(
-                                  color: Color(0xff6DB6FE),
+                                  color: brandGreen,
                                   borderRadius: BorderRadius.all(
                                     Radius.circular(50),
                                   ),
                                 ),
                                 child: Column(
                                   mainAxisAlignment: MainAxisAlignment.center,
-                                  children: const [
-                                    Icon(
+                                  children: [
+                                    const Icon(
                                       Icons.flight,
-                                      color: Colors.white,
+                                      color: primaryText,
                                       size: 80,
                                     ),
                                     Text(
                                       "Travel",
-                                      style: TextStyle(
-                                        fontSize: 15,
-                                        fontWeight: FontWeight.normal,
-                                        color: Colors.white,
-                                      ),
+                                      style: kTextTheme.bodyLarge
+                                          ?.copyWith(color: primaryText),
                                     ),
                                   ],
                                 ),
@@ -157,9 +138,9 @@ class SingleSaving extends StatelessWidget {
                           Expanded(
                             child: Container(
                               height: 10,
-                              decoration: const BoxDecoration(
-                                color: Color(0xffDFF7E2),
-                                borderRadius: BorderRadius.all(
+                              decoration: BoxDecoration(
+                                color: primaryBg.withOpacity(0.2),
+                                borderRadius: const BorderRadius.all(
                                   Radius.circular(5),
                                 ),
                               ),
@@ -168,7 +149,7 @@ class SingleSaving extends StatelessWidget {
                                 widthFactor: 0.2,
                                 child: Container(
                                   decoration: BoxDecoration(
-                                    color: const Color(0xff00D09E),
+                                    color: brandGreen,
                                     borderRadius: BorderRadius.circular(5),
                                   ),
                                 ),
@@ -176,36 +157,27 @@ class SingleSaving extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(width: 10),
-                          const Text(
+                          Text(
                             "\$1,900.00",
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w300,
-                              color: Color(0xffDFF7E2),
-                            ),
+                            style: kTextTheme.bodyMedium
+                                ?.copyWith(color: primaryBg),
                           ),
                         ],
                       ),
                       const SizedBox(height: 2),
-                      const Padding(
-                        padding: EdgeInsets.only(left: 10),
+                      Padding(
+                        padding: const EdgeInsets.only(left: 10),
                         child: Text(
                           "30% Of The Goal Saved",
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w300,
-                            color: Color(0xffDFF7E2),
-                          ),
+                          style: kTextTheme.bodyMedium
+                              ?.copyWith(color: primaryBg),
                         ),
                       ),
                       const SizedBox(height: 30),
                       Text(
                         "Transactions",
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.normal,
-                          color: Color(0xffD2EAD7),
-                        ),
+                        style:
+                            kTextTheme.bodyLarge?.copyWith(color: primaryBg),
                       ),
                       // Scrollable List of Deposits
 
@@ -218,7 +190,7 @@ class SingleSaving extends StatelessWidget {
                           },
                         ),
                       ),
-                    
+
                       // Fixed Add More Button
                       Center(
                         child: Padding(
@@ -231,26 +203,22 @@ class SingleSaving extends StatelessWidget {
                               height: 36,
                               width: 169,
                               decoration: const BoxDecoration(
-                                color: Color(0xff00D09E),
+                                color: brandGreen,
                                 borderRadius: BorderRadius.all(
                                   Radius.circular(30),
                                 ),
                               ),
-                              child: const Center(
+                              child: Center(
                                 child: Text(
                                   "Add Savings",
-                                  style: TextStyle(
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.w500,
-                                    color: Color(0xff093030),
-                                  ),
+                                  style: kTextTheme.bodyMedium
+                                      ?.copyWith(color: primaryText),
                                 ),
                               ),
                             ),
                           ),
                         ),
                       ),
-                      
                     ],
                   ),
                 ),
@@ -272,61 +240,41 @@ class SingleSaving extends StatelessWidget {
             height: 53,
             width: 57,
             decoration: const BoxDecoration(
-              color: Color(0xff6DB6FE),
+              color: brandGreen,
               borderRadius: BorderRadius.all(Radius.circular(15)),
             ),
-            child: const Icon(Icons.flight, size: 15),
+            child: const Icon(Icons.flight, size: 15, color: primaryText),
           ),
           const SizedBox(width: 5),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: const [
+            children: [
               Text(
                 "Travel Deposit",
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.normal,
-                  color: Color(0xffDFF7E2),
-                ),
+                style: kTextTheme.bodyMedium?.copyWith(color: primaryBg),
               ),
               Row(
                 children: [
                   Text(
                     "19:00",
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Color(0xff0068FF),
-                      fontWeight: FontWeight.w600,
-                    ),
+                    style: kTextTheme.bodySmall?.copyWith(color: Colors.blue),
                   ),
                   Text(
                     " - ",
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Color(0xff0068FF),
-                      fontWeight: FontWeight.w600,
-                    ),
+                    style: kTextTheme.bodySmall?.copyWith(color: Colors.blue),
                   ),
                   Text(
                     "April 12",
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Color(0xff0068FF),
-                      fontWeight: FontWeight.w600,
-                    ),
+                    style: kTextTheme.bodySmall?.copyWith(color: Colors.blue),
                   ),
                 ],
               ),
             ],
           ),
           const Spacer(),
-          const Text(
+          Text(
             "\$217.00",
-            style: TextStyle(
-              fontSize: 15,
-              color: Color(0xffDFF7E2),
-              fontWeight: FontWeight.w600,
-            ),
+            style: kTextTheme.bodyMedium?.copyWith(color: primaryBg),
           ),
         ],
       ),
@@ -338,65 +286,64 @@ class SingleSaving extends StatelessWidget {
       context: context,
       builder: (BuildContext context) {
         return Dialog(
-          backgroundColor: Color(0xFF052224),
+          backgroundColor: primaryBg,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
           ),
           child: Padding(
-            padding: EdgeInsets.all(20),
+            padding: const EdgeInsets.all(20),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
                   "New Category",
-                  style: TextStyle(
-                    color: Color(0xffDFF7E2),
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: kTextTheme.headlineSmall,
                 ),
-                SizedBox(height: 15),
+                const SizedBox(height: 15),
                 TextField(
                   decoration: InputDecoration(
                     hintText: "Write...",
                     filled: true,
-                    fillColor: Color(0xFFDFF7E2),
+                    fillColor: primaryText.withOpacity(0.1),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
                       borderSide: BorderSide.none,
                     ),
-                    hintStyle: TextStyle(color: Color(0xFF093030)),
+                    hintStyle:
+                        kTextTheme.bodyMedium?.copyWith(color: primaryText.withOpacity(0.5)),
                   ),
-                  style: TextStyle(color: Colors.white),
+                  style: kTextTheme.bodyMedium,
                 ),
-                SizedBox(height: 15),
+                const SizedBox(height: 15),
                 ElevatedButton(
                   onPressed: () {
                     // Save action
                     Navigator.of(context).pop();
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Color(0xFF00B686),
-                    minimumSize: Size(double.infinity, 40),
+                    backgroundColor: brandGreen,
+                    minimumSize: const Size(double.infinity, 40),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
                     ),
                   ),
-                  child: Text("Save"),
+                  child: Text("Save",
+                      style:
+                          kTextTheme.bodyMedium?.copyWith(color: primaryText)),
                 ),
-                SizedBox(height: 10),
+                const SizedBox(height: 10),
                 ElevatedButton(
                   onPressed: () {
                     Navigator.of(context).pop();
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Color(0xFFDFF7E2),
-                    minimumSize: Size(double.infinity, 40),
+                    backgroundColor: primaryText.withOpacity(0.1),
+                    minimumSize: const Size(double.infinity, 40),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
                     ),
                   ),
-                  child: Text("Cancel"),
+                  child: Text("Cancel", style: kTextTheme.bodyMedium),
                 ),
               ],
             ),

@@ -1,3 +1,4 @@
+import 'package:final_project/constants.dart';
 import 'package:flutter/material.dart';
 
 class Home extends StatelessWidget {
@@ -6,7 +7,7 @@ class Home extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color(0xff08090A),
+      backgroundColor: primaryBg,
       body: SafeArea(
         child: Column(
           children: [
@@ -20,45 +21,39 @@ class Home extends StatelessWidget {
                       height: 60,
                       width: 60,
                       decoration: BoxDecoration(
-                        color: Colors.grey[400],
+                        color: primaryText.withOpacity(0.5),
                         shape: BoxShape.circle,
                       ),
                     ),
-                    SizedBox(width: 10),
+                    const SizedBox(width: 10),
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           "Welcome back,",
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xffF2F2F2),
-                          ),
+                          style: kTextTheme.titleLarge,
                         ),
                         Text(
                           "John",
-                          style: TextStyle(
-                            fontSize: 18,
-                            color: Color(0xff9A9B98),
-                          ),
+                          style: kTextTheme.bodyLarge
+                              ?.copyWith(color: primaryText.withOpacity(0.7)),
                         ),
                       ],
                     ),
-                    Spacer(),
+                    const Spacer(),
                     Container(
                       width: 60,
                       height: 60,
-                      decoration: ShapeDecoration(
-                        color: Color(0xFF424247),
+                      decoration: const ShapeDecoration(
+                        color: primaryText,
                         shape: OvalBorder(),
                       ),
                       child: IconButton(
                         onPressed: () {},
-                        icon: Icon(
+                        icon: const Icon(
                           Icons.notifications_none_outlined,
                           size: 22.0,
-                          color: Colors.white,
+                          color: primaryBg,
                         ),
                       ),
                     ),
@@ -66,7 +61,7 @@ class Home extends StatelessWidget {
                 ),
               ),
             ),
-            SizedBox(
+            const SizedBox(
               height: 22,
             ),
             Padding(
@@ -74,24 +69,24 @@ class Home extends StatelessWidget {
               child: TextField(
                 decoration: InputDecoration(
                   hintText: 'Search...',
-                  prefixIcon: Icon(Icons.search, color: Colors.white),
+                  prefixIcon: const Icon(Icons.search, color: primaryText),
                   suffixIcon: IconButton(
-                    icon: Icon(Icons.clear, color: Colors.white),
+                    icon: const Icon(Icons.clear, color: primaryText),
                     onPressed: () {},
                   ),
                   filled: true,
-                  fillColor: Color(0xFF424247),
+                  fillColor: primaryText.withOpacity(0.1),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(50),
                     borderSide: BorderSide.none,
                   ),
                   contentPadding:
-                      EdgeInsets.symmetric(vertical: 0, horizontal: 0),
+                      const EdgeInsets.symmetric(vertical: 0, horizontal: 0),
                 ),
-                style: TextStyle(color: Colors.white),
+                style: const TextStyle(color: primaryText),
               ),
             ),
-            SizedBox(
+            const SizedBox(
               height: 20,
             ),
             Padding(
@@ -99,8 +94,8 @@ class Home extends StatelessWidget {
               child: Container(
                 height: 151,
                 decoration: BoxDecoration(
-                  color: Color(0xff585859),
-                  borderRadius: BorderRadius.all(Radius.circular(10)),
+                  color: primaryText.withOpacity(0.1),
+                  borderRadius: const BorderRadius.all(Radius.circular(10)),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -108,17 +103,12 @@ class Home extends StatelessWidget {
                   children: [
                     Text(
                       "Ksh 32,423",
-                      style: TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xffF2F2F2),
-                      ),
+                      style: kTextTheme.displaySmall,
                     ),
                     Text(
                       "your balance",
-                      style: TextStyle(
-                        
-                      ),
+                      style: kTextTheme.bodyLarge
+                          ?.copyWith(color: primaryText.withOpacity(0.7)),
                     )
                   ],
                 ),

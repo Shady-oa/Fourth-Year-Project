@@ -1,3 +1,4 @@
+import 'package:final_project/constants.dart';
 import 'package:flutter/material.dart';
 
 class SingleBudget extends StatelessWidget {
@@ -6,7 +7,7 @@ class SingleBudget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color(0xff052224),
+      backgroundColor: primaryBg,
       body: SafeArea(
         child: Column(
           children: [
@@ -21,71 +22,59 @@ class SingleBudget extends StatelessWidget {
                       Center(
                         child: Text(
                           "Transport",
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xffDFF7E2),
-                          ),
+                          style: kTextTheme.headlineSmall,
                         ),
                       ),
-                      Spacer(),
+                      const Spacer(),
                       Container(
                         height: 30,
                         width: 30,
-                        decoration: BoxDecoration(
+                        decoration: const BoxDecoration(
                           shape: BoxShape.circle,
-                          color: Color(0xffDFF7E2),
+                          color: primaryText,
                         ),
-                        child: Icon(
+                        child: const Icon(
                           Icons.notifications_none,
-                          color: Color(0xff093030),
+                          color: primaryBg,
                         ),
                       )
                     ],
                   ),
-                  SizedBox(height: 25),
+                  const SizedBox(height: 25),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text("Budget", style: TextStyle(color: Colors.white)),
-                          SizedBox(height: 4),
+                          Text("Budget", style: kTextTheme.bodyLarge),
+                          const SizedBox(height: 4),
                           Text(
                             "\$2,187.40",
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                            ),
+                            style: kTextTheme.headlineMedium,
                           ),
                         ],
                       ),
                       Container(
                         height: 50,
                         width: 1,
-                        color: Color(0xffDFF7E2),
+                        color: primaryText,
                       ),
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text("Expenses",
-                              style: TextStyle(color: Colors.white)),
-                          SizedBox(height: 4),
+                          Text("Expenses", style: kTextTheme.bodyLarge),
+                          const SizedBox(height: 4),
                           Text(
                             " \$1,783.00",
-                            style: TextStyle(
-                              color: Colors.blue,
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                            ),
+                            style: kTextTheme.headlineMedium
+                                ?.copyWith(color: Colors.blue),
                           ),
                         ],
                       ),
                     ],
                   ),
-                  SizedBox(height: 22),
+                  const SizedBox(height: 22),
                   // Progress bar
                   Row(
                     children: [
@@ -93,29 +82,26 @@ class SingleBudget extends StatelessWidget {
                         child: Container(
                           height: 10,
                           decoration: BoxDecoration(
-                            color: Color(0xffDFF7E2),
-                            borderRadius: BorderRadius.all(Radius.circular(5)),
+                            color: primaryText.withOpacity(0.2),
+                            borderRadius:
+                                const BorderRadius.all(Radius.circular(5)),
                           ),
                           child: FractionallySizedBox(
                             alignment: Alignment.centerLeft,
                             widthFactor: 0.2,
                             child: Container(
                               decoration: BoxDecoration(
-                                color: Color(0xff00D09E),
+                                color: brandGreen,
                                 borderRadius: BorderRadius.circular(5),
                               ),
                             ),
                           ),
                         ),
                       ),
-                      SizedBox(width: 10),
+                      const SizedBox(width: 10),
                       Text(
                         "\$2,187.40",
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w300,
-                          color: Color(0xffDFF7E2),
-                        ),
+                        style: kTextTheme.bodyMedium,
                       ),
                     ],
                   ),
@@ -125,22 +111,14 @@ class SingleBudget extends StatelessWidget {
                       padding: const EdgeInsets.only(top: 10),
                       child: Text(
                         "18% Of Budget Used",
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w300,
-                          color: Color(0xffDFF7E2),
-                        ),
+                        style: kTextTheme.bodyMedium,
                       ),
                     ),
                   ),
-                  SizedBox(height: 20),
+                  const SizedBox(height: 20),
                   Text(
                     "Transactions",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: kTextTheme.titleLarge,
                   ),
                 ],
               ),
@@ -150,12 +128,12 @@ class SingleBudget extends StatelessWidget {
             Expanded(
               child: Container(
                 width: double.infinity,
-                decoration: BoxDecoration(
+                decoration: const BoxDecoration(
                   borderRadius: BorderRadius.only(
                     topLeft: Radius.circular(50),
                     topRight: Radius.circular(50),
                   ),
-                  color: Color(0xff093030),
+                  color: primaryText,
                 ),
                 child: Padding(
                   padding: const EdgeInsets.only(
@@ -185,17 +163,14 @@ class SingleBudget extends StatelessWidget {
                           height: 36,
                           width: 169,
                           decoration: const BoxDecoration(
-                            color: Color(0xff00D09E),
+                            color: brandGreen,
                             borderRadius: BorderRadius.all(Radius.circular(30)),
                           ),
-                          child: const Center(
+                          child: Center(
                             child: Text(
                               "Add Expense",
-                              style: TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w500,
-                                color: Color(0xff093030),
-                              ),
+                              style: kTextTheme.bodyMedium
+                                  ?.copyWith(color: primaryText),
                             ),
                           ),
                         ),
@@ -218,29 +193,24 @@ class SingleBudget extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: Row(
         children: [
-          Icon(Icons.circle, color: Color(0xffF1FFF3), size: 40),
-          SizedBox(width: 16),
+          const Icon(Icons.circle, color: primaryBg, size: 40),
+          const SizedBox(width: 16),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(title,
-                  style: TextStyle(color: Color(0xffF1FFF3), fontSize: 16)),
+                  style: kTextTheme.bodyLarge?.copyWith(color: primaryBg)),
               Text(description,
-                  style: TextStyle(
-                    color: Color(0xffF1FFF3),
-                    fontSize: 12,
-                  )),
-              Text(date, style: TextStyle(color: Color(0xff3299FF))),
+                  style: kTextTheme.bodySmall
+                      ?.copyWith(color: primaryBg.withOpacity(0.8))),
+              Text(date,
+                  style: kTextTheme.bodySmall?.copyWith(color: Colors.blue)),
             ],
           ),
-          Spacer(),
+          const Spacer(),
           Text(
             amount,
-            style: TextStyle(
-              color: Color(0xffDFF7E2),
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
+            style: kTextTheme.bodyLarge?.copyWith(color: primaryBg),
           ),
         ],
       ),

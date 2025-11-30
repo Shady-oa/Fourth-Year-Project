@@ -1,3 +1,4 @@
+import 'package:final_project/constants.dart';
 import 'package:flutter/material.dart';
 
 class QuickAnalysis extends StatefulWidget {
@@ -11,7 +12,7 @@ class _QuickAnalysisState extends State<QuickAnalysis> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color(0xFF031314),
+      backgroundColor: primaryBg,
       body: SafeArea(
         child: Column(
           children: [
@@ -23,30 +24,26 @@ class _QuickAnalysisState extends State<QuickAnalysis> {
                     onTap: () {
                       Navigator.pop(context);
                     },
-                    child: Icon(Icons.arrow_back, color: Color(0xffF1FFF3)),
+                    child: const Icon(Icons.arrow_back, color: primaryText),
                   ),
-                  Spacer(),
+                  const Spacer(),
                   Text(
                     'Quickly Analysis',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xffF1FFF3),
-                    ),
+                    style: kTextTheme.headlineSmall,
                   ),
-                  Spacer(),
-                  CircleAvatar(
+                  const Spacer(),
+                  const CircleAvatar(
                     radius: 15,
-                    backgroundColor: Color(0xffF1FFF3),
+                    backgroundColor: primaryText,
                     child: Icon(
                       Icons.notifications_outlined,
-                      color: Colors.black,
+                      color: primaryBg,
                     ),
                   ),
                 ],
               ),
             ),
-            SizedBox(height: 20),
+            const SizedBox(height: 20),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 30),
               child: Row(
@@ -54,18 +51,15 @@ class _QuickAnalysisState extends State<QuickAnalysis> {
                 children: [
                   Column(
                     children: [
-                      Icon(
+                      const Icon(
                         Icons.directions_car,
-                        color: Color(0xffF1FFF3),
+                        color: primaryText,
                         size: 40,
                       ),
                       const SizedBox(height: 10),
                       Text(
                         'Savings On Goals',
-                        style: TextStyle(
-                          color: Color(0xffF1FFF3),
-                          fontSize: 14,
-                        ),
+                        style: kTextTheme.bodyMedium,
                         textAlign: TextAlign.center,
                       ),
                     ],
@@ -74,49 +68,38 @@ class _QuickAnalysisState extends State<QuickAnalysis> {
                     children: [
                       Text(
                         'Revenue Last Week',
-                        style: TextStyle(
-                          color: Color(0xff00D09E),
-                          fontSize: 14,
-                        ),
+                        style: kTextTheme.bodyMedium
+                            ?.copyWith(color: brandGreen),
                       ),
                       Text(
                         '\$4,000.00',
-                        style: TextStyle(
-                          color: Color(0xffF1FFF3),
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
+                        style: kTextTheme.bodyLarge,
                       ),
-                      SizedBox(height: 15),
+                      const SizedBox(height: 15),
                       Text(
                         'Food Last Week',
-                        style: TextStyle(
-                          color: Color(0xff00D09E),
-                          fontSize: 14,
-                        ),
+                        style: kTextTheme.bodyMedium
+                            ?.copyWith(color: brandGreen),
                       ),
                       Text(
                         '-\$100.00',
-                        style: TextStyle(
-                          color: Color(0xff3299FF),
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
+                        style: kTextTheme.bodyLarge
+                            ?.copyWith(color: Colors.blue),
                       ),
                     ],
                   ),
                 ],
               ),
             ),
-            SizedBox(height: 40),
+            const SizedBox(height: 40),
             Expanded(
               child: Container(
-                decoration: BoxDecoration(
+                decoration: const BoxDecoration(
                   borderRadius: BorderRadius.only(
                     topLeft: Radius.circular(50),
                     topRight: Radius.circular(50),
                   ),
-                  color: Color(0xff093030),
+                  color: primaryText,
                 ),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
@@ -129,13 +112,14 @@ class _QuickAnalysisState extends State<QuickAnalysis> {
                         height: 200,
                         width: double.infinity,
                         decoration: BoxDecoration(
-                          color: Color(0xffF1FFF3),
+                          color: primaryBg,
                           borderRadius: BorderRadius.circular(50),
                         ),
-                        child: Center(child: Text('Graph')),
+                        child: Center(
+                            child: Text('Graph', style: kTextTheme.headlineSmall)),
                       ),
-                      SizedBox(height: 20),
-                      Expanded(
+                      const SizedBox(height: 20),
+                      const Expanded(
                         child: SingleChildScrollView(
                           child: Column(
                             children: [
@@ -166,121 +150,6 @@ class _QuickAnalysisState extends State<QuickAnalysis> {
                                 date: '12/2/2025',
                                 amount: '400',
                                 isIncome: true,
-                              ),
-                              TransactionItem(
-                                title: 'food',
-                                date: '12/2/2025',
-                                amount: '400',
-                              ),
-                              TransactionItem(
-                                title: 'food',
-                                date: '12/2/2025',
-                                amount: '400',
-                                isIncome: true,
-                              ),
-                              TransactionItem(
-                                title: 'food',
-                                date: '12/2/2025',
-                                amount: '400',
-                              ),
-                              TransactionItem(
-                                title: 'food',
-                                date: '12/2/2025',
-                                amount: '400',
-                                isIncome: true,
-                              ),
-                              TransactionItem(
-                                title: 'food',
-                                date: '12/2/2025',
-                                amount: '400',
-                              ),
-                              TransactionItem(
-                                title: 'food',
-                                date: '12/2/2025',
-                                amount: '400',
-                                isIncome: true,
-                              ),
-                              TransactionItem(
-                                title: 'food',
-                                date: '12/2/2025',
-                                amount: '400',
-                              ),
-                              TransactionItem(
-                                title: 'food',
-                                date: '12/2/2025',
-                                amount: '400',
-                                isIncome: true,
-                              ),
-                              TransactionItem(
-                                title: 'food',
-                                date: '12/2/2025',
-                                amount: '400',
-                              ),
-                              TransactionItem(
-                                title: 'food',
-                                date: '12/2/2025',
-                                amount: '400',
-                                isIncome: true,
-                              ),
-                              TransactionItem(
-                                title: 'food',
-                                date: '12/2/2025',
-                                amount: '400',
-                              ),
-                              TransactionItem(
-                                title: 'food',
-                                date: '12/2/2025',
-                                amount: '400',
-                                isIncome: true,
-                              ),
-                              TransactionItem(
-                                title: 'food',
-                                date: '12/2/2025',
-                                amount: '400',
-                              ),
-                              TransactionItem(
-                                title: 'food',
-                                date: '12/2/2025',
-                                amount: '400',
-                                isIncome: true,
-                              ),
-                              TransactionItem(
-                                title: 'food',
-                                date: '12/2/2025',
-                                amount: '400',
-                              ),
-                              TransactionItem(
-                                title: 'food',
-                                date: '12/2/2025',
-                                amount: '400',
-                                isIncome: true,
-                              ),
-                              TransactionItem(
-                                title: 'food',
-                                date: '12/2/2025',
-                                amount: '400',
-                              ),
-                              TransactionItem(
-                                title: 'food',
-                                date: '12/2/2025',
-                                amount: '400',
-                                isIncome: true,
-                              ),
-                              TransactionItem(
-                                title: 'food',
-                                date: '12/2/2025',
-                                amount: '400',
-                              ),
-                              TransactionItem(
-                                title: 'food',
-                                date: '12/2/2025',
-                                amount: '400',
-                                isIncome: true,
-                              ),
-                              TransactionItem(
-                                title: 'food',
-                                date: '12/2/2025',
-                                amount: '400',
                               ),
                             ],
                           ),
@@ -321,8 +190,8 @@ class TransactionItem extends StatelessWidget {
       child: Row(
         children: [
           CircleAvatar(
-            backgroundColor: isIncome ? Colors.blueAccent : Colors.greenAccent,
-            child: Icon(Icons.category, color: Colors.white),
+            backgroundColor: isIncome ? brandGreen : Colors.red,
+            child: const Icon(Icons.category, color: primaryText),
           ),
           const SizedBox(width: 16),
           Column(
@@ -330,22 +199,18 @@ class TransactionItem extends StatelessWidget {
             children: [
               Text(
                 title,
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: kTextTheme.bodyLarge?.copyWith(color: primaryBg),
               ),
-              Text(date, style: TextStyle(color: Colors.white54, fontSize: 12)),
+              Text(date,
+                  style: kTextTheme.bodySmall
+                      ?.copyWith(color: primaryBg.withOpacity(0.7))),
             ],
           ),
-          Spacer(),
+          const Spacer(),
           Text(
             amount,
-            style: TextStyle(
-              color: isIncome ? Colors.greenAccent : Colors.redAccent,
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
+            style: kTextTheme.bodyLarge?.copyWith(
+              color: isIncome ? brandGreen : Colors.red,
             ),
           ),
         ],

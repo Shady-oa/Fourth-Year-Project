@@ -1,3 +1,4 @@
+import 'package:final_project/constants.dart';
 import 'package:flutter/material.dart';
 
 class Transaction extends StatelessWidget {
@@ -5,67 +6,11 @@ class Transaction extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Color(0xFF093030),
+    return const Scaffold(
+      backgroundColor: primaryText,
       body: SingleChildScrollView(
         child: Column(
           children: [
-            TransactionItem(
-              title: 'food',
-              date: '12/2/2025',
-              amount: '400',
-              isIncome: true,
-            ),
-            TransactionItem(title: 'food', date: '12/2/2025', amount: '400'),
-            TransactionItem(
-              title: 'food',
-              date: '12/2/2025',
-              amount: '400',
-              isIncome: true,
-            ),
-            TransactionItem(title: 'food', date: '12/2/2025', amount: '400'),
-            TransactionItem(
-              title: 'food',
-              date: '12/2/2025',
-              amount: '400',
-              isIncome: true,
-            ),
-            TransactionItem(title: 'food', date: '12/2/2025', amount: '400'),
-            TransactionItem(
-              title: 'food',
-              date: '12/2/2025',
-              amount: '400',
-              isIncome: true,
-            ),
-            TransactionItem(title: 'food', date: '12/2/2025', amount: '400'),
-            TransactionItem(
-              title: 'food',
-              date: '12/2/2025',
-              amount: '400',
-              isIncome: true,
-            ),
-            TransactionItem(title: 'food', date: '12/2/2025', amount: '400'),
-            TransactionItem(
-              title: 'food',
-              date: '12/2/2025',
-              amount: '400',
-              isIncome: true,
-            ),
-            TransactionItem(title: 'food', date: '12/2/2025', amount: '400'),
-            TransactionItem(
-              title: 'food',
-              date: '12/2/2025',
-              amount: '400',
-              isIncome: true,
-            ),
-            TransactionItem(title: 'food', date: '12/2/2025', amount: '400'),
-            TransactionItem(
-              title: 'food',
-              date: '12/2/2025',
-              amount: '400',
-              isIncome: true,
-            ),
-            TransactionItem(title: 'food', date: '12/2/2025', amount: '400'),
             TransactionItem(
               title: 'food',
               date: '12/2/2025',
@@ -131,8 +76,8 @@ class TransactionItem extends StatelessWidget {
       child: Row(
         children: [
           CircleAvatar(
-            backgroundColor: isIncome ? Colors.blueAccent : Colors.greenAccent,
-            child: Icon(Icons.category, color: Colors.white),
+            backgroundColor: isIncome ? brandGreen : Colors.red,
+            child: const Icon(Icons.category, color: primaryText),
           ),
           const SizedBox(width: 16),
           Column(
@@ -140,22 +85,18 @@ class TransactionItem extends StatelessWidget {
             children: [
               Text(
                 title,
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: kTextTheme.bodyLarge?.copyWith(color: primaryBg),
               ),
-              Text(date, style: TextStyle(color: Colors.white54, fontSize: 12)),
+              Text(date,
+                  style: kTextTheme.bodySmall
+                      ?.copyWith(color: primaryBg.withOpacity(0.7))),
             ],
           ),
-          Spacer(),
+          const Spacer(),
           Text(
             amount,
-            style: TextStyle(
-              color: isIncome ? Colors.greenAccent : Colors.redAccent,
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
+            style: kTextTheme.bodyLarge?.copyWith(
+              color: isIncome ? brandGreen : Colors.red,
             ),
           ),
         ],
