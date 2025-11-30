@@ -13,10 +13,10 @@ class AddExpenseScreen extends StatelessWidget {
           children: [
             Padding(
               padding: const EdgeInsets.only(
-                top: 20,
-                left: 20,
-                bottom: 50,
-                right: 20,
+                top: spacerMedium,
+                left: spacerMedium,
+                bottom: 50.0, // Custom value
+                right: spacerMedium,
               ),
               child: Row(
                 children: [
@@ -48,17 +48,17 @@ class AddExpenseScreen extends StatelessWidget {
                   width: double.infinity,
                   decoration: const BoxDecoration(
                     borderRadius: BorderRadius.only(
-                      topLeft: Radius.circular(50),
-                      topRight: Radius.circular(50),
+                      topLeft: Radius.circular(50), // Custom value
+                      topRight: Radius.circular(50), // Custom value
                     ),
                     color: primaryText,
                   ),
                   child: Padding(
                     padding: const EdgeInsets.only(
-                      top: 45,
-                      left: 50,
-                      right: 50,
-                      bottom: 10,
+                      top: 45, // Custom value
+                      left: 50, // Custom value
+                      right: 50, // Custom value
+                      bottom: spacerSmall,
                     ),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.start,
@@ -66,7 +66,7 @@ class AddExpenseScreen extends StatelessWidget {
                       children: [
                         Padding(
                           padding: const EdgeInsets.only(
-                              bottom: 8.0), // Reduced padding for label
+                              bottom: spacerSmall), // Reduced padding for label
                           child: Text(
                             'Date',
                             style: kTextTheme.bodyMedium
@@ -74,7 +74,7 @@ class AddExpenseScreen extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(
-                          height: 2,
+                          height: spacerTiny,
                         ),
                         TextField(
                           decoration: InputDecoration(
@@ -85,18 +85,18 @@ class AddExpenseScreen extends StatelessWidget {
                             fillColor: primaryBg, // White background inside the field
                             border: OutlineInputBorder(
                               borderRadius:
-                                  BorderRadius.circular(32), // Rounded corners
+                                  radiusMedium, // Rounded corners
                             ),
                           ),
                           style: kTextTheme.bodyMedium
                               ?.copyWith(fontWeight: FontWeight.w600), // Black and bold text
                         ),
                         const SizedBox(
-                          height: 15,
+                          height: spacerMedium,
                         ),
                         Padding(
                           padding: const EdgeInsets.only(
-                              bottom: 8.0), // Reduced padding for label
+                              bottom: spacerSmall), // Reduced padding for label
                           child: Text(
                             'Category',
                             style: kTextTheme.bodyMedium
@@ -110,16 +110,16 @@ class AddExpenseScreen extends StatelessWidget {
                             fillColor: primaryBg, // White background inside the field
                             border: OutlineInputBorder(
                               borderRadius:
-                                  BorderRadius.circular(32), // Rounded corners
+                                  radiusMedium, // Rounded corners
                             ),
                           ),
                           style: kTextTheme.bodyMedium
                               ?.copyWith(fontWeight: FontWeight.w600), // Black and bold text
                         ),
-                        const SizedBox(height: 15),
+                        const SizedBox(height: spacerMedium),
                         Padding(
                           padding: const EdgeInsets.only(
-                              bottom: 8.0), // Reduced padding for label
+                              bottom: spacerSmall), // Reduced padding for label
                           child: Text(
                             'Amount',
                             style: kTextTheme.bodyMedium
@@ -133,16 +133,16 @@ class AddExpenseScreen extends StatelessWidget {
                             fillColor: primaryBg, // White background inside the field
                             border: OutlineInputBorder(
                               borderRadius:
-                                  BorderRadius.circular(32), // Rounded corners
+                                  radiusMedium, // Rounded corners
                             ),
                           ),
                           style: kTextTheme.bodyMedium
                               ?.copyWith(fontWeight: FontWeight.w600), // Black and bold text
                         ),
-                        const SizedBox(height: 15),
+                        const SizedBox(height: spacerMedium),
                         Padding(
                           padding: const EdgeInsets.only(
-                              bottom: 8.0), // Reduced padding for label
+                              bottom: spacerSmall), // Reduced padding for label
                           child: Text(
                             'Expense Title',
                             style: kTextTheme.bodyMedium
@@ -156,13 +156,13 @@ class AddExpenseScreen extends StatelessWidget {
                             fillColor: primaryBg,
                             border: OutlineInputBorder(
                               borderRadius:
-                                  BorderRadius.circular(32), // Rounded corners
+                                  radiusMedium, // Rounded corners
                             ),
                           ),
                           style: kTextTheme.bodyMedium
                               ?.copyWith(fontWeight: FontWeight.w600),
                         ),
-                        const SizedBox(height: 15),
+                        const SizedBox(height: spacerMedium),
                         TextField(
                           maxLines: 4,
                           decoration: InputDecoration(
@@ -171,23 +171,23 @@ class AddExpenseScreen extends StatelessWidget {
                             fillColor: primaryBg, // White background inside the field
                             border: OutlineInputBorder(
                               borderRadius:
-                                  BorderRadius.circular(12), // Rounded corners
+                                  radiusMedium, // Rounded corners
                             ),
                           ),
                           style: kTextTheme.bodyMedium
                               ?.copyWith(fontWeight: FontWeight.w600),
                         ),
-                        const SizedBox(height: 15),
+                        const SizedBox(height: spacerMedium),
                         Center(
                           child: SizedBox(
-                            height: 36,
-                            width: 169,
+                            height: 36, // Custom value
+                            width: 169, // Custom value
                             child: ElevatedButton(
                               onPressed: () {},
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: brandGreen,
                                 padding: const EdgeInsets.symmetric(
-                                    horizontal: 20, vertical: 10),
+                                    horizontal: spacerMedium, vertical: spacerSmall),
                               ),
                               child: Text(
                                 'Save',

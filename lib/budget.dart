@@ -122,7 +122,7 @@ class _BudgetsPageState extends State<BudgetsPage> {
               decoration: const InputDecoration(labelText: "Budgeted Amount"),
               style: kTextTheme.bodyMedium,
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: spacerMedium),
             TextButton(
               onPressed: () async {
                 final DateTime? pickedDate = await showDatePicker(
@@ -202,7 +202,7 @@ class _BudgetsPageState extends State<BudgetsPage> {
           children: [
             // Header Section
             Padding(
-              padding: const EdgeInsets.only(top: 16, left: 20, right: 20),
+              padding: const EdgeInsets.only(top: spacerMedium, left: spacerMedium, right: spacerMedium),
               child: Column(
                 children: [
                   Row(
@@ -228,12 +228,12 @@ class _BudgetsPageState extends State<BudgetsPage> {
                       )
                     ],
                   ),
-                  const SizedBox(height: 10),
+                                    const SizedBox(height: spacerSmall),
                 ],
               ),
             ),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: spacerMedium, vertical: spacerSmall),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -241,7 +241,7 @@ class _BudgetsPageState extends State<BudgetsPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text("Total Budget", style: kTextTheme.bodyLarge),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: spacerTiny),
                       Text(
                         "\$${totalBudget.toStringAsFixed(2)}",
                         style: kTextTheme.headlineMedium,
@@ -257,7 +257,7 @@ class _BudgetsPageState extends State<BudgetsPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text("Total Expense", style: kTextTheme.bodyLarge),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: spacerTiny),
                       Text(
                         "\$${totalExpenses.toStringAsFixed(2)}",
                         style: kTextTheme.headlineMedium
@@ -268,7 +268,7 @@ class _BudgetsPageState extends State<BudgetsPage> {
                 ],
               ),
             ),
-            const SizedBox(height: 10),
+                              const SizedBox(height: spacerSmall),
             // Budgets Section
             Expanded(
               child: Container(
@@ -281,7 +281,7 @@ class _BudgetsPageState extends State<BudgetsPage> {
                   color: primaryText,
                 ),
                 child: Padding(
-                  padding: const EdgeInsets.all(20.0),
+                  padding: paddingAllMedium,
                   child: ListView.builder(
                     itemCount: budgets.length,
                     itemBuilder: (context, index) {
@@ -289,11 +289,11 @@ class _BudgetsPageState extends State<BudgetsPage> {
                       return GestureDetector(
                         onTap: () => navigateToExpenses(budget['id']),
                         child: Container(
-                          margin: const EdgeInsets.only(bottom: 16),
-                          padding: const EdgeInsets.all(16),
+                          margin: const EdgeInsets.only(bottom: spacerMedium),
+                          padding: paddingAllMedium,
                           decoration: BoxDecoration(
                             color: primaryText.withOpacity(0.8),
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: radiusMedium,
                           ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -331,11 +331,11 @@ class _BudgetsPageState extends State<BudgetsPage> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: brandGreen,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30),
+                      borderRadius: BorderRadius.circular(30.0),
                     ),
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 50,
-                      vertical: 12,
+                      horizontal: 50.0,
+                      vertical: spacerMedium,
                     ),
                   ),
                   onPressed: addBudget,
@@ -489,7 +489,7 @@ class _BudgetDetailsPageState extends State<BudgetDetailsPage> {
           children: [
             // Header Section
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              padding: const EdgeInsets.symmetric(horizontal: spacerMedium, vertical: spacerMedium),
               child: Row(
                 children: [
                   Text(
@@ -513,7 +513,7 @@ class _BudgetDetailsPageState extends State<BudgetDetailsPage> {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: spacerMedium, vertical: spacerSmall),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -521,7 +521,7 @@ class _BudgetDetailsPageState extends State<BudgetDetailsPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text("Total Budget", style: kTextTheme.bodyLarge),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: spacerTiny),
                       Text(
                         "\$${budgetDetails['Total amount']}",
                         style: kTextTheme.headlineMedium,
@@ -537,7 +537,7 @@ class _BudgetDetailsPageState extends State<BudgetDetailsPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text("Total Expense", style: kTextTheme.bodyLarge),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: spacerTiny),
                       Text(
                         " \$${totalExpenses.toStringAsFixed(2)}",
                         style: kTextTheme.headlineMedium
@@ -548,7 +548,7 @@ class _BudgetDetailsPageState extends State<BudgetDetailsPage> {
                 ],
               ),
             ),
-            const SizedBox(height: 10),
+                              const SizedBox(height: spacerSmall),
             // Budget Details Section
             Expanded(
               child: Container(
@@ -561,7 +561,7 @@ class _BudgetDetailsPageState extends State<BudgetDetailsPage> {
                   color: primaryText,
                 ),
                 child: Padding(
-                  padding: const EdgeInsets.all(20.0),
+                  padding: paddingAllMedium,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -579,11 +579,11 @@ class _BudgetDetailsPageState extends State<BudgetDetailsPage> {
                                 DateFormat.Hm().format(date); // Format the Time
 
                             return Container(
-                              margin: const EdgeInsets.symmetric(vertical: 8.0),
-                              padding: const EdgeInsets.all(16.0),
+                              margin: const EdgeInsets.symmetric(vertical: spacerSmall),
+                              padding: paddingAllMedium,
                               decoration: BoxDecoration(
                                 color: primaryText.withOpacity(0.8),
-                                borderRadius: BorderRadius.circular(8.0),
+                                borderRadius: radiusSmall,
                               ),
                               child: Row(
                                 children: [
@@ -598,7 +598,7 @@ class _BudgetDetailsPageState extends State<BudgetDetailsPage> {
                                           style: kTextTheme.titleLarge
                                               ?.copyWith(color: primaryBg),
                                         ),
-                                        const SizedBox(height: 8.0),
+                                        const SizedBox(height: spacerSmall),
                                         Row(
                                           children: [
                                             Column(
@@ -612,7 +612,7 @@ class _BudgetDetailsPageState extends State<BudgetDetailsPage> {
                                                           color: primaryBg
                                                               .withOpacity(0.7)),
                                                 ),
-                                                const SizedBox(height: 4.0),
+                                                const SizedBox(height: spacerTiny),
                                                 Text(
                                                   formattedTime,
                                                   style: kTextTheme.bodySmall
@@ -629,9 +629,7 @@ class _BudgetDetailsPageState extends State<BudgetDetailsPage> {
                                   ),
                                   // Amount aligned to the far right
                                   Padding(
-                                    padding: const EdgeInsets.only(
-                                        left:
-                                            8.0), // Add padding for space between amount and text
+                                    padding: const EdgeInsets.only(left: spacerSmall),
                                     child: Text(
                                       "\$${expense['amount']}",
                                       style: kTextTheme.bodyMedium
@@ -645,13 +643,13 @@ class _BudgetDetailsPageState extends State<BudgetDetailsPage> {
                         ),
                       ),
                       Padding(
-                        padding: const EdgeInsets.only(top: 10, bottom: 19),
+                        padding: const EdgeInsets.only(top: spacerSmall, bottom: 19.0),
                         child: Center(
                           child: ElevatedButton(
                             style: ElevatedButton.styleFrom(
                               backgroundColor: brandGreen,
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(30),
+                                borderRadius: BorderRadius.circular(30.0),
                               ),
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 50,

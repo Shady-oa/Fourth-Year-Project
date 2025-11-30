@@ -82,10 +82,7 @@ class _SignUpState extends State<SignUp> {
         dismissDirection: DismissDirection.endToStart,
         expandedHeight: 80,
         isClosable: true,
-        leading: Icon(
-          Icons.error_outline,
-          color: Colors.red,
-        ),
+        leading: Icon(Icons.error_outline, color: Colors.red),
         message: 'Password not the same!!',
         length: ToastLength.medium,
         positionCurve: Curves.bounceInOut,
@@ -109,12 +106,16 @@ class _SignUpState extends State<SignUp> {
           return AlertDialog(
             backgroundColor: primaryBg,
             title: Text('Alert Title', style: kTextTheme.headlineSmall),
-            content: Text('password is not the same', style: kTextTheme.bodyMedium),
+            content: Text(
+              'password is not the same',
+              style: kTextTheme.bodyMedium,
+            ),
             actions: <Widget>[
               TextButton(
-                child: Text('OK',
-                    style:
-                        kTextTheme.bodyMedium?.copyWith(color: brandGreen)),
+                child: Text(
+                  'OK',
+                  style: kTextTheme.bodyMedium?.copyWith(color: brandGreen),
+                ),
                 onPressed: () {
                   Navigator.of(context).pop();
                 },
@@ -183,10 +184,7 @@ class _SignUpState extends State<SignUp> {
                   ),
                 ),
               ),
-              Text(
-                'Penny Wise',
-                style: kTextTheme.displayMedium,
-              ),
+              Text('Penny Wise', style: kTextTheme.displayMedium),
               SizedBox(height: 2),
               Text(
                 "Wise Choices For Financial Freedom",
@@ -252,10 +250,7 @@ class _SignUpState extends State<SignUp> {
                   Expanded(child: Divider(color: primaryText)),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Text(
-                      'or signup with',
-                      style: kTextTheme.bodyLarge,
-                    ),
+                    child: Text('or signup with', style: kTextTheme.bodyLarge),
                   ),
                   Expanded(child: Divider(color: primaryText)),
                 ],
@@ -276,8 +271,10 @@ class _SignUpState extends State<SignUp> {
                           builder: (context) {
                             return AlertDialog(
                               backgroundColor: primaryBg,
-                              content: Text('Unknown error occured',
-                                  style: kTextTheme.bodyMedium),
+                              content: Text(
+                                'Unknown error occured',
+                                style: kTextTheme.bodyMedium,
+                              ),
                             );
                           },
                         );
@@ -324,17 +321,15 @@ class _SignUpState extends State<SignUp> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text(
-                      'I am a member?',
-                      style: kTextTheme.bodyLarge,
-                    ),
+                    Text('I am a member?', style: kTextTheme.bodyLarge),
                     SizedBox(width: 8),
                     GestureDetector(
                       onTap: widget.showLoginpage,
                       child: Text(
                         'Sign In',
-                        style:
-                            kTextTheme.bodyLarge?.copyWith(color: Colors.blue),
+                        style: kTextTheme.bodyLarge?.copyWith(
+                          color: Colors.blue,
+                        ),
                       ),
                     ),
                   ],

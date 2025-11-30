@@ -1,18 +1,15 @@
 import 'package:final_project/auth_services.dart';
-import 'package:final_project/component/button.dart';
 import 'package:final_project/constants.dart';
 import 'package:final_project/start.dart';
-// import 'package:firebase/auth_services.dart';
-// import 'package:firebase/component/button.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:toasty_box/toast_enums.dart';
 import 'package:toasty_box/toast_service.dart';
-//import 'package:google_fonts/google_fonts.dart';
 
 class Login extends StatefulWidget {
   final VoidCallback showSignupPage;
+
   const Login({super.key, required this.showSignupPage});
 
   @override
@@ -32,10 +29,9 @@ class _LoginState extends State<Login> {
 
   Future signin() async {
     if (_emailcontroller.text.isEmpty || _passwordcontroller.text.isEmpty) {
-      // Show a toast or an alert if fields are empty
       ToastService.showToast(
         context,
-        backgroundColor: Colors.red,
+        backgroundColor: errorColor,
         dismissDirection: DismissDirection.endToStart,
         expandedHeight: 80,
         isClosable: true,
@@ -47,7 +43,7 @@ class _LoginState extends State<Login> {
         slideCurve: Curves.easeInOut,
         shadowColor: primaryText.withOpacity(0.5),
       );
-      return; // Prevent further execution if fields are empty
+      return;
     }
 
     try {
@@ -57,22 +53,22 @@ class _LoginState extends State<Login> {
       );
       Navigator.pushReplacementNamed(context, '/navigation');
     } catch (e) {
-      // Handle error cases
       showDialog(
         context: context,
         builder: (context) {
           return AlertDialog(
             backgroundColor: primaryBg,
-            content:
-                Text('Wrong password or email!', style: kTextTheme.bodyMedium),
+            content: Text(
+              'Wrong password or email!',
+              style: kTextTheme.bodyMedium,
+            ),
             actions: [
               TextButton(
-                onPressed: () {
-                  Navigator.of(context).pop();
-                },
-                child: Text('OK',
-                    style:
-                        kTextTheme.bodyMedium?.copyWith(color: brandGreen)),
+                onPressed: () => Navigator.of(context).pop(),
+                child: Text(
+                  'OK',
+                  style: kTextTheme.bodyMedium?.copyWith(color: brandGreen),
+                ),
               ),
             ],
           );
@@ -84,162 +80,206 @@ class _LoginState extends State<Login> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: primaryBg,
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(0, 100, 0, 0),
-              child: Center(
-                child: SvgPicture.asset(
-                  'assets/svg/penny.svg',
-                  height: 120,
-                  width: 120,
-                  colorFilter:
-                      const ColorFilter.mode(brandGreen, BlendMode.srcIn),
-                ),
-              ),
-            ),
-            Text(
-              'Penny Wise',
-              style: kTextTheme.displayMedium,
-            ),
-            const SizedBox(height: 2),
-            Text(
-              "Wise Choices For Financial Freedom",
-              style: kTextTheme.titleMedium,
-            ),
-            const SizedBox(height: 20),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 25),
-              child: TextField(
-                controller: _emailcontroller,
-                decoration: InputDecoration(
-                  hintText: 'Email',
-                  border: const OutlineInputBorder(
-                    borderRadius: BorderRadius.all(Radius.circular(12)),
-                  ),
-                  fillColor: primaryText.withOpacity(0.1),
-                  filled: true,
-                ),
-              ),
-            ),
-            const SizedBox(height: 10),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 25),
-              child: TextField(
-                controller: _passwordcontroller,
-                obscureText: true,
-                decoration: InputDecoration(
-                  hintText: 'Password',
-                  border: const OutlineInputBorder(
-                    borderRadius: BorderRadius.all(Radius.circular(12)),
-                  ),
-                  fillColor: primaryText.withOpacity(0.1),
-                  filled: true,
-                ),
-              ),
-            ),
-            const SizedBox(height: 5),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 30),
-              child: Align(
-                alignment: Alignment.centerRight,
-                child: GestureDetector(
-                  onTap: () {
-                    Navigator.pushNamed(context, '/forgotpassword');
-                  },
-                  child: Text(
-                    'Forgot password?',
-                    style: kTextTheme.bodyMedium?.copyWith(color: Colors.blue),
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 35),
-            GestureDetector(
-              child: const Button(h: 50, s: 380, text: 'Sign in'),
-              onTap: () async {
-                await signin(); // Use the updated signin method
-              },
-            ),
-            const SizedBox(height: 32),
-            const Row(
-              children: [
-                Expanded(child: Divider(color: primaryText)),
-                Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 16),
-                  child: Text(
-                    'or sign in with',
-                    style: TextStyle(
-                      color: primaryText,
-                      fontWeight: FontWeight.normal,
-                    ),
-                  ),
-                ),
-                Expanded(child: Divider(color: primaryText)),
-              ],
-            ),
-            const SizedBox(height: 32),
-            GestureDetector(
-              onTap: () async {
-                try {
-                  await AuthService().signInWithGoogle();
-                } on NoGoogleAccountChoosenException {
-                  return;
-                } catch (e) {
-                  if (!context.mounted) {
-                    return;
-                  }
-                  showDialog(
-                    context: context,
-                    builder: (context) {
-                      return AlertDialog(
-                        backgroundColor: primaryBg,
-                        content: Text('Unknown error occured',
-                            style: kTextTheme.bodyMedium),
-                      );
-                    },
-                  );
-                }
+      backgroundColor: brandGreen,
+      body: Column(
+        children: [
+          Container(
+            alignment: Alignment.center,
+            height: 150,
+            child: Text("Sign In", style: kTextTheme.displaySmall),
+          ),
 
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(builder: (context) => const MainLoader()),
-                ); //'/homepage'
-              },
-              child: Container(
-                height: 50,
-                width: 50,
-                decoration: BoxDecoration(
-                  color: primaryBg,
-                  borderRadius: const BorderRadius.all(Radius.circular(6)),
-                  border: Border.all(color: primaryText),
+          // BOTTOM EXPANDED CONTAINER
+          Expanded(
+            child: Container(
+              padding: paddingAllMedium,
+              decoration: const BoxDecoration(
+                color: primaryBg,
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(40),
+                  topRight: Radius.circular(40),
                 ),
-                child: const Image(
-                    image: AssetImage('assets/image/google.png')),
+              ),
+
+              // SCROLL ONLY INSIDE BOTTOM AREA
+              child: SingleChildScrollView(
+                child: Column(
+                  children: [
+                    const SizedBox(height: 50),
+                    Center(
+                      child: SvgPicture.asset(
+                        'assets/svg/penny.svg',
+                        height: 120,
+                        width: 120,
+                        colorFilter: const ColorFilter.mode(
+                          brandGreen,
+                          BlendMode.srcIn,
+                        ),
+                      ),
+                    ),
+
+                    Text('Penny Wise', style: kTextTheme.displayMedium),
+                    const SizedBox(height: 2),
+                    Text(
+                      "Wise Choices For Financial Freedom",
+                      style: kTextTheme.titleMedium,
+                    ),
+
+                    const SizedBox(height: 20),
+
+                    // EMAIL FIELD
+                    TextField(
+                      controller: _emailcontroller,
+                      decoration: InputDecoration(
+                        hintText: 'Email',
+                        border: const OutlineInputBorder(
+                          borderRadius: radiusMedium,
+                        ),
+                        fillColor: primaryText.withOpacity(0.1),
+                        filled: true,
+                      ),
+                    ),
+
+                    const SizedBox(height: 10),
+
+                    // PASSWORD FIELD
+                    TextField(
+                      controller: _passwordcontroller,
+                      obscureText: true,
+                      decoration: InputDecoration(
+                        hintText: 'Password',
+                        border: const OutlineInputBorder(
+                          borderRadius: radiusMedium,
+                        ),
+                        fillColor: primaryText.withOpacity(0.1),
+                        filled: true,
+                      ),
+                    ),
+
+                    const SizedBox(height: 5),
+
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: GestureDetector(
+                        onTap: () =>
+                            Navigator.pushNamed(context, '/forgotpassword'),
+                        child: Text(
+                          'Forgot password?',
+                          style: kTextTheme.bodyMedium?.copyWith(
+                            color: accentColor,
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 35),
+
+                    // SIGN IN BUTTON
+                    SizedBox(
+                      width: double.infinity,
+                      height: 50,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: brandGreen,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: radiusMedium,
+                          ),
+                        ),
+                        onPressed: () async {
+                          await signin();
+                        },
+                        child: Text(
+                          'Sign in',
+                          style: kTextTheme.bodyLarge?.copyWith(
+                            color: primaryText,
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 32),
+
+                    //GOOGLE BUTTON
+                    GestureDetector(
+                      onTap: () async {
+                        try {
+                          await AuthService().signInWithGoogle();
+                        } on NoGoogleAccountChoosenException {
+                          return;
+                        } catch (e) {
+                          if (!context.mounted) return;
+                          showDialog(
+                            context: context,
+                            builder: (context) {
+                              return AlertDialog(
+                                backgroundColor: errorColor,
+                                content: Text(
+                                  'Unknown error occurred',
+                                  style: kTextTheme.bodyMedium,
+                                ),
+                              );
+                            },
+                          );
+                        }
+
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const MainLoader(),
+                          ),
+                        );
+                      },
+                      child: Container(
+                        height: 50,
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          color: primaryBg,
+                          borderRadius: radiusMedium,
+                          border: Border.all(color: primaryText),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Image(
+                              image: AssetImage('assets/image/google.png'),
+                            ),
+                            const SizedBox(width: 10),
+                            Text(
+                              'Or Sign in with Google',
+                              style: kTextTheme.bodyLarge,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 32),
+
+                    //  SIGNUP REDIRECT
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text('Not a member?', style: kTextTheme.bodyLarge),
+                        const SizedBox(width: 8),
+                        GestureDetector(
+                          onTap: widget.showSignupPage,
+                          child: Text(
+                            'Register now',
+                            style: kTextTheme.bodyLarge?.copyWith(
+                              color: accentColor,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 40),
+                  ],
+                ),
               ),
             ),
-            const SizedBox(height: 32),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  'Not a member?',
-                  style: kTextTheme.bodyLarge,
-                ),
-                const SizedBox(width: 8),
-                GestureDetector(
-                  onTap: widget.showSignupPage,
-                  child: Text(
-                    'Register now',
-                    style: kTextTheme.bodyLarge?.copyWith(color: Colors.blue),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

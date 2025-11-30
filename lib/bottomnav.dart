@@ -34,23 +34,40 @@ class _BottomNavigationState extends State<BottomNavigation> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: primaryBg,
-      body: _pages[_selectedIndex], // Display the current page
+      body: _pages[_selectedIndex],
+
       bottomNavigationBar: Container(
-        color: primaryBg,
+        decoration: BoxDecoration(
+          color: primaryBg,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.08),
+              blurRadius: 12,
+              offset: const Offset(0, -3),
+            ),
+          ],
+        ),
+
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 15.0, vertical: 20),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: GNav(
-            backgroundColor: primaryBg,
-            color: Colors.black,
-            activeColor: Colors.black,
-            tabBackgroundColor: brandGreen,
-            gap: 8,
+            // IMPORTANT → padding inside GNav (controls spacing)
+            padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 14),
+
+            gap: 12,
+
+            // Colors
+            color: Colors.black, // inactive icon/text
+            activeColor: Colors.white, // icon/text when selected
+            tabBackgroundColor: brandGreen, // active tab background
+
+            selectedIndex: _selectedIndex,
             onTabChange: _onItemTapped,
-            padding: const EdgeInsets.all(16),
-            tabs: [
+
+            tabs: const [
               GButton(icon: Icons.home, text: 'Home'),
               GButton(icon: Icons.pie_chart, text: 'Stats'),
-              GButton(icon: Icons.swap_horiz, text: 'Transfer'),
+              GButton(icon: Icons.savings, text: 'Save'),
               GButton(icon: Icons.account_circle, text: 'Profile'),
             ],
           ),

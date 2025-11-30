@@ -5,24 +5,30 @@ class Button extends StatelessWidget {
   final double h;
   final double s;
   final String text;
-  const Button({super.key, required this.h, required this.s, required this.text});
+  const Button({
+    super.key,
+    required this.h,
+    required this.s,
+    required this.text,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 25),
+      padding: const EdgeInsets.symmetric(horizontal: 25.0),
       child: Container(
         height: h,
         width: s,
         decoration: const BoxDecoration(
-          borderRadius: BorderRadius.all(Radius.circular(10)),
+          borderRadius: BorderRadius.all(Radius.circular(10.0)),
           color: brandGreen,
         ),
         child: Center(
-            child: Text(
-          text,
-          style: kTextTheme.headlineSmall?.copyWith(color: primaryText),
-        )),
+          child: Text(
+            text,
+            style: kTextTheme.headlineSmall?.copyWith(color: primaryText),
+          ),
+        ),
       ),
     );
   }

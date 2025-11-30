@@ -23,7 +23,7 @@ class _BalancePageState extends State<BalancePage> {
           children: [
             // Header Section
             Padding(
-              padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
+              padding: paddingAllMedium,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -39,7 +39,7 @@ class _BalancePageState extends State<BalancePage> {
                             colorFilter: const ColorFilter.mode(
                                 brandGreen, BlendMode.srcIn),
                           ),
-                          const SizedBox(width: 5),
+                          const SizedBox(width: spacerTiny),
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -77,7 +77,7 @@ class _BalancePageState extends State<BalancePage> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: spacerMedium),
                   // Balance and Expense Section
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -113,7 +113,7 @@ class _BalancePageState extends State<BalancePage> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: spacerSmall),
                   Row(
                     children: [
                       Expanded(
@@ -124,14 +124,14 @@ class _BalancePageState extends State<BalancePage> {
                               const AlwaysStoppedAnimation<Color>(brandGreen),
                         ),
                       ),
-                      const SizedBox(width: 10),
+                      const SizedBox(width: spacerSmall),
                       Text(
                         '\$20,000.00',
                         style: kTextTheme.bodyMedium,
                       ),
                     ],
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: spacerSmall),
                   Text(
                     '30% Of Your Expenses, Looks Good.',
                     style: kTextTheme.bodyMedium
@@ -144,7 +144,7 @@ class _BalancePageState extends State<BalancePage> {
 
             // Income & Expense Cards
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
+              padding: const EdgeInsets.symmetric(horizontal: spacerMedium),
               child: Row(
                 children: [
                   // Income Container - navigate to the Income page
@@ -155,21 +155,21 @@ class _BalancePageState extends State<BalancePage> {
                         Navigator.pushNamed(context, '/income');
                       },
                       child: Container(
-                        padding: const EdgeInsets.all(16),
+                        padding: paddingAllMedium,
                         decoration: BoxDecoration(
                           color: primaryText.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(12),
+                                                    borderRadius: radiusMedium,
                         ),
                         child: Column(
                           children: [
                             const Icon(Icons.arrow_upward, color: brandGreen),
-                            const SizedBox(height: 8),
+                            const SizedBox(height: spacerSmall),
                             Text(
                               "Income",
                               style: kTextTheme.bodyMedium
                                   ?.copyWith(color: primaryText.withOpacity(0.7)),
                             ),
-                            const SizedBox(height: 4),
+                            const SizedBox(height: spacerTiny),
                             Text(
                               "\$${latestTransactionAmount.toStringAsFixed(2)}", // Dynamically display the latest transaction
                               style: kTextTheme.titleLarge,
@@ -179,24 +179,24 @@ class _BalancePageState extends State<BalancePage> {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 16),
+                  const SizedBox(width: spacerMedium),
                   Expanded(
                     child: Container(
-                      padding: const EdgeInsets.all(16),
+                      padding: paddingAllMedium,
                       decoration: BoxDecoration(
                         color: primaryText.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(12),
+                                                  borderRadius: radiusMedium,
                       ),
                       child: Column(
                         children: [
                           const Icon(Icons.arrow_downward, color: Colors.blue),
-                          const SizedBox(height: 8),
+                          const SizedBox(height: spacerSmall),
                           Text(
                             "Expense",
                             style: kTextTheme.bodyMedium
                                 ?.copyWith(color: primaryText.withOpacity(0.7)),
                           ),
-                          const SizedBox(height: 4),
+                          const SizedBox(height: spacerTiny),
                           Text(
                             "\$1,187.40",
                             style: kTextTheme.titleLarge,
@@ -301,11 +301,11 @@ class _BalancePageState extends State<BalancePage> {
     Color color,
   ) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      padding: const EdgeInsets.symmetric(vertical: spacerSmall),
       child: Row(
         children: [
           Icon(Icons.circle, color: color, size: 40),
-          const SizedBox(width: 16),
+          const SizedBox(width: spacerMedium),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
