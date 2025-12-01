@@ -62,7 +62,7 @@ class _SignUpState extends State<SignUp> {
         _lastnamecontroller.text.isEmpty) {
       ToastService.showToast(
         context,
-        backgroundColor: Colors.red,
+        backgroundColor: errorColor,
         dismissDirection: DismissDirection.endToStart,
         expandedHeight: 80,
         isClosable: true,

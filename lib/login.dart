@@ -53,26 +53,19 @@ class _LoginState extends State<Login> {
       );
       Navigator.pushReplacementNamed(context, '/navigation');
     } catch (e) {
-      showDialog(
-        context: context,
-        builder: (context) {
-          return AlertDialog(
-            backgroundColor: primaryBg,
-            content: Text(
-              'Wrong password or email!',
-              style: kTextTheme.bodyMedium,
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: Text(
-                  'OK',
-                  style: kTextTheme.bodyMedium?.copyWith(color: brandGreen),
-                ),
-              ),
-            ],
-          );
-        },
+      ToastService.showToast(
+        context,
+        backgroundColor: errorColor,
+        dismissDirection: DismissDirection.endToStart,
+        expandedHeight: 80,
+        isClosable: true,
+        leading: const Icon(Icons.error_outline),
+        message: 'Wrong email or password!',
+        length: ToastLength.medium,
+        positionCurve: Curves.bounceInOut,
+        messageStyle: kTextTheme.bodyLarge?.copyWith(color: primaryBg),
+        slideCurve: Curves.easeInOut,
+        shadowColor: primaryText.withOpacity(0.5),
       );
     }
   }
@@ -103,7 +96,6 @@ class _LoginState extends State<Login> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    
                     Center(
                       child: SvgPicture.asset(
                         'assets/svg/penny.svg',
@@ -205,18 +197,21 @@ class _LoginState extends State<Login> {
                         } on NoGoogleAccountChoosenException {
                           return;
                         } catch (e) {
-                          if (!context.mounted) return;
-                          showDialog(
-                            context: context,
-                            builder: (context) {
-                              return AlertDialog(
-                                backgroundColor: errorColor,
-                                content: Text(
-                                  'Unknown error occurred',
-                                  style: kTextTheme.bodyMedium,
-                                ),
-                              );
-                            },
+                          ToastService.showToast(
+                            context,
+                            backgroundColor: errorColor,
+                            dismissDirection: DismissDirection.endToStart,
+                            expandedHeight: 80,
+                            isClosable: true,
+                            leading: const Icon(Icons.error_outline),
+                            message: 'Unexpected error occurred,try again!',
+                            length: ToastLength.medium,
+                            positionCurve: Curves.bounceInOut,
+                            messageStyle: kTextTheme.bodyLarge?.copyWith(
+                              color: primaryBg,
+                            ),
+                            slideCurve: Curves.easeInOut,
+                            shadowColor: primaryText.withOpacity(0.5),
                           );
                         }
 
@@ -257,7 +252,10 @@ class _LoginState extends State<Login> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Text('Don\'t have an account?', style: kTextTheme.bodyLarge),
+                        Text(
+                          'Don\'t have an account?',
+                          style: kTextTheme.bodyLarge,
+                        ),
                         const SizedBox(width: 8),
                         GestureDetector(
                           onTap: widget.showSignupPage,
