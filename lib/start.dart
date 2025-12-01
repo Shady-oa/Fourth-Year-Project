@@ -2,6 +2,7 @@ import 'package:final_project/balance.dart';
 import 'package:final_project/budget.dart';
 import 'package:final_project/constants.dart';
 import 'package:final_project/hme.dart';
+import 'package:final_project/profile.dart';
 import 'package:final_project/save_page.dart';
 import 'package:flutter/material.dart';
 import 'package:google_nav_bar/google_nav_bar.dart';
@@ -15,7 +16,7 @@ class MainLoader extends StatefulWidget {
 
 class _MainLoaderState extends State<MainLoader> {
   int current_index = 0;
-  List pages = [const HomePage(), const SavePage(), const BalancePage(), const BudgetsPage()];
+  List pages = [const HomePage(), const SavePage(), const BalancePage(), const Profile()];
 
   void select(int index) {
     setState(() {

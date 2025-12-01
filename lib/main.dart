@@ -8,6 +8,7 @@ import 'package:final_project/home.dart';
 import 'package:final_project/income.dart';
 import 'package:final_project/login.dart';
 import 'package:final_project/main_page.dart';
+import 'package:final_project/profile.dart';
 import 'package:final_project/single_budget.dart';
 import 'package:final_project/single_saving.dart';
 import 'package:final_project/splash.dart';
