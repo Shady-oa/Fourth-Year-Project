@@ -10,7 +10,6 @@ import 'package:final_project/start.dart';
 // import 'package:firebase/component/button.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/svg.dart';
 import 'package:toasty_box/toast_enums.dart';
 import 'package:toasty_box/toasty_box.dart';
 
@@ -173,7 +172,7 @@ class _SignUpState extends State<SignUp> {
         children: [
           Container(
             alignment: Alignment.center,
-            height: 150,
+            height: 100,
             child: Text("Create Account", style: kTextTheme.displaySmall),
           ),
           Expanded(
@@ -185,27 +184,10 @@ class _SignUpState extends State<SignUp> {
               ),
               child: SingleChildScrollView(
                 child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisAlignment: MainAxisAlignment.start,
                   children: [
-                    Center(
-                      child: SvgPicture.asset(
-                        'assets/svg/penny.svg',
-                        height: 120,
-                        width: 120,
-                        colorFilter: ColorFilter.mode(
-                          brandGreen,
-                          BlendMode.srcIn,
-                        ),
-                      ),
-                    ),
+                    formLogo,
 
-                    Text('Penny Wise', style: kTextTheme.displayMedium),
-                    SizedBox(height: 2),
-                    Text(
-                      "Wise Choices For Financial Freedom",
-                      style: kTextTheme.titleMedium,
-                    ),
-                    SizedBox(height: 35),
                     TextField(
                       controller: _emailcontroller,
                       decoration: InputDecoration(
@@ -216,7 +198,7 @@ class _SignUpState extends State<SignUp> {
                       ),
                     ),
 
-                    SizedBox(height: 10),
+                    sizedBoxHeightSmall,
                     TextField(
                       controller: _passwordcontroller,
                       obscureText: true,
@@ -228,7 +210,7 @@ class _SignUpState extends State<SignUp> {
                       ),
                     ),
 
-                    SizedBox(height: 10),
+                    sizedBoxHeightSmall,
                     TextField(
                       controller: _confirmpasswordcontroller,
                       obscureText: true,
@@ -240,7 +222,7 @@ class _SignUpState extends State<SignUp> {
                       ),
                     ),
 
-                    SizedBox(height: 45),
+                    sizedBoxHeightXLarge,
                     SizedBox(
                       width: double.infinity,
                       height: 50,
@@ -262,7 +244,7 @@ class _SignUpState extends State<SignUp> {
                         ),
                       ),
                     ),
-                    SizedBox(height: 32),
+                    sizedBoxHeightLarge,
 
                     GestureDetector(
                       onTap: () async {
@@ -301,6 +283,7 @@ class _SignUpState extends State<SignUp> {
                         child: Row(
                           children: [
                             Image(image: AssetImage('assets/image/google.png')),
+                            sizedBoxWidthSmall,
                             Text(
                               'Or Sign Up with Google',
                               style: kTextTheme.bodyLarge,
@@ -309,7 +292,7 @@ class _SignUpState extends State<SignUp> {
                         ),
                       ),
                     ),
-                    SizedBox(width: 8),
+                    sizedBoxWidthSmall,
 
                     Padding(
                       padding: const EdgeInsets.symmetric(vertical: 20),
@@ -320,7 +303,7 @@ class _SignUpState extends State<SignUp> {
                             'Already have an account?',
                             style: kTextTheme.bodyLarge,
                           ),
-                          SizedBox(width: 8),
+                          sizedBoxWidthSmall,
                           GestureDetector(
                             onTap: widget.showLoginpage,
                             child: Text(

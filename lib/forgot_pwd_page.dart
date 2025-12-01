@@ -5,7 +5,6 @@ import 'package:final_project/constants.dart';
 import 'package:final_project/start.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/svg.dart';
 
 class ForgotPasswordPage extends StatefulWidget {
   const ForgotPasswordPage({super.key});
@@ -86,10 +85,10 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                   Navigator.pop(context);
                 },
               ),
-              SizedBox(width: 20),
+              sizedBoxHeightLarge,
               Container(
                 alignment: Alignment.center,
-                height: 150,
+                height: 100,
                 child: Text("Forgot Password", style: kTextTheme.displaySmall),
               ),
             ],
@@ -102,44 +101,24 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                 borderRadius: topOnly,
               ),
               child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisAlignment: MainAxisAlignment.start,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Center(
-                    child: Column(
-                      children: [
-                        SvgPicture.asset(
-                          'assets/svg/penny.svg',
-                          height: 120,
-                          width: 120,
-                          colorFilter: ColorFilter.mode(
-                            brandGreen,
-                            BlendMode.srcIn,
-                          ),
-                        ),
-                        Text('Penny Wise', style: kTextTheme.displayMedium),
-                        SizedBox(height: 2),
-                        Text(
-                          "Wise Choices For Financial Freedom",
-                          style: kTextTheme.titleMedium,
-                        ),
-                      ],
-                    ),
-                  ),
+                  formLogo,
 
-                  SizedBox(height: 35),
+                  sizedBoxHeightLarge,
                   Text(
                     'Reset Your Password?',
                     style: kTextTheme.headlineMedium,
                     textAlign: TextAlign.center,
                   ),
-                  SizedBox(height: 10),
+                  sizedBoxHeightSmall,
                   Text(
                     'Enter your email to receive a password reset link.',
                     style: kTextTheme.bodyLarge,
-                    textAlign: TextAlign.center,
+                    textAlign: TextAlign.left,
                   ),
-                  SizedBox(height: 20),
+                  sizedBoxHeightSmall,
                   TextField(
                     controller: _emailController,
                     decoration: InputDecoration(
@@ -150,7 +129,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                     ),
                   ),
 
-                  SizedBox(height: 20),
+                  sizedBoxHeightLarge,
                   SizedBox(
                     width: double.infinity,
                     height: 50,
@@ -170,7 +149,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                       ),
                     ),
                   ),
-                  SizedBox(height: 20),
+                  sizedBoxHeightLarge,
                   GestureDetector(
                     onTap: () async {
                       try {
@@ -214,7 +193,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                           const Image(
                             image: AssetImage('assets/image/google.png'),
                           ),
-                          const SizedBox(width: 10),
+                          sizedBoxWidthSmall,
                           Text(
                             'Or Sign in with Google',
                             style: kTextTheme.bodyLarge,

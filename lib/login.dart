@@ -3,7 +3,6 @@ import 'package:final_project/constants.dart';
 import 'package:final_project/start.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:toasty_box/toast_enums.dart';
 import 'package:toasty_box/toast_service.dart';
 
@@ -78,11 +77,10 @@ class _LoginState extends State<Login> {
         children: [
           Container(
             alignment: Alignment.center,
-            height: 150,
+            height: 100,
             child: Text("Welcome Back", style: kTextTheme.displaySmall),
           ),
 
-          // BOTTOM EXPANDED CONTAINER
           Expanded(
             child: Container(
               padding: paddingAllMedium,
@@ -91,33 +89,12 @@ class _LoginState extends State<Login> {
                 borderRadius: topOnly,
               ),
 
-              // SCROLL ONLY INSIDE BOTTOM AREA
               child: SingleChildScrollView(
                 child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisAlignment: MainAxisAlignment.start,
                   children: [
-                    Center(
-                      child: SvgPicture.asset(
-                        'assets/svg/penny.svg',
-                        height: 120,
-                        width: 120,
-                        colorFilter: const ColorFilter.mode(
-                          brandGreen,
-                          BlendMode.srcIn,
-                        ),
-                      ),
-                    ),
+                    formLogo,
 
-                    Text('Penny Wise', style: kTextTheme.displayMedium),
-                    const SizedBox(height: 2),
-                    Text(
-                      "Wise Choices For Financial Freedom",
-                      style: kTextTheme.titleMedium,
-                    ),
-
-                    const SizedBox(height: 20),
-
-                    // EMAIL FIELD
                     TextField(
                       controller: _emailcontroller,
                       decoration: InputDecoration(
@@ -130,7 +107,7 @@ class _LoginState extends State<Login> {
                       ),
                     ),
 
-                    const SizedBox(height: 10),
+                    sizedBoxHeightSmall,
 
                     // PASSWORD FIELD
                     TextField(
@@ -146,7 +123,7 @@ class _LoginState extends State<Login> {
                       ),
                     ),
 
-                    const SizedBox(height: 5),
+                    sizedBoxHeightTiny,
 
                     Align(
                       alignment: Alignment.centerRight,
@@ -162,7 +139,7 @@ class _LoginState extends State<Login> {
                       ),
                     ),
 
-                    const SizedBox(height: 35),
+                    sizedBoxHeightXLarge,
 
                     // SIGN IN BUTTON
                     SizedBox(
@@ -187,7 +164,7 @@ class _LoginState extends State<Login> {
                       ),
                     ),
 
-                    const SizedBox(height: 32),
+                    sizedBoxHeightLarge,
 
                     //GOOGLE BUTTON
                     GestureDetector(
@@ -236,7 +213,7 @@ class _LoginState extends State<Login> {
                             const Image(
                               image: AssetImage('assets/image/google.png'),
                             ),
-                            const SizedBox(width: 10),
+                            sizedBoxWidthSmall,
                             Text(
                               'Or Sign in with Google',
                               style: kTextTheme.bodyLarge,
@@ -246,7 +223,7 @@ class _LoginState extends State<Login> {
                       ),
                     ),
 
-                    const SizedBox(height: 32),
+                    sizedBoxHeightXLarge,
 
                     //  SIGNUP REDIRECT
                     Row(
@@ -256,7 +233,7 @@ class _LoginState extends State<Login> {
                           'Don\'t have an account?',
                           style: kTextTheme.bodyLarge,
                         ),
-                        const SizedBox(width: 8),
+                        sizedBoxWidthSmall,
                         GestureDetector(
                           onTap: widget.showSignupPage,
                           child: Text(
@@ -268,8 +245,6 @@ class _LoginState extends State<Login> {
                         ),
                       ],
                     ),
-
-                    const SizedBox(height: 40),
                   ],
                 ),
               ),

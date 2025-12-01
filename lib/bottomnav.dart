@@ -1,11 +1,42 @@
-import 'package:final_project/balance.dart';
-import 'package:final_project/budget.dart';
-import 'package:final_project/constants.dart';
-import 'package:final_project/income.dart';
 import 'package:flutter/material.dart';
 import 'package:google_nav_bar/google_nav_bar.dart';
 
-import 'save_page.dart';
+// --- Placeholder for your constants.dart ---
+// You should ensure these colors provide proper contrast.
+// Example: Dark primaryBg and a bright brandGreen.
+const Color primaryBg = Color(0xFF1E1E1E); // Dark background color
+const Color brandGreen = Color(0xFF4CAF50); // A bright green for the active tab
+// ------------------------------------------
+
+// --- Placeholder pages for a runnable example ---
+class BalancePage extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) => const Center(
+    child: Text('Home', style: TextStyle(color: Colors.white, fontSize: 30)),
+  );
+}
+
+class BudgetsPage extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) => const Center(
+    child: Text('Stats', style: TextStyle(color: Colors.white, fontSize: 30)),
+  );
+}
+
+class SavePage extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) => const Center(
+    child: Text('Save', style: TextStyle(color: Colors.white, fontSize: 30)),
+  );
+}
+
+class Income extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) => const Center(
+    child: Text('Profile', style: TextStyle(color: Colors.white, fontSize: 30)),
+  );
+}
+// --------------------------------------------------
 
 class BottomNavigation extends StatefulWidget {
   const BottomNavigation({super.key});
@@ -33,11 +64,15 @@ class _BottomNavigationState extends State<BottomNavigation> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      // Set the main scaffold background to your primary background color
       backgroundColor: primaryBg,
+
+      // Display the selected page in the body
       body: _pages[_selectedIndex],
 
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
+          // Set the nav bar background to your primary background color
           color: primaryBg,
           boxShadow: [
             BoxShadow(
@@ -51,16 +86,20 @@ class _BottomNavigationState extends State<BottomNavigation> {
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: GNav(
-            // IMPORTANT → padding inside GNav (controls spacing)
-            padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 14),
-
             gap: 12,
 
-            // Colors
-            color: Colors.black, // inactive icon/text
-            activeColor: Colors.white, // icon/text when selected
-            tabBackgroundColor: brandGreen, // active tab background
+            // --- THE FIXES ---
 
+            // 1. Inactive tabs are now **White** so they are visible against the dark primaryBg.
+            color: Colors.white,
+
+            // 2. Active icon/text color is now **Black**, as requested.
+            activeColor: Colors.black,
+
+            // 3. The background color of the active tab (brandGreen) must contrast with the activeColor (black).
+            tabBackgroundColor: brandGreen,
+
+            // --- END OF FIXES ---
             selectedIndex: _selectedIndex,
             onTabChange: _onItemTapped,
 

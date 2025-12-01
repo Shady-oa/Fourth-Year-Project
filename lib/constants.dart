@@ -1,5 +1,26 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:google_fonts/google_fonts.dart';
+
+//- - - - - - - -  - -  FORM LOGO - - - - - - - -  - - -
+final formLogo = Column(
+  children: [
+    sizedBoxHeightMedium,
+    Center(
+      child: SvgPicture.asset(
+        'assets/svg/penny.svg',
+        height: 100,
+        width: 100,
+        colorFilter: const ColorFilter.mode(brandGreen, BlendMode.srcIn),
+      ),
+    ),
+
+    Text('Penny Wise', style: kTextTheme.displayMedium),
+    sizedBoxHeightTiny,
+    Text("Wise Choices For Financial Freedom", style: kTextTheme.titleMedium),
+    sizedBoxHeightLarge,
+  ],
+);
 
 //- - - - - - - - - - - - - - - - - - - - COLORS - - - - - - - - - - - - - - - - - - - -
 
@@ -85,3 +106,16 @@ const BorderRadius topOnly = BorderRadius.only(
   bottomLeft: Radius.circular(0.0),
   bottomRight: Radius.circular(0.0),
 );
+
+// - - -  - - - - - -   SIZEBOXES  - - - - - - - - - - - - - - - - - - - - - - -  - - - - - -  - -
+
+const SizedBox sizedBoxHeightTiny = SizedBox(height: spacerTiny);
+const SizedBox sizedBoxHeightSmall = SizedBox(height: spacerSmall);
+const SizedBox sizedBoxHeightMedium = SizedBox(height: spacerMedium);
+const SizedBox sizedBoxHeightLarge = SizedBox(height: spacerLarge);
+const SizedBox sizedBoxHeightXLarge = SizedBox(height: spacerXLarge);
+const SizedBox sizedBoxWidthTiny = SizedBox(width: spacerTiny);
+const SizedBox sizedBoxWidthSmall = SizedBox(width: spacerSmall);
+const SizedBox sizedBoxWidthMedium = SizedBox(width: spacerMedium);
+const SizedBox sizedBoxWidthLarge = SizedBox(width: spacerLarge);
+const SizedBox sizedBoxWidthXLarge = SizedBox(width: spacerXLarge);
