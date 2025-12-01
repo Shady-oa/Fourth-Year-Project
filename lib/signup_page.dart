@@ -4,7 +4,6 @@ import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:final_project/auth_services.dart';
-import 'package:final_project/component/button.dart';
 import 'package:final_project/constants.dart';
 import 'package:final_project/start.dart';
 // import 'package:firebase/auth_services.dart';
@@ -169,175 +168,177 @@ class _SignUpState extends State<SignUp> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: primaryBg,
-      body: Center(
-        child: SingleChildScrollView(
-          child: Column(
-            children: [
-              SafeArea(
-                child: Center(
-                  child: SvgPicture.asset(
-                    'assets/svg/penny.svg',
-                    height: 120,
-                    width: 120,
-                    colorFilter: ColorFilter.mode(brandGreen, BlendMode.srcIn),
-                  ),
-                ),
+      backgroundColor: brandGreen,
+      body: Column(
+        children: [
+          Container(
+            alignment: Alignment.center,
+            height: 150,
+            child: Text("Create Account", style: kTextTheme.displaySmall),
+          ),
+          Expanded(
+            child: Container(
+              padding: paddingAllMedium,
+              decoration: const BoxDecoration(
+                color: primaryBg,
+                borderRadius: topOnly,
               ),
-              Text('Penny Wise', style: kTextTheme.displayMedium),
-              SizedBox(height: 2),
-              Text(
-                "Wise Choices For Financial Freedom",
-                style: kTextTheme.titleMedium,
-              ),
-              SizedBox(height: 35),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 25),
-                child: TextField(
-                  controller: _emailcontroller,
-                  decoration: InputDecoration(
-                    hintText: 'Email',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.all(Radius.circular(12)),
-                    ),
-                    fillColor: primaryText.withOpacity(0.1),
-                    filled: true,
-                  ),
-                ),
-              ),
-              SizedBox(height: 10),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 25),
-                child: TextField(
-                  controller: _passwordcontroller,
-                  obscureText: true,
-                  decoration: InputDecoration(
-                    hintText: 'Password',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.all(Radius.circular(12)),
-                    ),
-                    fillColor: primaryText.withOpacity(0.1),
-                    filled: true,
-                  ),
-                ),
-              ),
-              SizedBox(height: 10),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 25),
-                child: TextField(
-                  controller: _confirmpasswordcontroller,
-                  obscureText: true,
-                  decoration: InputDecoration(
-                    hintText: 'Confirm password',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.all(Radius.circular(12)),
-                    ),
-                    fillColor: primaryText.withOpacity(0.1),
-                    filled: true,
-                  ),
-                ),
-              ),
-              SizedBox(height: 45),
-              GestureDetector(
-                child: Button(h: 50, s: 380, text: 'Sign Up'),
-                onTap: () async {
-                  await HandleSignup();
-                },
-              ),
-              SizedBox(height: 32),
-              Row(
-                children: [
-                  Expanded(child: Divider(color: primaryText)),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Text('or signup with', style: kTextTheme.bodyLarge),
-                  ),
-                  Expanded(child: Divider(color: primaryText)),
-                ],
-              ),
-              SizedBox(height: 32),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  GestureDetector(
-                    onTap: () async {
-                      try {
-                        await AuthService().signInWithGoogle();
-                      } on NoGoogleAccountChoosenException {
-                        return;
-                      } catch (e) {
-                        showDialog(
-                          context: context,
-                          builder: (context) {
-                            return AlertDialog(
-                              backgroundColor: primaryBg,
-                              content: Text(
-                                'Unknown error occured',
-                                style: kTextTheme.bodyMedium,
-                              ),
-                            );
-                          },
-                        );
-                      }
-
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(builder: (context) => MainLoader()),
-                      );
-                    },
-                    child: Container(
-                      height: 50,
-                      width: 50,
-                      decoration: BoxDecoration(
-                        color: primaryBg,
-                        borderRadius: BorderRadius.all(Radius.circular(6)),
-                        border: Border.all(color: primaryText),
-                      ),
-                      child: Image(
-                        image: AssetImage('assets/image/google.png'),
-                      ),
-                    ),
-                  ),
-                  SizedBox(width: 8),
-                  GestureDetector(
-                    onTap: () {
-                      // AuthService().signInWithGoogle();
-                    },
-                    child: Container(
-                      height: 50,
-                      width: 50,
-                      decoration: BoxDecoration(
-                        color: primaryBg,
-                        borderRadius: BorderRadius.all(Radius.circular(6)),
-                        border: Border.all(color: primaryText),
-                      ),
-                      child: Image(image: AssetImage('assets/image/FB.jpeg')),
-                    ),
-                  ),
-                ],
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 20),
-                child: Row(
+              child: SingleChildScrollView(
+                child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text('I am a member?', style: kTextTheme.bodyLarge),
-                    SizedBox(width: 8),
-                    GestureDetector(
-                      onTap: widget.showLoginpage,
-                      child: Text(
-                        'Sign In',
-                        style: kTextTheme.bodyLarge?.copyWith(
-                          color: Colors.blue,
+                    Center(
+                      child: SvgPicture.asset(
+                        'assets/svg/penny.svg',
+                        height: 120,
+                        width: 120,
+                        colorFilter: ColorFilter.mode(
+                          brandGreen,
+                          BlendMode.srcIn,
                         ),
+                      ),
+                    ),
+
+                    Text('Penny Wise', style: kTextTheme.displayMedium),
+                    SizedBox(height: 2),
+                    Text(
+                      "Wise Choices For Financial Freedom",
+                      style: kTextTheme.titleMedium,
+                    ),
+                    SizedBox(height: 35),
+                    TextField(
+                      controller: _emailcontroller,
+                      decoration: InputDecoration(
+                        hintText: 'Email',
+                        border: OutlineInputBorder(borderRadius: radiusMedium),
+                        fillColor: primaryText.withOpacity(0.1),
+                        filled: true,
+                      ),
+                    ),
+
+                    SizedBox(height: 10),
+                    TextField(
+                      controller: _passwordcontroller,
+                      obscureText: true,
+                      decoration: InputDecoration(
+                        hintText: 'Password',
+                        border: OutlineInputBorder(borderRadius: radiusMedium),
+                        fillColor: primaryText.withOpacity(0.1),
+                        filled: true,
+                      ),
+                    ),
+
+                    SizedBox(height: 10),
+                    TextField(
+                      controller: _confirmpasswordcontroller,
+                      obscureText: true,
+                      decoration: InputDecoration(
+                        hintText: 'Confirm password',
+                        border: OutlineInputBorder(borderRadius: radiusMedium),
+                        fillColor: primaryText.withOpacity(0.1),
+                        filled: true,
+                      ),
+                    ),
+
+                    SizedBox(height: 45),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 50,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: brandGreen,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: radiusMedium,
+                          ),
+                        ),
+                        onPressed: () async {
+                          await HandleSignup();
+                        },
+                        child: Text(
+                          'Sign Up',
+                          style: kTextTheme.titleLarge?.copyWith(
+                            color: primaryText,
+                          ),
+                        ),
+                      ),
+                    ),
+                    SizedBox(height: 32),
+
+                    GestureDetector(
+                      onTap: () async {
+                        try {
+                          await AuthService().signInWithGoogle();
+                        } on NoGoogleAccountChoosenException {
+                          return;
+                        } catch (e) {
+                          showDialog(
+                            context: context,
+                            builder: (context) {
+                              return AlertDialog(
+                                backgroundColor: errorColor,
+                                content: Text(
+                                  'Unknown error occured',
+                                  style: kTextTheme.bodyMedium,
+                                ),
+                              );
+                            },
+                          );
+                        }
+
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(builder: (context) => MainLoader()),
+                        );
+                      },
+                      child: Container(
+                        height: 50,
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          color: primaryBg,
+                          borderRadius: radiusMedium,
+                          border: Border.all(color: primaryText),
+                        ),
+                        child: Row(
+                          children: [
+                            Image(image: AssetImage('assets/image/google.png')),
+                            Text(
+                              'Or Sign Up with Google',
+                              style: kTextTheme.bodyLarge,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    SizedBox(width: 8),
+
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 20),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            'Already have an account?',
+                            style: kTextTheme.bodyLarge,
+                          ),
+                          SizedBox(width: 8),
+                          GestureDetector(
+                            onTap: widget.showLoginpage,
+                            child: Text(
+                              'Sign In',
+                              style: kTextTheme.bodyLarge?.copyWith(
+                                color: Colors.blue,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
                 ),
               ),
-            ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }

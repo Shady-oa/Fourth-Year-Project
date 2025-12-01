@@ -86,7 +86,7 @@ class _LoginState extends State<Login> {
           Container(
             alignment: Alignment.center,
             height: 150,
-            child: Text("Sign In", style: kTextTheme.displaySmall),
+            child: Text("Welcome Back", style: kTextTheme.displaySmall),
           ),
 
           // BOTTOM EXPANDED CONTAINER
@@ -95,17 +95,15 @@ class _LoginState extends State<Login> {
               padding: paddingAllMedium,
               decoration: const BoxDecoration(
                 color: primaryBg,
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(40),
-                  topRight: Radius.circular(40),
-                ),
+                borderRadius: topOnly,
               ),
 
               // SCROLL ONLY INSIDE BOTTOM AREA
               child: SingleChildScrollView(
                 child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const SizedBox(height: 50),
+                    
                     Center(
                       child: SvgPicture.asset(
                         'assets/svg/penny.svg',
@@ -190,7 +188,7 @@ class _LoginState extends State<Login> {
                         },
                         child: Text(
                           'Sign in',
-                          style: kTextTheme.bodyLarge?.copyWith(
+                          style: kTextTheme.titleLarge?.copyWith(
                             color: primaryText,
                           ),
                         ),
@@ -259,7 +257,7 @@ class _LoginState extends State<Login> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Text('Not a member?', style: kTextTheme.bodyLarge),
+                        Text('Don\'t have an account?', style: kTextTheme.bodyLarge),
                         const SizedBox(width: 8),
                         GestureDetector(
                           onTap: widget.showSignupPage,

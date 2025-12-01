@@ -79,3 +79,9 @@ const EdgeInsets paddingAllLarge = EdgeInsets.all(spacerLarge);
 const BorderRadius radiusSmall = BorderRadius.all(Radius.circular(8.0));
 const BorderRadius radiusMedium = BorderRadius.all(Radius.circular(12.0));
 const BorderRadius radiusLarge = BorderRadius.all(Radius.circular(24.0));
+const BorderRadius topOnly = BorderRadius.only(
+  topLeft: Radius.circular(40.0),
+  topRight: Radius.circular(40.0),
+  bottomLeft: Radius.circular(0.0),
+  bottomRight: Radius.circular(0.0),
+);
