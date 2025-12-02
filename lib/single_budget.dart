@@ -1,6 +1,5 @@
 import 'package:final_project/Constants/colors.dart';
 import 'package:final_project/Constants/typograpy.dart';
-
 import 'package:flutter/material.dart';
 
 class SingleBudget extends StatelessWidget {
@@ -39,7 +38,7 @@ class SingleBudget extends StatelessWidget {
                           Icons.notifications_none,
                           color: primaryBg,
                         ),
-                      )
+                      ),
                     ],
                   ),
                   const SizedBox(height: 25),
@@ -51,17 +50,10 @@ class SingleBudget extends StatelessWidget {
                         children: [
                           Text("Budget", style: kTextTheme.bodyLarge),
                           const SizedBox(height: 4),
-                          Text(
-                            "\$2,187.40",
-                            style: kTextTheme.headlineMedium,
-                          ),
+                          Text("\$2,187.40", style: kTextTheme.headlineMedium),
                         ],
                       ),
-                      Container(
-                        height: 50,
-                        width: 1,
-                        color: primaryText,
-                      ),
+                      Container(height: 50, width: 1, color: primaryText),
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -69,8 +61,9 @@ class SingleBudget extends StatelessWidget {
                           const SizedBox(height: 4),
                           Text(
                             " \$1,783.00",
-                            style: kTextTheme.headlineMedium
-                                ?.copyWith(color: Colors.blue),
+                            style: kTextTheme.headlineMedium?.copyWith(
+                              color: Colors.blue,
+                            ),
                           ),
                         ],
                       ),
@@ -85,8 +78,9 @@ class SingleBudget extends StatelessWidget {
                           height: 10,
                           decoration: BoxDecoration(
                             color: primaryText.withOpacity(0.2),
-                            borderRadius:
-                                const BorderRadius.all(Radius.circular(5)),
+                            borderRadius: const BorderRadius.all(
+                              Radius.circular(5),
+                            ),
                           ),
                           child: FractionallySizedBox(
                             alignment: Alignment.centerLeft,
@@ -101,10 +95,7 @@ class SingleBudget extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(width: 10),
-                      Text(
-                        "\$2,187.40",
-                        style: kTextTheme.bodyMedium,
-                      ),
+                      Text("\$2,187.40", style: kTextTheme.bodyMedium),
                     ],
                   ),
                   Align(
@@ -118,10 +109,7 @@ class SingleBudget extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 20),
-                  Text(
-                    "Transactions",
-                    style: kTextTheme.titleLarge,
-                  ),
+                  Text("Transactions", style: kTextTheme.titleLarge),
                 ],
               ),
             ),
@@ -138,24 +126,36 @@ class SingleBudget extends StatelessWidget {
                   color: primaryText,
                 ),
                 child: Padding(
-                  padding: const EdgeInsets.only(
-                    left: 38,
-                    right: 38,
-                    top: 30,
-                  ),
+                  padding: const EdgeInsets.only(left: 38, right: 38, top: 30),
                   child: Column(
                     children: [
                       Expanded(
                         child: ListView(
                           children: [
-                            transactionItem("Transport", "Fuel",
-                                "17:00 - Nov 18", "\$-500"),
-                            transactionItem("Transport", "Car Parts",
-                                "17:00 - Nov 10", "\$-700"),
-                            transactionItem("Transport", "Tiers",
-                                "17:00 - Nov 09", "\$-500"),
-                            transactionItem("Transport", "Public Transport",
-                                "17:00 - Nov 05", "\$-200"),
+                            transactionItem(
+                              "Transport",
+                              "Fuel",
+                              "17:00 - Nov 18",
+                              "\$-500",
+                            ),
+                            transactionItem(
+                              "Transport",
+                              "Car Parts",
+                              "17:00 - Nov 10",
+                              "\$-700",
+                            ),
+                            transactionItem(
+                              "Transport",
+                              "Tiers",
+                              "17:00 - Nov 09",
+                              "\$-500",
+                            ),
+                            transactionItem(
+                              "Transport",
+                              "Public Transport",
+                              "17:00 - Nov 05",
+                              "\$-200",
+                            ),
                           ],
                         ),
                       ),
@@ -171,8 +171,9 @@ class SingleBudget extends StatelessWidget {
                           child: Center(
                             child: Text(
                               "Add Expense",
-                              style: kTextTheme.bodyMedium
-                                  ?.copyWith(color: primaryText),
+                              style: kTextTheme.bodyMedium?.copyWith(
+                                color: primaryText,
+                              ),
                             ),
                           ),
                         ),
@@ -181,7 +182,7 @@ class SingleBudget extends StatelessWidget {
                   ),
                 ),
               ),
-            )
+            ),
           ],
         ),
       ),
@@ -190,7 +191,11 @@ class SingleBudget extends StatelessWidget {
 
   //expenses
   Widget transactionItem(
-      String title, String description, String date, String amount) {
+    String title,
+    String description,
+    String date,
+    String amount,
+  ) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: Row(
@@ -200,20 +205,24 @@ class SingleBudget extends StatelessWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(title,
-                  style: kTextTheme.bodyLarge?.copyWith(color: primaryBg)),
-              Text(description,
-                  style: kTextTheme.bodySmall
-                      ?.copyWith(color: primaryBg.withOpacity(0.8))),
-              Text(date,
-                  style: kTextTheme.bodySmall?.copyWith(color: Colors.blue)),
+              Text(
+                title,
+                style: kTextTheme.bodyLarge?.copyWith(color: primaryBg),
+              ),
+              Text(
+                description,
+                style: kTextTheme.bodySmall?.copyWith(
+                  color: primaryBg.withOpacity(0.8),
+                ),
+              ),
+              Text(
+                date,
+                style: kTextTheme.bodySmall?.copyWith(color: Colors.blue),
+              ),
             ],
           ),
           const Spacer(),
-          Text(
-            amount,
-            style: kTextTheme.bodyLarge?.copyWith(color: primaryBg),
-          ),
+          Text(amount, style: kTextTheme.bodyLarge?.copyWith(color: primaryBg)),
         ],
       ),
     );

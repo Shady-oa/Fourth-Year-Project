@@ -3,8 +3,8 @@ import 'package:final_project/Constants/spacing.dart';
 import 'package:final_project/Constants/typograpy.dart';
 import 'package:flutter/material.dart';
 
-class AddExpenseScreen extends StatelessWidget {
-  const AddExpenseScreen({super.key});
+class AddExpense extends StatelessWidget {
+  const AddExpense({super.key});
 
   @override
   Widget build(BuildContext context) {

@@ -6,14 +6,14 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 
-class BudgetsPage extends StatefulWidget {
-  const BudgetsPage({super.key});
+class Budget extends StatefulWidget {
+  const Budget({super.key});
 
   @override
-  _BudgetsPageState createState() => _BudgetsPageState();
+  _BudgetState createState() => _BudgetState();
 }
 
-class _BudgetsPageState extends State<BudgetsPage> {
+class _BudgetState extends State<Budget> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
   User? currentUser;

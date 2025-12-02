@@ -29,10 +29,7 @@ class SingleSaving extends StatelessWidget {
                     icon: const Icon(Icons.arrow_back, color: primaryText),
                   ),
                   const SizedBox(width: 5),
-                  Text(
-                    "Travel",
-                    style: kTextTheme.headlineSmall,
-                  ),
+                  Text("Travel", style: kTextTheme.headlineSmall),
                   const Spacer(),
                   Container(
                     height: 30,
@@ -81,25 +78,29 @@ class SingleSaving extends StatelessWidget {
                               children: [
                                 Text(
                                   "Goal",
-                                  style: kTextTheme.bodySmall
-                                      ?.copyWith(color: primaryBg),
+                                  style: kTextTheme.bodySmall?.copyWith(
+                                    color: primaryBg,
+                                  ),
                                 ),
                                 const SizedBox(height: 5),
                                 Text(
                                   "\$1,900.00",
-                                  style: kTextTheme.headlineMedium
-                                      ?.copyWith(color: primaryBg),
+                                  style: kTextTheme.headlineMedium?.copyWith(
+                                    color: primaryBg,
+                                  ),
                                 ),
                                 const SizedBox(height: 10),
                                 Text(
                                   "Amount Saved",
-                                  style: kTextTheme.bodySmall
-                                      ?.copyWith(color: primaryBg),
+                                  style: kTextTheme.bodySmall?.copyWith(
+                                    color: primaryBg,
+                                  ),
                                 ),
                                 Text(
                                   "\$654.00",
-                                  style: kTextTheme.headlineMedium
-                                      ?.copyWith(color: primaryBg),
+                                  style: kTextTheme.headlineMedium?.copyWith(
+                                    color: primaryBg,
+                                  ),
                                 ),
                               ],
                             ),
@@ -122,8 +123,9 @@ class SingleSaving extends StatelessWidget {
                                     ),
                                     Text(
                                       "Travel",
-                                      style: kTextTheme.bodyLarge
-                                          ?.copyWith(color: primaryText),
+                                      style: kTextTheme.bodyLarge?.copyWith(
+                                        color: primaryText,
+                                      ),
                                     ),
                                   ],
                                 ),
@@ -160,8 +162,9 @@ class SingleSaving extends StatelessWidget {
                           const SizedBox(width: 10),
                           Text(
                             "\$1,900.00",
-                            style: kTextTheme.bodyMedium
-                                ?.copyWith(color: primaryBg),
+                            style: kTextTheme.bodyMedium?.copyWith(
+                              color: primaryBg,
+                            ),
                           ),
                         ],
                       ),
@@ -170,15 +173,15 @@ class SingleSaving extends StatelessWidget {
                         padding: const EdgeInsets.only(left: 10),
                         child: Text(
                           "30% Of The Goal Saved",
-                          style: kTextTheme.bodyMedium
-                              ?.copyWith(color: primaryBg),
+                          style: kTextTheme.bodyMedium?.copyWith(
+                            color: primaryBg,
+                          ),
                         ),
                       ),
                       const SizedBox(height: 30),
                       Text(
                         "Transactions",
-                        style:
-                            kTextTheme.bodyLarge?.copyWith(color: primaryBg),
+                        style: kTextTheme.bodyLarge?.copyWith(color: primaryBg),
                       ),
                       // Scrollable List of Deposits
 
@@ -212,8 +215,9 @@ class SingleSaving extends StatelessWidget {
                               child: Center(
                                 child: Text(
                                   "Add Savings",
-                                  style: kTextTheme.bodyMedium
-                                      ?.copyWith(color: primaryText),
+                                  style: kTextTheme.bodyMedium?.copyWith(
+                                    color: primaryText,
+                                  ),
                                 ),
                               ),
                             ),
@@ -296,10 +300,7 @@ class SingleSaving extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
-                  "New Category",
-                  style: kTextTheme.headlineSmall,
-                ),
+                Text("New Category", style: kTextTheme.headlineSmall),
                 const SizedBox(height: 15),
                 TextField(
                   decoration: InputDecoration(
@@ -310,8 +311,9 @@ class SingleSaving extends StatelessWidget {
                       borderRadius: BorderRadius.circular(10),
                       borderSide: BorderSide.none,
                     ),
-                    hintStyle:
-                        kTextTheme.bodyMedium?.copyWith(color: primaryText.withOpacity(0.5)),
+                    hintStyle: kTextTheme.bodyMedium?.copyWith(
+                      color: primaryText.withOpacity(0.5),
+                    ),
                   ),
                   style: kTextTheme.bodyMedium,
                 ),
@@ -328,9 +330,10 @@ class SingleSaving extends StatelessWidget {
                       borderRadius: BorderRadius.circular(10),
                     ),
                   ),
-                  child: Text("Save",
-                      style:
-                          kTextTheme.bodyMedium?.copyWith(color: primaryText)),
+                  child: Text(
+                    "Save",
+                    style: kTextTheme.bodyMedium?.copyWith(color: primaryText),
+                  ),
                 ),
                 const SizedBox(height: 10),
                 ElevatedButton(

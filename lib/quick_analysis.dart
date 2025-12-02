@@ -1,16 +1,15 @@
 import 'package:final_project/Constants/colors.dart';
-import 'package:final_project/Constants/spacing.dart';
 import 'package:final_project/Constants/typograpy.dart';
 import 'package:flutter/material.dart';
 
-class QuickAnalysis extends StatefulWidget {
-  const QuickAnalysis({super.key});
+class Analysis extends StatefulWidget {
+  const Analysis({super.key});
 
   @override
-  State<QuickAnalysis> createState() => _QuickAnalysisState();
+  State<Analysis> createState() => _AnalysisState();
 }
 
-class _QuickAnalysisState extends State<QuickAnalysis> {
+class _AnalysisState extends State<Analysis> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(

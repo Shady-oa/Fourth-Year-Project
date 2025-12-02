@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-
 const double spacerTiny = 4.0;
 const double spacerSmall = 8.0;
 const double spacerMedium = 16.0;

@@ -1,9 +1,10 @@
 import 'package:final_project/Constants/colors.dart';
-import 'package:final_project/balance.dart';
 import 'package:final_project/Constants/spacing.dart';
-import 'package:final_project/Screens/home.dart';
-import 'package:final_project/Screens/profile.dart';
-import 'package:final_project/save_page.dart';
+import 'package:final_project/Primary_Screens/ai.dart';
+import 'package:final_project/Primary_Screens/home.dart';
+import 'package:final_project/Primary_Screens/profile.dart';
+import 'package:final_project/Primary_Screens/savings.dart';
+import 'package:final_project/Primary_Screens/transactions.dart';
 import 'package:flutter/material.dart';
 import 'package:google_nav_bar/google_nav_bar.dart';
 
@@ -18,8 +19,9 @@ class _BottomNavState extends State<BottomNav> {
   int current_index = 0;
   List pages = [
     const HomePage(),
-    const SavePage(),
-    const BalancePage(),
+    const Transactions(),
+    const SavingsPage(),
+    const AiPage(),
     const Profile(),
   ];
 
@@ -35,7 +37,7 @@ class _BottomNavState extends State<BottomNav> {
       backgroundColor: primaryBg,
       body: pages[current_index],
       bottomNavigationBar: Container(
-        padding: paddingAllSmall,
+        padding: paddingAllTiny,
         color: primaryText,
         child: GNav(
           backgroundColor: primaryText,
@@ -46,10 +48,23 @@ class _BottomNavState extends State<BottomNav> {
           onTabChange: select,
           padding: paddingAllSmall,
           tabs: const [
-            GButton(icon: Icons.home_rounded, text: 'Home'),
-            GButton(icon: Icons.swap_horiz_rounded, text: 'Transfer'),
-            GButton(icon: Icons.pie_chart_rounded, text: 'Stats'),
-            GButton(icon: Icons.account_circle_rounded, text: 'Profile'),
+            GButton(icon: Icons.home, text: 'Home'),
+            GButton(
+              icon: Icons.swap_horizontal_circle_rounded,
+              text: 'Transactions',
+              iconSize: 30,
+            ),
+            GButton(
+              icon: Icons.analytics_rounded,
+              text: 'Savings',
+              iconSize: 30,
+            ),
+            GButton(
+              icon: Icons.auto_graph_rounded,
+              text: 'Penny AI',
+              iconSize: 30,
+            ),
+            GButton(icon: Icons.person_rounded, text: 'Profile', iconSize: 30),
           ],
         ),
       ),

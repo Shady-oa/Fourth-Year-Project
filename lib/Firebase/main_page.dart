@@ -2,7 +2,6 @@
 
 import 'package:final_project/Constants/colors.dart';
 import 'package:final_project/Firebase/auth_page.dart';
-import 'package:final_project/Constants/spacing.dart';
 // import 'package:firebase/auth_page.dart';
 //import 'package:firebase/login.dart';
 import 'package:firebase_auth/firebase_auth.dart';

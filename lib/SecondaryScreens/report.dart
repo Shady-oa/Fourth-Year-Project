@@ -3,7 +3,7 @@ import 'package:final_project/Constants/spacing.dart';
 import 'package:final_project/Constants/typograpy.dart';
 import 'package:flutter/material.dart';
 
-class ReportPage extends StatelessWidget {
+class Report extends StatelessWidget {
   final List<double> budgetSpendingData = [30, 20, 15, 25, 10];
   final List<double> savingGoalsData = [40, 30, 20, 10];
   final List<String> budgetCategories = [
@@ -15,7 +15,7 @@ class ReportPage extends StatelessWidget {
   ];
   final List<String> savingGoals = ["Vacation", "Car", "Gadgets", "Emergency"];
 
-  ReportPage({super.key});
+  Report({super.key});
 
   @override
   Widget build(BuildContext context) {

@@ -1,16 +1,16 @@
+import 'package:final_project/Components/Custom_header.dart';
 import 'package:final_project/Constants/colors.dart';
-import 'package:final_project/Constants/spacing.dart';
 import 'package:final_project/Constants/typograpy.dart';
 import 'package:flutter/material.dart';
 
-class SavePage extends StatefulWidget {
-  const SavePage({super.key});
+class SavingsPage extends StatefulWidget {
+  const SavingsPage({super.key});
 
   @override
-  State<SavePage> createState() => _SavePageState();
+  State<SavingsPage> createState() => _SavingsPageState();
 }
 
-class _SavePageState extends State<SavePage> {
+class _SavingsPageState extends State<SavingsPage> {
   // List of categories
   final List<Map<String, dynamic>> _categories = [
     {'icon': Icons.directions_car, 'label': 'Transport'},
@@ -39,64 +39,30 @@ class _SavePageState extends State<SavePage> {
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
               child: Column(
                 children: [
-                  Row(
-                    children: [
-                      Center(
-                        child: Text(
-                          "Savings",
-                          style: kTextTheme.headlineSmall,
-                        ),
-                      ),
-                      const Spacer(),
-                      Container(
-                        height: 30,
-                        width: 30,
-                        decoration: const BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: primaryText,
-                        ),
-                        child: const Icon(
-                          Icons.notifications_none,
-                          color: primaryBg,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 25),
+                  CustomHeader(headerName: "Savings"),
+
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            "Balance",
-                            style: kTextTheme.bodyLarge,
-                          ),
+                          Text("Balance", style: kTextTheme.bodyLarge),
                           const SizedBox(height: 4),
-                          Text(
-                            "\$1,187.40",
-                            style: kTextTheme.headlineMedium,
-                          ),
+                          Text("\$1,187.40", style: kTextTheme.headlineMedium),
                         ],
                       ),
-                      Container(
-                        height: 50,
-                        width: 1,
-                        color: primaryText,
-                      ),
+                      Container(height: 50, width: 1, color: primaryText),
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            "Total Target",
-                            style: kTextTheme.bodyLarge,
-                          ),
+                          Text("Total Target", style: kTextTheme.bodyLarge),
                           const SizedBox(height: 4),
                           Text(
                             "\$7,783.00",
-                            style: kTextTheme.headlineMedium
-                                ?.copyWith(color: Colors.blue),
+                            style: kTextTheme.headlineMedium?.copyWith(
+                              color: Colors.blue,
+                            ),
                           ),
                         ],
                       ),
@@ -125,10 +91,7 @@ class _SavePageState extends State<SavePage> {
                         ),
                       ),
                       const SizedBox(width: 10),
-                      Text(
-                        "\$7,783.00",
-                        style: kTextTheme.bodyMedium,
-                      ),
+                      Text("\$7,783.00", style: kTextTheme.bodyMedium),
                     ],
                   ),
                   Align(
@@ -198,8 +161,9 @@ class _SavePageState extends State<SavePage> {
                             child: Center(
                               child: Text(
                                 "Add More",
-                                style: kTextTheme.bodyMedium
-                                    ?.copyWith(color: primaryText),
+                                style: kTextTheme.bodyMedium?.copyWith(
+                                  color: primaryText,
+                                ),
                               ),
                             ),
                           ),
@@ -232,15 +196,12 @@ class _SavePageState extends State<SavePage> {
             //height: 65,
             //width: 80,
             decoration: BoxDecoration(
-              color: isSelected
-                  ? brandGreen
-                  : primaryText.withOpacity(0.8),
+              color: isSelected ? brandGreen : primaryText.withOpacity(0.8),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Padding(
               padding: const EdgeInsets.all(8.0),
-              child:
-                  Flexible(child: Icon(icon, color: primaryBg, size: 40)),
+              child: Flexible(child: Icon(icon, color: primaryBg, size: 40)),
             ),
           ),
         ),
@@ -273,10 +234,7 @@ class _SavePageState extends State<SavePage> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
-                  "New Category",
-                  style: kTextTheme.headlineSmall,
-                ),
+                Text("New Category", style: kTextTheme.headlineSmall),
                 const SizedBox(height: 15),
                 TextField(
                   onChanged: (value) {
@@ -290,8 +248,7 @@ class _SavePageState extends State<SavePage> {
                       borderRadius: BorderRadius.circular(10),
                       borderSide: BorderSide.none,
                     ),
-                    hintStyle:
-                        TextStyle(color: primaryText.withOpacity(0.5)),
+                    hintStyle: TextStyle(color: primaryText.withOpacity(0.5)),
                   ),
                   style: const TextStyle(color: primaryText),
                 ),
@@ -303,12 +260,11 @@ class _SavePageState extends State<SavePage> {
                     }
                     Navigator.of(context).pop();
                   },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: brandGreen,
+                  style: ElevatedButton.styleFrom(backgroundColor: brandGreen),
+                  child: Text(
+                    "Save",
+                    style: kTextTheme.bodyMedium?.copyWith(color: primaryText),
                   ),
-                  child: Text("Save",
-                      style:
-                          kTextTheme.bodyMedium?.copyWith(color: primaryText)),
                 ),
               ],
             ),

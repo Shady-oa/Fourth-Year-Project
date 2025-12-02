@@ -2,8 +2,8 @@ import 'package:final_project/Constants/colors.dart';
 import 'package:final_project/Constants/typograpy.dart';
 import 'package:flutter/material.dart';
 
-class SavingsPage extends StatelessWidget {
-  const SavingsPage({super.key});
+class Expenses extends StatelessWidget {
+  const Expenses({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -19,10 +19,7 @@ class SavingsPage extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   const Icon(Icons.arrow_back, color: primaryText),
-                  Text(
-                    "Savings",
-                    style: kTextTheme.headlineSmall,
-                  ),
+                  Text("Savings", style: kTextTheme.headlineSmall),
                   const Icon(Icons.notifications_none, color: primaryText),
                 ],
               ),
@@ -37,10 +34,7 @@ class SavingsPage extends StatelessWidget {
                     children: [
                       Text("Total Balance", style: kTextTheme.bodyLarge),
                       const SizedBox(height: 4),
-                      Text(
-                        "\$7,783.00",
-                        style: kTextTheme.headlineMedium,
-                      ),
+                      Text("\$7,783.00", style: kTextTheme.headlineMedium),
                     ],
                   ),
                   Column(
@@ -50,8 +44,9 @@ class SavingsPage extends StatelessWidget {
                       const SizedBox(height: 4),
                       Text(
                         "-\$1,187.40",
-                        style: kTextTheme.headlineMedium
-                            ?.copyWith(color: Colors.blue),
+                        style: kTextTheme.headlineMedium?.copyWith(
+                          color: Colors.blue,
+                        ),
                       ),
                     ],
                   ),
@@ -94,7 +89,9 @@ class SavingsPage extends StatelessWidget {
                       borderRadius: BorderRadius.circular(20),
                     ),
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 40, vertical: 12),
+                      horizontal: 40,
+                      vertical: 12,
+                    ),
                   ),
                   onPressed: () {},
                   child: Text(
@@ -153,10 +150,7 @@ class TravelSavingsPage extends StatelessWidget {
                     onTap: () => Navigator.pop(context),
                     child: const Icon(Icons.arrow_back, color: primaryText),
                   ),
-                  Text(
-                    "Travel",
-                    style: kTextTheme.headlineSmall,
-                  ),
+                  Text("Travel", style: kTextTheme.headlineSmall),
                   const Icon(Icons.notifications_none, color: primaryText),
                 ],
               ),
@@ -171,10 +165,7 @@ class TravelSavingsPage extends StatelessWidget {
                     children: [
                       Text("Goal", style: kTextTheme.bodyLarge),
                       const SizedBox(height: 4),
-                      Text(
-                        "\$1,962.93",
-                        style: kTextTheme.headlineMedium,
-                      ),
+                      Text("\$1,962.93", style: kTextTheme.headlineMedium),
                     ],
                   ),
                   Column(
@@ -184,8 +175,9 @@ class TravelSavingsPage extends StatelessWidget {
                       const SizedBox(height: 4),
                       Text(
                         "\$653.31",
-                        style:
-                            kTextTheme.headlineMedium?.copyWith(color: brandGreen),
+                        style: kTextTheme.headlineMedium?.copyWith(
+                          color: brandGreen,
+                        ),
                       ),
                     ],
                   ),
@@ -216,34 +208,38 @@ class TravelSavingsPage extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 10),
-                  Text(
-                    "\$1,962.93",
-                    style: kTextTheme.bodyMedium,
-                  ),
+                  Text("\$1,962.93", style: kTextTheme.bodyMedium),
                 ],
               ),
               const SizedBox(height: 10),
               Text(
                 "30% Of Your Expenses, Looks Good.",
-                style: kTextTheme.bodyMedium
-                    ?.copyWith(color: primaryText.withOpacity(0.7)),
+                style: kTextTheme.bodyMedium?.copyWith(
+                  color: primaryText.withOpacity(0.7),
+                ),
               ),
               const SizedBox(height: 20),
 
               // Transaction List
-              Text(
-                "April",
-                style: kTextTheme.titleLarge,
-              ),
+              Text("April", style: kTextTheme.titleLarge),
               Expanded(
                 child: ListView(
                   children: [
                     transactionItem(
-                        "Travel Deposit", "19:56 - April 30", "\$217.77"),
+                      "Travel Deposit",
+                      "19:56 - April 30",
+                      "\$217.77",
+                    ),
                     transactionItem(
-                        "Travel Deposit", "17:42 - April 14", "\$217.77"),
+                      "Travel Deposit",
+                      "17:42 - April 14",
+                      "\$217.77",
+                    ),
                     transactionItem(
-                        "Travel Deposit", "12:30 - April 02", "\$217.77"),
+                      "Travel Deposit",
+                      "12:30 - April 02",
+                      "\$217.77",
+                    ),
                   ],
                 ),
               ),
@@ -258,7 +254,9 @@ class TravelSavingsPage extends StatelessWidget {
                       borderRadius: BorderRadius.circular(20),
                     ),
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 40, vertical: 12),
+                      horizontal: 40,
+                      vertical: 12,
+                    ),
                   ),
                   onPressed: () {},
                   child: Text(
@@ -288,23 +286,18 @@ class TravelSavingsPage extends StatelessWidget {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    title,
-                    style: kTextTheme.bodyLarge,
-                  ),
+                  Text(title, style: kTextTheme.bodyLarge),
                   Text(
                     date,
-                    style: kTextTheme.bodySmall
-                        ?.copyWith(color: primaryText.withOpacity(0.7)),
+                    style: kTextTheme.bodySmall?.copyWith(
+                      color: primaryText.withOpacity(0.7),
+                    ),
                   ),
                 ],
               ),
             ],
           ),
-          Text(
-            amount,
-            style: kTextTheme.bodyLarge,
-          ),
+          Text(amount, style: kTextTheme.bodyLarge),
         ],
       ),
     );

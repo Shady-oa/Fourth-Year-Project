@@ -1,7 +1,6 @@
 import 'package:final_project/Constants/colors.dart';
-import 'package:final_project/Constants/spacing.dart';
 import 'package:final_project/Constants/typograpy.dart';
-import 'package:final_project/transaction.dart';
+import 'package:final_project/Primary_Screens/notifications.dart';
 import 'package:flutter/material.dart';
 
 class HomePage extends StatelessWidget {
@@ -28,21 +27,24 @@ class HomePage extends StatelessWidget {
                           'Hi, Welcome Back',
                           style: kTextTheme.headlineSmall,
                         ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Good Morning',
-                          style: kTextTheme.bodyLarge,
-                        ),
+
+                        Text('Good Morning', style: kTextTheme.bodyLarge),
                       ],
                     ),
                     const Spacer(),
-                    const CircleAvatar(
-                      radius: 15,
-                      backgroundColor: primaryText,
-                      child: Icon(
-                        Icons.notifications_outlined,
-                        color: primaryBg,
+                    IconButton(
+                      icon: const Icon(
+                        Icons.circle_notifications_rounded,
+                        size: 30,
+                        color: primaryText,
                       ),
+                      onPressed: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => const Notifications(),
+                          ),
+                        );
+                      },
                     ),
                   ],
                 ),
@@ -55,27 +57,19 @@ class HomePage extends StatelessWidget {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          'Total Balance',
-                          style: kTextTheme.bodyMedium,
-                        ),
-                        Text(
-                          '\$7,783.00',
-                          style: kTextTheme.headlineMedium,
-                        ),
+                        Text('Total Balance', style: kTextTheme.bodyMedium),
+                        Text('\$7,783.00', style: kTextTheme.headlineMedium),
                       ],
                     ),
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
-                        Text(
-                          'Total Expense',
-                          style: kTextTheme.bodyMedium,
-                        ),
+                        Text('Total Expense', style: kTextTheme.bodyMedium),
                         Text(
                           '-\$1,187.40',
-                          style: kTextTheme.headlineMedium
-                              ?.copyWith(color: Colors.blue),
+                          style: kTextTheme.headlineMedium?.copyWith(
+                            color: Colors.blue,
+                          ),
                         ),
                       ],
                     ),
@@ -88,15 +82,13 @@ class HomePage extends StatelessWidget {
                       child: LinearProgressIndicator(
                         value: 0.3,
                         backgroundColor: primaryText.withOpacity(0.2),
-                        valueColor:
-                            const AlwaysStoppedAnimation<Color>(brandGreen),
+                        valueColor: const AlwaysStoppedAnimation<Color>(
+                          brandGreen,
+                        ),
                       ),
                     ),
                     const SizedBox(width: 10),
-                    Text(
-                      '\$20,000.00',
-                      style: kTextTheme.bodyMedium,
-                    ),
+                    Text('\$20,000.00', style: kTextTheme.bodyMedium),
                   ],
                 ),
                 const SizedBox(height: 10),
@@ -148,8 +140,9 @@ class HomePage extends StatelessWidget {
                                 const SizedBox(height: 10),
                                 Text(
                                   'Savings On Goals',
-                                  style: kTextTheme.bodyMedium
-                                      ?.copyWith(color: primaryText),
+                                  style: kTextTheme.bodyMedium?.copyWith(
+                                    color: primaryText,
+                                  ),
                                   textAlign: TextAlign.center,
                                 ),
                               ],
@@ -174,24 +167,28 @@ class HomePage extends StatelessWidget {
                               children: [
                                 Text(
                                   'Revenue Last Week',
-                                  style: kTextTheme.bodyMedium
-                                      ?.copyWith(color: primaryText),
+                                  style: kTextTheme.bodyMedium?.copyWith(
+                                    color: primaryText,
+                                  ),
                                 ),
                                 Text(
                                   '\$4,000.00',
-                                  style: kTextTheme.bodyLarge
-                                      ?.copyWith(color: primaryText),
+                                  style: kTextTheme.bodyLarge?.copyWith(
+                                    color: primaryText,
+                                  ),
                                 ),
                                 const SizedBox(height: 5),
                                 Text(
                                   'Food Last Week',
-                                  style: kTextTheme.bodyMedium
-                                      ?.copyWith(color: primaryText),
+                                  style: kTextTheme.bodyMedium?.copyWith(
+                                    color: primaryText,
+                                  ),
                                 ),
                                 Text(
                                   '-\$100.00',
-                                  style: kTextTheme.bodyLarge
-                                      ?.copyWith(color: Colors.blue),
+                                  style: kTextTheme.bodyLarge?.copyWith(
+                                    color: Colors.blue,
+                                  ),
                                 ),
                               ],
                             ),
@@ -217,8 +214,9 @@ class HomePage extends StatelessWidget {
                               child: TabBar(
                                 //isScrollable: true,
                                 dividerColor: Colors.transparent,
-                                labelStyle:
-                                    kTextTheme.bodyMedium?.copyWith(color: primaryText),
+                                labelStyle: kTextTheme.bodyMedium?.copyWith(
+                                  color: primaryText,
+                                ),
                                 unselectedLabelColor: primaryBg,
                                 indicator: BoxDecoration(
                                   borderRadius: BorderRadius.circular(12),
@@ -258,15 +256,6 @@ class HomePage extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(height: 20),
-                          const Expanded(
-                            child: TabBarView(
-                              children: [
-                                Transaction(),
-                                Transaction(),
-                                Transaction(),
-                              ],
-                            ),
-                          ),
                         ],
                       ),
                     ),
@@ -316,14 +305,20 @@ class TransactionItem extends StatelessWidget {
                 title,
                 style: kTextTheme.bodyLarge?.copyWith(color: primaryBg),
               ),
-              Text(date, style: kTextTheme.bodySmall?.copyWith(color: primaryBg.withOpacity(0.7))),
+              Text(
+                date,
+                style: kTextTheme.bodySmall?.copyWith(
+                  color: primaryBg.withOpacity(0.7),
+                ),
+              ),
             ],
           ),
           const Spacer(),
           Text(
             amount,
             style: kTextTheme.bodyLarge?.copyWith(
-                color: isIncome ? brandGreen : Colors.red),
+              color: isIncome ? brandGreen : Colors.red,
+            ),
           ),
         ],
       ),
