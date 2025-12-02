@@ -1,16 +1,14 @@
-// ignore_for_file: prefer_const_constructors
+// ignore_for_file: prefer_const_constructors, use_build_context_synchronously
 
 import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:final_project/Components/bottom_nav.dart';
 import 'package:final_project/Components/form_logo.dart';
 import 'package:final_project/Constants/colors.dart';
+import 'package:final_project/Constants/spacing.dart';
 import 'package:final_project/Constants/typograpy.dart';
 import 'package:final_project/Firebase/auth_services.dart';
-import 'package:final_project/Constants/spacing.dart';
-import 'package:final_project/Components/bottom_nav.dart';
-// import 'package:firebase/auth_services.dart';
-// import 'package:firebase/component/button.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:toasty_box/toast_enums.dart';
@@ -25,43 +23,31 @@ class SignUp extends StatefulWidget {
 }
 
 class _SignUpState extends State<SignUp> {
+  // 1. UPDATED: Removed first/last name and age controllers, added username controller
   final _emailcontroller = TextEditingController();
   final _passwordcontroller = TextEditingController();
   final _confirmpasswordcontroller = TextEditingController();
-  final _firstnamecontroller = TextEditingController();
-  final _lastnamecontroller = TextEditingController();
-  final _agecontroller = TextEditingController();
+  final _usernamecontroller = TextEditingController();
 
   final users = FirebaseFirestore.instance.collection('users');
 
   @override
   void dispose() {
-    // TODO: implement dispose
+    // 2. UPDATED: Dispose of only the active controllers
     _emailcontroller.dispose();
     _passwordcontroller.dispose();
     _confirmpasswordcontroller.dispose();
-    _firstnamecontroller.dispose();
-    _lastnamecontroller.dispose();
-    _agecontroller.dispose();
+    _usernamecontroller.dispose();
     super.dispose();
   }
 
+  // 3. UPDATED: Logic now checks for username and uses signup()
   HandleSignup() async {
-    if (_passwordcontroller.text.isNotEmpty &&
-        _confirmpasswordcontroller.text.isNotEmpty &&
-        _passwordcontroller.text.trim() ==
-            _confirmpasswordcontroller.text.trim()) {
-      await AuthService().SignUp(
-        _firstnamecontroller.text.trim(),
-        _lastnamecontroller.text.trim(),
-        _agecontroller.text.trim(),
-        _emailcontroller.text.trim(),
-        _passwordcontroller.text.trim(),
-      );
-    } else if (_agecontroller.text.isEmpty ||
-        _emailcontroller.text.isEmpty ||
-        _firstnamecontroller.text.isEmpty ||
-        _lastnamecontroller.text.isEmpty) {
+    if (_passwordcontroller.text.trim() ==
+        _confirmpasswordcontroller.text.trim()) {
+      await signup();
+    } else if (_usernamecontroller.text.isEmpty ||
+        _emailcontroller.text.isEmpty) {
       ToastService.showToast(
         context,
         backgroundColor: errorColor,
@@ -69,7 +55,7 @@ class _SignUpState extends State<SignUp> {
         expandedHeight: 80,
         isClosable: true,
         leading: Icon(Icons.error_outline),
-        message: 'fill in all details',
+        message: 'Fill in all details',
         length: ToastLength.medium,
         positionCurve: Curves.bounceInOut,
         messageStyle: kTextTheme.bodyLarge?.copyWith(color: primaryBg),
@@ -94,12 +80,29 @@ class _SignUpState extends State<SignUp> {
     }
   }
 
+  // 4. UPDATED: Call to addUserDetails is simpler
   Future signup() async {
     if (passwordConfirmed()) {
-      await FirebaseAuth.instance.createUserWithEmailAndPassword(
-        email: _emailcontroller.text.trim(),
-        password: _passwordcontroller.text.trim(),
-      );
+      try {
+        await FirebaseAuth.instance.createUserWithEmailAndPassword(
+          email: _emailcontroller.text.trim(),
+          password: _passwordcontroller.text.trim(),
+        );
+
+        // Add user details to Firestore
+        await addUserDetails(
+          _usernamecontroller.text.trim(),
+          _emailcontroller.text.trim(),
+        );
+      } on FirebaseAuthException catch (e) {
+        // Handle specific Firebase errors (e.g., weak password, email already in use)
+        ToastService.showToast(
+          context,
+          backgroundColor: errorColor,
+          message: e.message ?? 'An error occurred during sign up.',
+          length: ToastLength.medium,
+        );
+      }
     } else {
       showDialog(
         context: context,
@@ -126,41 +129,30 @@ class _SignUpState extends State<SignUp> {
         },
       );
     }
-
-    addUserDetails(
-      _firstnamecontroller.text.trim(),
-      _lastnamecontroller.text.trim(),
-      _emailcontroller.text.trim(),
-      int.parse(_agecontroller.text.trim()),
-    );
   }
 
-  Future addUserDetails(
-    String firstName,
-    String lastName,
-    String email,
-    int age,
-  ) async {
-    final user = FirebaseFirestore.instance.collection('users').doc();
-
-    await users.add({
-      'first name': firstName,
-      'last name': lastName,
-      'age': age,
-      'email': email,
-    });
+  // 5. UPDATED: Function signature and Firestore data structure
+  Future addUserDetails(String userName, String email) async {
+    // Use the user's UID as the document ID after successful authentication
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      await users.doc(user.uid).set({
+        'user name': userName,
+        'email': email,
+        'created_at': Timestamp.now(), // Helpful for tracking
+      });
+    }
   }
 
   bool passwordConfirmed() {
     if (_emailcontroller.text.isNotEmpty &&
         _confirmpasswordcontroller.text.isNotEmpty &&
         _passwordcontroller.text.isNotEmpty &&
+        _usernamecontroller.text.isNotEmpty && // Added username check
         _passwordcontroller.text.trim() ==
             _confirmpasswordcontroller.text.trim()) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) =>BottomNav()),
-      ); // '/homepage'
+      // Navigation is now handled inside signup() after successful addUserDetails
+      // We only return true here to proceed with the signup logic.
       return true;
     } else {
       return false;
@@ -191,8 +183,21 @@ class _SignUpState extends State<SignUp> {
                   children: [
                     formLogo,
 
+                    // 6. ADDED: Username Text Field
+                    TextField(
+                      controller: _usernamecontroller,
+                      decoration: InputDecoration(
+                        hintText: 'User Name',
+                        border: OutlineInputBorder(borderRadius: radiusMedium),
+                        fillColor: primaryText.withOpacity(0.1),
+                        filled: true,
+                      ),
+                    ),
+                    sizedBoxHeightSmall,
+
                     TextField(
                       controller: _emailcontroller,
+                      keyboardType: TextInputType.emailAddress,
                       decoration: InputDecoration(
                         hintText: 'Email',
                         border: OutlineInputBorder(borderRadius: radiusMedium),
@@ -252,7 +257,25 @@ class _SignUpState extends State<SignUp> {
                     GestureDetector(
                       onTap: () async {
                         try {
-                          await AuthService().signInWithGoogle();
+                          final userCredential = await AuthService()
+                              .signInWithGoogle();
+                          if (userCredential != null) {
+                            // Automatically add/update user details after Google sign-in
+                            await users.doc(userCredential.user!.uid).set({
+                              'user name':
+                                  userCredential.user!.displayName ??
+                                  'Google User',
+                              'email': userCredential.user!.email ?? '',
+                              'created_at': Timestamp.now(),
+                            }, SetOptions(merge: true));
+                          }
+
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => BottomNav(),
+                            ),
+                          );
                         } on NoGoogleAccountChoosenException {
                           return;
                         } catch (e) {
@@ -262,18 +285,13 @@ class _SignUpState extends State<SignUp> {
                               return AlertDialog(
                                 backgroundColor: errorColor,
                                 content: Text(
-                                  'Unknown error occured',
+                                  'Error: ${e.toString()}',
                                   style: kTextTheme.bodyMedium,
                                 ),
                               );
                             },
                           );
                         }
-
-                        Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(builder: (context) => BottomNav()),
-                        );
                       },
                       child: Container(
                         height: 50,
@@ -284,8 +302,9 @@ class _SignUpState extends State<SignUp> {
                           border: Border.all(color: primaryText),
                         ),
                         child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Image(image: AssetImage('assets/image/google.png')),
+                            Image.asset('assets/image/google.png', height: 24),
                             sizedBoxWidthSmall,
                             Text(
                               'Or Sign Up with Google',
@@ -295,8 +314,8 @@ class _SignUpState extends State<SignUp> {
                         ),
                       ),
                     ),
-                    sizedBoxWidthSmall,
 
+                    // Removed extra sizedBoxWidthSmall here
                     Padding(
                       padding: const EdgeInsets.symmetric(vertical: 20),
                       child: Row(

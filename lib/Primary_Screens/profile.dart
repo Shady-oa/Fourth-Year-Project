@@ -1,11 +1,12 @@
+import 'package:final_project/AuthScreens/change_pwd.dart';
 import 'package:final_project/AuthScreens/login.dart';
 import 'package:final_project/Constants/colors.dart';
+import 'package:final_project/Constants/spacing.dart';
 import 'package:final_project/Constants/typograpy.dart';
+import 'package:final_project/Primary_Screens/notifications.dart';
 import 'package:final_project/single_budget.dart';
 import 'package:flutter/material.dart';
 
-// 1. FIXED: Removed the required 'onToggleTheme' callback from the constructor.
-// It is now an independent page/widget.
 class Profile extends StatelessWidget {
   const Profile({super.key});
 
@@ -23,9 +24,8 @@ class _ProfileContent extends StatefulWidget {
 }
 
 class _ProfileContentState extends State<_ProfileContent> {
-  // State for switches (Notifications and Theme)
+  // State for switches
   bool _isDarkMode = false;
-  bool _isNotificationsEnabled = true;
 
   // Helper for building basic settings items
   Widget _buildSettingsItem({
@@ -56,7 +56,6 @@ class _ProfileContentState extends State<_ProfileContent> {
       title: 'Dark Mode',
       trailing: Switch(
         value: _isDarkMode,
-        // The onChanged function now performs the state update and "do-nothing" action
         onChanged: (bool value) {
           setState(() {
             _isDarkMode = value;
@@ -68,21 +67,17 @@ class _ProfileContentState extends State<_ProfileContent> {
     );
   }
 
-  // 4. REFACTOR: Created a separate widget for the Notifications toggle
-  Widget _buildNotificationsToggle() {
+  // 🔔 UPDATED: Notifications is now a navigable item to Notifications()
+  Widget _buildNotificationsItem(BuildContext context) {
     return _buildSettingsItem(
       icon: Icons.notifications_active,
       title: 'Notifications',
-      trailing: Switch(
-        value: _isNotificationsEnabled,
-        onChanged: (bool value) {
-          setState(() {
-            _isNotificationsEnabled = value;
-          });
-        },
-        activeColor: accentColor,
-      ),
-      onTap: () {}, // Do nothing on list tile tap
+      onTap: () {
+        // NAVIGATING TO Notifications()
+        Navigator.of(
+          context,
+        ).push(MaterialPageRoute(builder: (context) => const Notifications()));
+      },
     );
   }
 
@@ -107,10 +102,7 @@ class _ProfileContentState extends State<_ProfileContent> {
                 children: [
                   CircleAvatar(
                     radius: 50,
-                    backgroundImage: const AssetImage(
-                      "assets/images/profile.png",
-                    ),
-                    backgroundColor: Colors.grey[200],
+                    backgroundImage: const AssetImage("assets/images/coin.jpg"),
                   ),
                   const SizedBox(height: 16),
                   Text('Shady_o.a', style: kTextTheme.headlineMedium),
@@ -133,12 +125,9 @@ class _ProfileContentState extends State<_ProfileContent> {
                       );
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: primaryBg,
-                      // The foreground color should contrast with primaryBg
-                      foregroundColor: primaryBg,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(30),
-                      ),
+                      backgroundColor: brandGreen,
+                      foregroundColor: primaryText,
+                      shape: RoundedRectangleBorder(borderRadius: radiusSmall),
                       padding: const EdgeInsets.symmetric(
                         horizontal: 40,
                         vertical: 14,
@@ -153,8 +142,6 @@ class _ProfileContentState extends State<_ProfileContent> {
               ),
             ),
 
-            const SizedBox(height: 24),
-
             // Settings Section
             Container(
               margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -167,7 +154,7 @@ class _ProfileContentState extends State<_ProfileContent> {
                 children: [
                   // Section Header
                   Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
+                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 0),
                     child: Text('Settings', style: kTextTheme.headlineSmall),
                   ),
                   const Divider(height: 1, indent: 20, endIndent: 20),
@@ -176,19 +163,19 @@ class _ProfileContentState extends State<_ProfileContent> {
                   _buildDarkModeToggle(),
                   const Divider(height: 1, indent: 20, endIndent: 20),
 
-                  // 🔔 Notifications Toggle
-                  _buildNotificationsToggle(),
+                  // 🔔 Notifications (Now navigates to Notifications())
+                  _buildNotificationsItem(context),
                   const Divider(height: 1, indent: 20, endIndent: 20),
 
-                  // 🔐 Privacy (Extracted from Account ExpansionTile)
-
-                  // 🔒 Security (Extracted from Account ExpansionTile)
+                  // 🔒 Change Password
                   _buildSettingsItem(
-                    icon: Icons.security,
-                    title: 'Security',
+                    icon: Icons.lock_rounded,
+                    title: 'Change Password',
                     onTap: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Security Settings')),
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => const ChangePasswordPage(),
+                        ),
                       );
                     },
                   ),
@@ -196,22 +183,27 @@ class _ProfileContentState extends State<_ProfileContent> {
 
                   // ℹ️ About
                   _buildSettingsItem(
-                    icon: Icons.info_outline,
-                    title: 'About',
+                    icon: Icons.help_rounded,
+                    title: 'About Penny Wise',
                     onTap: () {
                       showAboutDialog(
                         context: context,
-                        applicationName: "penny wise",
-                        applicationVersion: "1.0.0",
-                        applicationLegalese: "© 2025 Magari Konnect",
+                        applicationName: 'Penny Wise',
+                        applicationVersion: '1.0.0',
+                        children: [
+                          Text(
+                            'Penny Wise is a personal finance management app designed to help you track your expenses, manage budgets, and achieve your financial goals.',
+                            style: kTextTheme.bodyMedium,
+                          ),
+                        ],
                       );
                     },
                   ),
                   const Divider(height: 1, indent: 20, endIndent: 20),
 
-                  // 🚪 Logout (Extracted from Account ExpansionTile)
+                  // 🚪 Logout
                   _buildSettingsItem(
-                    icon: Icons.logout,
+                    icon: Icons.logout_rounded,
                     title: 'Logout',
                     onTap: () {
                       Navigator.pushReplacement(

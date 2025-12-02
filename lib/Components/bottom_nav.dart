@@ -60,7 +60,7 @@ class _BottomNavState extends State<BottomNav> {
               iconSize: 30,
             ),
             GButton(
-              icon: Icons.auto_graph_rounded,
+              icon: Icons.auto_awesome_rounded,
               text: 'Penny AI',
               iconSize: 30,
             ),

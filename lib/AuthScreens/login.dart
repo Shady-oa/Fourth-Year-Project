@@ -1,9 +1,10 @@
+import 'package:final_project/AuthScreens/forgot_pwd_page.dart';
+import 'package:final_project/Components/bottom_nav.dart';
 import 'package:final_project/Components/form_logo.dart';
 import 'package:final_project/Constants/colors.dart';
+import 'package:final_project/Constants/spacing.dart';
 import 'package:final_project/Constants/typograpy.dart';
 import 'package:final_project/Firebase/auth_services.dart';
-import 'package:final_project/Constants/spacing.dart';
-import 'package:final_project/Components/bottom_nav.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:toasty_box/toast_enums.dart';
@@ -131,8 +132,13 @@ class _LoginState extends State<Login> {
                     Align(
                       alignment: Alignment.centerRight,
                       child: GestureDetector(
-                        onTap: () =>
-                            Navigator.pushNamed(context, '/forgotpassword'),
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) => const ForgotPassword(),
+                            ),
+                          );
+                        },
                         child: Text(
                           'Forgot password?',
                           style: kTextTheme.bodyMedium?.copyWith(
