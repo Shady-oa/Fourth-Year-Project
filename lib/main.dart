@@ -1,17 +1,15 @@
-import 'package:final_project/auth_page.dart';
+import 'package:final_project/Constants/colors.dart';
+import 'package:final_project/Constants/typograpy.dart';
+import 'package:final_project/Firebase/auth_page.dart';
 import 'package:final_project/balance.dart';
-import 'package:final_project/bottomnav.dart';
-import 'package:final_project/constants.dart';
-import 'package:final_project/forgot_pwd_page.dart';
-import 'package:final_project/hme.dart';
-import 'package:final_project/home.dart';
+import 'package:final_project/Screens/forgot_pwd_page.dart';
+import 'package:final_project/Screens/home.dart';
 import 'package:final_project/income.dart';
-import 'package:final_project/login.dart';
+import 'package:final_project/Screens/login.dart';
 import 'package:final_project/main_page.dart';
-import 'package:final_project/profile.dart';
 import 'package:final_project/single_budget.dart';
 import 'package:final_project/single_saving.dart';
-import 'package:final_project/splash.dart';
+import 'package:final_project/Screens/splash.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 
@@ -44,12 +42,10 @@ class MyApp extends StatelessWidget {
         '/homepage': (context) => HomePage(), //init
         '/forgotpassword': (context) => ForgotPasswordPage(),
         '/auth': (context) => AuthPage(), //yhy
-        '/home': (context) => Home(),
         '/singlebudget': (context) => SingleBudget(),
         '/singlesaving': (context) => SingleSaving(),
         '/balance': (context) => BalancePage(),
         '/login': (context) => Login(showSignupPage: () => true),
-        '/navigation': (context) => BottomNavigation(),
         '/mainpage': (context) => MainPage(),
         '/income': (context) => Income(),
       },

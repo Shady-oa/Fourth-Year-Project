@@ -3,9 +3,12 @@
 import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:final_project/auth_services.dart';
-import 'package:final_project/constants.dart';
-import 'package:final_project/start.dart';
+import 'package:final_project/Components/form_logo.dart';
+import 'package:final_project/Constants/colors.dart';
+import 'package:final_project/Constants/typograpy.dart';
+import 'package:final_project/Firebase/auth_services.dart';
+import 'package:final_project/Constants/spacing.dart';
+import 'package:final_project/Components/bottom_nav.dart';
 // import 'package:firebase/auth_services.dart';
 // import 'package:firebase/component/button.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -156,7 +159,7 @@ class _SignUpState extends State<SignUp> {
             _confirmpasswordcontroller.text.trim()) {
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => MainLoader()),
+        MaterialPageRoute(builder: (context) =>BottomNav()),
       ); // '/homepage'
       return true;
     } else {
@@ -269,7 +272,7 @@ class _SignUpState extends State<SignUp> {
 
                         Navigator.pushReplacement(
                           context,
-                          MaterialPageRoute(builder: (context) => MainLoader()),
+                          MaterialPageRoute(builder: (context) => BottomNav()),
                         );
                       },
                       child: Container(

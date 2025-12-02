@@ -1,6 +1,8 @@
 import 'dart:async';
 
-import 'package:final_project/constants.dart';
+import 'package:final_project/Constants/colors.dart';
+import 'package:final_project/Constants/spacing.dart';
+import 'package:final_project/Constants/typograpy.dart';
 import 'package:final_project/main_page.dart';
 // import 'package:firebase/main_page.dart';
 import 'package:flutter/material.dart';
@@ -49,7 +51,7 @@ class _SplashScreenState extends State<SplashScreen> {
 
             Text(
               "Wise Choices For Financial Freedom",
-              style: kTextTheme.titleMedium?.copyWith(color: primaryText,),
+              style: kTextTheme.titleMedium?.copyWith(color: primaryText),
             ),
           ],
         ),

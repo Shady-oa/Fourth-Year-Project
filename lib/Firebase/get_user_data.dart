@@ -1,9 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:final_project/constants.dart';
+import 'package:final_project/Constants/typograpy.dart';
 import 'package:flutter/material.dart';
 
 class GetUserData extends StatelessWidget {
-  String docId;
+  final String docId;
   GetUserData({super.key, required this.docId});
 
   @override

@@ -1,8 +1,11 @@
 // ignore_for_file: prefer_const_constructors
 
-import 'package:final_project/auth_services.dart';
-import 'package:final_project/constants.dart';
-import 'package:final_project/start.dart';
+import 'package:final_project/Components/form_logo.dart';
+import 'package:final_project/Constants/colors.dart';
+import 'package:final_project/Constants/typograpy.dart';
+import 'package:final_project/Firebase/auth_services.dart';
+import 'package:final_project/Constants/spacing.dart';
+import 'package:final_project/Components/bottom_nav.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
@@ -175,7 +178,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                       Navigator.pushReplacement(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => const MainLoader(),
+                          builder: (context) => const BottomNav(),
                         ),
                       );
                     },
