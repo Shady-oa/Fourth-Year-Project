@@ -103,109 +103,111 @@ class _ForgotPasswordState extends State<ForgotPassword> {
                 color: primaryBg,
                 borderRadius: topOnly,
               ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.start,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  formLogo,
-
-                  sizedBoxHeightLarge,
-                  Text(
-                    'Reset Your Password?',
-                    style: kTextTheme.headlineMedium,
-                    textAlign: TextAlign.center,
-                  ),
-                  sizedBoxHeightSmall,
-                  Text(
-                    'Enter your email to receive a password reset link.',
-                    style: kTextTheme.bodyLarge,
-                    textAlign: TextAlign.left,
-                  ),
-                  sizedBoxHeightSmall,
-                  TextField(
-                    controller: _emailController,
-                    decoration: InputDecoration(
-                      hintText: 'Email',
-                      border: OutlineInputBorder(borderRadius: radiusMedium),
-                      fillColor: primaryBg.withOpacity(0.8),
-                      filled: true,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    formLogo,
+                
+                    sizedBoxHeightLarge,
+                    Text(
+                      'Reset Your Password?',
+                      style: kTextTheme.headlineMedium,
+                      textAlign: TextAlign.center,
                     ),
-                  ),
-
-                  sizedBoxHeightLarge,
-                  SizedBox(
-                    width: double.infinity,
-                    height: 50,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: brandGreen,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: radiusMedium,
-                        ),
-                      ),
-                      onPressed: passwordReset,
-                      child: Text(
-                        'Send Reset Link',
-                        style: kTextTheme.titleLarge?.copyWith(
-                          color: primaryText,
-                        ),
+                    sizedBoxHeightSmall,
+                    Text(
+                      'Enter your email to receive a password reset link.',
+                      style: kTextTheme.bodyLarge,
+                      textAlign: TextAlign.left,
+                    ),
+                    sizedBoxHeightSmall,
+                    TextField(
+                      controller: _emailController,
+                      decoration: InputDecoration(
+                        hintText: 'Email',
+                        border: OutlineInputBorder(borderRadius: radiusMedium),
+                        fillColor: primaryBg.withOpacity(0.8),
+                        filled: true,
                       ),
                     ),
-                  ),
-                  sizedBoxHeightLarge,
-                  GestureDetector(
-                    onTap: () async {
-                      try {
-                        await AuthService().signInWithGoogle();
-                      } on NoGoogleAccountChoosenException {
-                        return;
-                      } catch (e) {
-                        if (!context.mounted) return;
-                        showDialog(
-                          context: context,
-                          builder: (context) {
-                            return AlertDialog(
-                              backgroundColor: errorColor,
-                              content: Text(
-                                'Unknown error occurred',
-                                style: kTextTheme.bodyMedium,
-                              ),
-                            );
-                          },
-                        );
-                      }
-
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const BottomNav(),
-                        ),
-                      );
-                    },
-                    child: Container(
-                      height: 50,
+                
+                    sizedBoxHeightLarge,
+                    SizedBox(
                       width: double.infinity,
-                      decoration: BoxDecoration(
-                        color: primaryBg,
-                        borderRadius: radiusMedium,
-                        border: Border.all(color: primaryText),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Image(
-                            image: AssetImage('assets/image/google.png'),
+                      height: 50,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: brandGreen,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: radiusMedium,
                           ),
-                          sizedBoxWidthSmall,
-                          Text(
-                            'Or Sign in with Google',
-                            style: kTextTheme.bodyLarge,
+                        ),
+                        onPressed: passwordReset,
+                        child: Text(
+                          'Send Reset Link',
+                          style: kTextTheme.titleLarge?.copyWith(
+                            color: primaryText,
                           ),
-                        ],
+                        ),
                       ),
                     ),
-                  ),
-                ],
+                    sizedBoxHeightLarge,
+                    GestureDetector(
+                      onTap: () async {
+                        try {
+                          await AuthService().signInWithGoogle();
+                        } on NoGoogleAccountChoosenException {
+                          return;
+                        } catch (e) {
+                          if (!context.mounted) return;
+                          showDialog(
+                            context: context,
+                            builder: (context) {
+                              return AlertDialog(
+                                backgroundColor: errorColor,
+                                content: Text(
+                                  'Unknown error occurred',
+                                  style: kTextTheme.bodyMedium,
+                                ),
+                              );
+                            },
+                          );
+                        }
+                
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const BottomNav(),
+                          ),
+                        );
+                      },
+                      child: Container(
+                        height: 50,
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          color: primaryBg,
+                          borderRadius: radiusMedium,
+                          border: Border.all(color: primaryText),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Image(
+                              image: AssetImage('assets/image/google.png'),
+                            ),
+                            sizedBoxWidthSmall,
+                            Text(
+                              'Or Sign in with Google',
+                              style: kTextTheme.bodyLarge,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),

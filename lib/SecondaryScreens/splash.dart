@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:final_project/Constants/colors.dart';
-import 'package:final_project/Constants/spacing.dart';
 import 'package:final_project/Constants/typograpy.dart';
 import 'package:final_project/Firebase/main_page.dart';
 // import 'package:firebase/main_page.dart';
