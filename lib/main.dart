@@ -22,7 +22,7 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return MaterialApp(//end
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         scaffoldBackgroundColor: primaryBg,
