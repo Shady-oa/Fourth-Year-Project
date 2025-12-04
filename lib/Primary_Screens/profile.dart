@@ -1,10 +1,9 @@
 import 'package:final_project/AuthScreens/change_pwd.dart';
 import 'package:final_project/AuthScreens/login.dart';
+import 'package:final_project/Components/Custom_header.dart';
 import 'package:final_project/Constants/colors.dart';
 import 'package:final_project/Constants/spacing.dart';
 import 'package:final_project/Constants/typograpy.dart';
-import 'package:final_project/Primary_Screens/notifications.dart';
-import 'package:final_project/single_budget.dart';
 import 'package:flutter/material.dart';
 
 class Profile extends StatelessWidget {
@@ -67,105 +66,48 @@ class _ProfileContentState extends State<_ProfileContent> {
     );
   }
 
-  // 🔔 UPDATED: Notifications is now a navigable item to Notifications()
-  Widget _buildNotificationsItem(BuildContext context) {
-    return _buildSettingsItem(
-      icon: Icons.notifications_active,
-      title: 'Notifications',
-      onTap: () {
-        // NAVIGATING TO Notifications()
-        Navigator.of(
-          context,
-        ).push(MaterialPageRoute(builder: (context) => const Notifications()));
-      },
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        backgroundColor: primaryBg,
+        title: CustomHeader(headerName: "Profile"),
+      ),
       backgroundColor: primaryBg,
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            const SizedBox(height: 20),
-
-            // Profile Header Section
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 16),
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: primaryBg,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Column(
+      body: Padding(
+        padding: paddingAllMedium,
+        child: SingleChildScrollView(
+          child: Column(
+            children: [
+              Row(
                 children: [
                   CircleAvatar(
                     radius: 50,
-                    backgroundImage: const AssetImage("assets/image/icon 2.png"),
+                    backgroundImage: const AssetImage(
+                      "assets/image/icon 2.png",
+                    ),
                   ),
-                  const SizedBox(height: 16),
-                  Text('Shady_o.a', style: kTextTheme.headlineMedium),
-                  const SizedBox(height: 4),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                  const SizedBox(width: 16),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(Icons.location_on, size: 16, color: primaryText),
-                      const SizedBox(width: 4),
+                      Text('Shady_o.a', style: kTextTheme.headlineMedium),
+                      const SizedBox(height: 4),
                       Text('Kisii, Kenya', style: kTextTheme.bodySmall),
                     ],
                   ),
-
-                  const SizedBox(height: 24),
-                  ElevatedButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => SingleBudget()),
-                      );
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: brandGreen,
-                      foregroundColor: primaryText,
-                      shape: RoundedRectangleBorder(borderRadius: radiusSmall),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 40,
-                        vertical: 14,
-                      ),
-                    ),
-                    child: Text(
-                      'Savings Analysis',
-                      style: kTextTheme.bodyLarge,
-                    ),
-                  ),
                 ],
               ),
-            ),
-
-            // Settings Section
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 16),
-              decoration: BoxDecoration(
-                color: primaryBg,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Column(
+              SizedBox(height: 20),
+              Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Section Header
                   Padding(
                     padding: const EdgeInsets.fromLTRB(20, 0, 20, 0),
                     child: Text('Settings', style: kTextTheme.headlineSmall),
                   ),
-                  const Divider(height: 1, indent: 20, endIndent: 20),
 
-                  // Dark Mode Toggle
                   _buildDarkModeToggle(),
-                  const Divider(height: 1, indent: 20, endIndent: 20),
-
-                  // 🔔 Notifications (Now navigates to Notifications())
-                  _buildNotificationsItem(context),
-                  const Divider(height: 1, indent: 20, endIndent: 20),
 
                   // 🔒 Change Password
                   _buildSettingsItem(
@@ -179,7 +121,6 @@ class _ProfileContentState extends State<_ProfileContent> {
                       );
                     },
                   ),
-                  const Divider(height: 1, indent: 20, endIndent: 20),
 
                   // ℹ️ About
                   _buildSettingsItem(
@@ -199,7 +140,6 @@ class _ProfileContentState extends State<_ProfileContent> {
                       );
                     },
                   ),
-                  const Divider(height: 1, indent: 20, endIndent: 20),
 
                   // 🚪 Logout
                   _buildSettingsItem(
@@ -209,11 +149,7 @@ class _ProfileContentState extends State<_ProfileContent> {
                       Navigator.pushReplacement(
                         context,
                         MaterialPageRoute(
-                          builder: (_) => Login(
-                            showSignupPage: () {
-                              // "Do nothing" placeholder function
-                            },
-                          ),
+                          builder: (_) => Login(showSignupPage: () {}),
                         ),
                       );
                     },
@@ -221,10 +157,8 @@ class _ProfileContentState extends State<_ProfileContent> {
                   const SizedBox(height: 10),
                 ],
               ),
-            ),
-
-            const SizedBox(height: 24),
-          ],
+            ],
+          ),
         ),
       ),
     );

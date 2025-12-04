@@ -1,4 +1,5 @@
 import 'package:final_project/Components/Custom_header.dart';
+import 'package:final_project/Components/back_button.dart';
 import 'package:final_project/Constants/colors.dart';
 import 'package:flutter/material.dart';
 
@@ -15,12 +16,7 @@ class _IncomeState extends State<Income> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: primaryBg,
-        leading: IconButton(
-          onPressed: () {
-            Navigator.of(context).pop();
-          },
-          icon: Icon(Icons.arrow_back_ios, color: primaryText),
-        ),
+        leading: CustomBackButton(),
         title: CustomHeader(headerName: "Income"),
       ),
       body: SafeArea(

@@ -38,12 +38,11 @@ class _BottomNavState extends State<BottomNav> {
       body: pages[current_index],
       bottomNavigationBar: Container(
         padding: paddingAllTiny,
-        color: primaryText,
         child: GNav(
-          backgroundColor: primaryText,
-          color: primaryBg,
-          activeColor: primaryText,
-          tabBackgroundColor: primaryBg,
+          backgroundColor: primaryBg,
+          color: primaryText,
+          activeColor: primaryBg,
+          tabBackgroundColor: primaryText,
           gap: 8,
           onTabChange: select,
           padding: paddingAllSmall,

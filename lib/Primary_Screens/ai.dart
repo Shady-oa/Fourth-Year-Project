@@ -1,4 +1,6 @@
+import 'package:final_project/Components/Custom_header.dart';
 import 'package:final_project/Constants/colors.dart';
+import 'package:final_project/Constants/spacing.dart';
 import 'package:final_project/Constants/typograpy.dart';
 import 'package:flutter/material.dart';
 
@@ -131,20 +133,12 @@ class _AiPageState extends State<AiPage> {
           Expanded(
             child: TextField(
               controller: _controller,
-              style: kTextTheme.bodyLarge,
+              obscureText: true,
               decoration: InputDecoration(
-                hintText: "Ask Penny AI a finance question...",
-                hintStyle: kTextTheme.bodyLarge!.copyWith(color: Colors.grey),
+                hintText: 'Ask penny AI about your finances...',
+                border: const OutlineInputBorder(borderRadius: radiusLarge),
+                fillColor: primaryText.withOpacity(0.1),
                 filled: true,
-                fillColor: brandGreen.withOpacity(0.1),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(30.0),
-                  borderSide: BorderSide.none,
-                ),
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 20.0,
-                  vertical: 10.0,
-                ),
               ),
               onSubmitted: (_) => _handleSend(),
             ),
@@ -152,7 +146,7 @@ class _AiPageState extends State<AiPage> {
           const SizedBox(width: 8),
           FloatingActionButton(
             onPressed: _handleSend,
-            backgroundColor: accentColor,
+            backgroundColor: primaryText,
             elevation: 0,
             mini: true,
             child: const Icon(Icons.send, color: Colors.white),
@@ -165,27 +159,11 @@ class _AiPageState extends State<AiPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: primaryBg,
       appBar: AppBar(
         backgroundColor: primaryBg,
-        surfaceTintColor: primaryBg,
-        elevation: 0,
-        centerTitle: true,
-        title: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.auto_awesome, color: brandGreen),
-            const SizedBox(width: 8),
-            Text(
-              'Penny AI',
-              style: kTextTheme.headlineMedium!.copyWith(
-                color: primaryText,
-                fontSize: 22,
-              ),
-            ),
-          ],
-        ),
+        title: CustomHeader(headerName: "Penny AI"),
       ),
+      backgroundColor: primaryBg,
       body: Column(
         children: <Widget>[
           // Chat Messages List
@@ -199,7 +177,6 @@ class _AiPageState extends State<AiPage> {
           ),
 
           // Divider for visual separation
-          const Divider(height: 1.0),
 
           // Input Widget
           _buildInputWidget(),

@@ -20,6 +20,10 @@ class _TransactionsState extends State<Transactions> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        backgroundColor: primaryBg,
+        title: CustomHeader(headerName: "Transactions"),
+      ),
       backgroundColor: primaryBg,
       body: SafeArea(
         child: Column(
@@ -31,8 +35,6 @@ class _TransactionsState extends State<Transactions> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  CustomHeader(headerName: "Transactions"),
-
                   // Balance and Expense Section
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,

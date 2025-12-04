@@ -1,6 +1,8 @@
 import 'package:final_project/Components/Custom_header.dart';
 import 'package:final_project/Constants/colors.dart';
+import 'package:final_project/Constants/spacing.dart';
 import 'package:final_project/Constants/typograpy.dart';
+import 'package:final_project/single_budget.dart';
 import 'package:flutter/material.dart';
 
 class SavingsPage extends StatefulWidget {
@@ -31,6 +33,10 @@ class _SavingsPageState extends State<SavingsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        backgroundColor: primaryBg,
+        title: CustomHeader(headerName: "Savings"),
+      ),
       backgroundColor: primaryBg,
       body: SafeArea(
         child: Column(
@@ -39,8 +45,6 @@ class _SavingsPageState extends State<SavingsPage> {
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
               child: Column(
                 children: [
-                  CustomHeader(headerName: "Savings"),
-
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -104,7 +108,28 @@ class _SavingsPageState extends State<SavingsPage> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 24),
+                  ElevatedButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => SingleBudget()),
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: brandGreen,
+                      foregroundColor: primaryText,
+                      shape: RoundedRectangleBorder(borderRadius: radiusSmall),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 40,
+                        vertical: 14,
+                      ),
+                    ),
+                    child: Text(
+                      'Savings Analysis',
+                      style: kTextTheme.bodyLarge,
+                    ),
+                  ),
                 ],
               ),
             ),
