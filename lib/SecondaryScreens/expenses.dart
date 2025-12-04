@@ -1,3 +1,4 @@
+import 'package:final_project/Components/Custom_header.dart';
 import 'package:final_project/Constants/colors.dart';
 import 'package:final_project/Constants/typograpy.dart';
 import 'package:flutter/material.dart';
@@ -8,6 +9,16 @@ class Expenses extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        backgroundColor: primaryBg,
+        leading: IconButton(
+          onPressed: () {
+            Navigator.of(context).pop();
+          },
+          icon: Icon(Icons.arrow_back_ios, color: primaryText),
+        ),
+        title: CustomHeader(headerName: "Expenses"),
+      ),
       backgroundColor: primaryBg,
       body: SafeArea(
         child: Padding(
@@ -15,16 +26,6 @@ class Expenses extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Icon(Icons.arrow_back, color: primaryText),
-                  Text("Savings", style: kTextTheme.headlineSmall),
-                  const Icon(Icons.notifications_none, color: primaryText),
-                ],
-              ),
-              const SizedBox(height: 20),
-
               // Balance Info
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -72,9 +73,6 @@ class Expenses extends StatelessWidget {
                       },
                       child: savingsGoalItem("Travel", Icons.flight),
                     ),
-                    savingsGoalItem("New House", Icons.home),
-                    savingsGoalItem("Car", Icons.directions_car),
-                    savingsGoalItem("Wedding", Icons.favorite),
                   ],
                 ),
               ),

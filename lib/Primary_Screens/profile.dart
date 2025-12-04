@@ -61,7 +61,7 @@ class _ProfileContentState extends State<_ProfileContent> {
             _isDarkMode = value;
           });
         },
-        activeColor: accentColor,
+        activeThumbColor: accentColor,
       ),
       onTap: () {}, // Do nothing on list tile tap
     );
@@ -102,7 +102,7 @@ class _ProfileContentState extends State<_ProfileContent> {
                 children: [
                   CircleAvatar(
                     radius: 50,
-                    backgroundImage: const AssetImage("assets/images/coin.jpg"),
+                    backgroundImage: const AssetImage("assets/image/icon 2.png"),
                   ),
                   const SizedBox(height: 16),
                   Text('Shady_o.a', style: kTextTheme.headlineMedium),

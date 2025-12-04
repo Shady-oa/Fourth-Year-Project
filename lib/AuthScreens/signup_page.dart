@@ -259,17 +259,15 @@ class _SignUpState extends State<SignUp> {
                         try {
                           final userCredential = await AuthService()
                               .signInWithGoogle();
-                          if (userCredential != null) {
-                            // Automatically add/update user details after Google sign-in
-                            await users.doc(userCredential.user!.uid).set({
-                              'user name':
-                                  userCredential.user!.displayName ??
-                                  'Google User',
-                              'email': userCredential.user!.email ?? '',
-                              'created_at': Timestamp.now(),
-                            }, SetOptions(merge: true));
-                          }
-
+                          // Automatically add/update user details after Google sign-in
+                          await users.doc(userCredential.user!.uid).set({
+                            'user name':
+                                userCredential.user!.displayName ??
+                                'Google User',
+                            'email': userCredential.user!.email ?? '',
+                            'created_at': Timestamp.now(),
+                          }, SetOptions(merge: true));
+                        
                           Navigator.pushReplacement(
                             context,
                             MaterialPageRoute(

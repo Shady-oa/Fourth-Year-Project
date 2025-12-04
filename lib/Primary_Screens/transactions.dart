@@ -2,8 +2,8 @@ import 'package:final_project/Components/Custom_header.dart';
 import 'package:final_project/Constants/colors.dart';
 import 'package:final_project/Constants/spacing.dart';
 import 'package:final_project/Constants/typograpy.dart';
-import 'package:final_project/SecondaryScreens/income.dart';
 import 'package:final_project/SecondaryScreens/expenses.dart';
+import 'package:final_project/SecondaryScreens/income.dart';
 import 'package:flutter/material.dart';
 
 class Transactions extends StatefulWidget {
@@ -180,132 +180,8 @@ class _TransactionsState extends State<Transactions> {
               ),
             ),
             const SizedBox(height: 20),
-
-            // Main Content Container for Transactions
-            Expanded(
-              child: Container(
-                decoration: const BoxDecoration(
-                  color: primaryText,
-                  borderRadius: BorderRadius.only(
-                    topLeft: Radius.circular(50),
-                    topRight: Radius.circular(50),
-                  ),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.only(left: 38, right: 38, top: 30),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Transactions Header
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            "Transactions",
-                            style: kTextTheme.titleLarge?.copyWith(
-                              color: primaryBg,
-                            ),
-                          ),
-                          Text(
-                            "See all",
-                            style: kTextTheme.bodyMedium?.copyWith(
-                              color: Colors.blue,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-
-                      // Transaction Items
-                      Expanded(
-                        child: ListView(
-                          children: [
-                            transactionItem(
-                              "Salary",
-                              "Gig",
-                              "18:27 - April 30",
-                              "\$4,000.00",
-                              brandGreen,
-                            ),
-                            transactionItem(
-                              "Groceries",
-                              "Vegetables",
-                              "17:00 - April 24",
-                              "-\$100.00",
-                              Colors.blue,
-                            ),
-                            transactionItem(
-                              "Rent",
-                              "Rent",
-                              "8:30 - April 15",
-                              "-\$674.40",
-                              Colors.blue,
-                            ),
-                            transactionItem(
-                              "Transport",
-                              "Bus fee",
-                              "9:30 - April 08",
-                              "-\$4.13",
-                              Colors.blue,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
           ],
         ),
-      ),
-    );
-  }
-
-  // Function to update the latest transaction amount
-  void updateTransactionAmount(double newAmount) {
-    setState(() {
-      latestTransactionAmount = newAmount;
-    });
-  }
-
-  Widget transactionItem(
-    String title,
-    String description,
-    String date,
-    String amount,
-    Color color,
-  ) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: spacerSmall),
-      child: Row(
-        children: [
-          Icon(Icons.circle, color: color, size: 40),
-          const SizedBox(width: spacerMedium),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: kTextTheme.bodyLarge?.copyWith(color: primaryBg),
-              ),
-              Text(
-                description,
-                style: kTextTheme.bodySmall?.copyWith(
-                  color: primaryBg.withOpacity(0.7),
-                ),
-              ),
-              Text(
-                date,
-                style: kTextTheme.bodySmall?.copyWith(
-                  color: primaryBg.withOpacity(0.7),
-                ),
-              ),
-            ],
-          ),
-          const Spacer(),
-          Text(amount, style: kTextTheme.bodyLarge?.copyWith(color: color)),
-        ],
       ),
     );
   }
