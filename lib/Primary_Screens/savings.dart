@@ -65,7 +65,7 @@ class _SavingsPageState extends State<SavingsPage> {
                           Text(
                             "\$7,783.00",
                             style: kTextTheme.headlineMedium?.copyWith(
-                              color: Colors.blue,
+                              color: accentColor,
                             ),
                           ),
                         ],

@@ -63,7 +63,7 @@ class _TransactionsState extends State<Transactions> {
                           Text(
                             '-\$1,187.40',
                             style: kTextTheme.headlineMedium?.copyWith(
-                              color: Colors.blue,
+                              color: accentColor,
                             ),
                           ),
                         ],

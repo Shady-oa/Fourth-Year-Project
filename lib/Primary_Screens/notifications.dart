@@ -1,3 +1,5 @@
+import 'package:final_project/Components/Custom_header.dart';
+import 'package:final_project/Components/back_button.dart';
 import 'package:final_project/Constants/colors.dart';
 import 'package:final_project/Constants/typograpy.dart';
 import 'package:flutter/material.dart';
@@ -8,23 +10,17 @@ class Notifications extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        backgroundColor: primaryBg,
+        leading: CustomBackButton(),
+        title: CustomHeader(headerName: "Notifications"),
+      ),
       backgroundColor: primaryBg,
       // --- BODY: Empty State ---
       body: SafeArea(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                IconButton(
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                  },
-                  icon: Icon(Icons.arrow_back_ios, color: primaryText),
-                ),
-                Text('Notifications', style: kTextTheme.headlineSmall),
-              ],
-            ),
             Expanded(
               child: Center(
                 child: Padding(

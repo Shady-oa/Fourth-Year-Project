@@ -48,7 +48,9 @@ class CustomHeader extends StatelessWidget {
             Text(headerName, style: kTextTheme.headlineSmall),
             const Spacer(),
 
-            NotificationIcon(),
+            // Conditional rendering:
+            // The NotificationIcon is only displayed if headerName is NOT 'Notifications'.
+            if (headerName != 'Notifications') const NotificationIcon(),
           ],
         ),
         const SizedBox(height: spacerMedium),
