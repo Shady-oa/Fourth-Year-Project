@@ -54,7 +54,10 @@ class _LoginState extends State<Login> {
         email: _emailcontroller.text.trim(),
         password: _passwordcontroller.text.trim(),
       );
-      Navigator.pushReplacementNamed(context, '/navigation');
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const BottomNav()),
+      );
     } catch (e) {
       ToastService.showToast(
         context,
@@ -70,196 +73,207 @@ class _LoginState extends State<Login> {
         slideCurve: Curves.easeInOut,
         shadowColor: primaryText.withOpacity(0.5),
       );
+      print('this is the error');
+      print(e.toString());
+
+      _emailcontroller.clear();
+      _passwordcontroller.clear();
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: brandGreen,
-      body: Column(
-        children: [
-          Container(
-            alignment: Alignment.center,
-            height: 100,
-            child: Text("Welcome Back", style: kTextTheme.displaySmall),
-          ),
+    return GestureDetector(
+      onTap: () {
+        FocusScope.of(context).unfocus();
+      },
+      child: Scaffold(
+        backgroundColor: brandGreen,
+        body: Column(
+          children: [
+            Container(
+              alignment: Alignment.center,
+              height: 100,
+              child: Text("Welcome Back", style: kTextTheme.displaySmall),
+            ),
 
-          Expanded(
-            child: Container(
-              padding: paddingAllMedium,
-              decoration: const BoxDecoration(
-                color: primaryBg,
-                borderRadius: topOnly,
-              ),
+            Expanded(
+              child: Container(
+                padding: paddingAllMedium,
+                decoration: const BoxDecoration(
+                  color: primaryBg,
+                  borderRadius: topOnly,
+                ),
 
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  children: [
-                    formLogo,
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    children: [
+                      formLogo,
 
-                    TextField(
-                      controller: _emailcontroller,
-                      decoration: InputDecoration(
-                        hintText: 'Email',
-                        border: const OutlineInputBorder(
-                          borderRadius: radiusMedium,
-                        ),
-                        fillColor: primaryText.withOpacity(0.1),
-                        filled: true,
-                      ),
-                    ),
-
-                    sizedBoxHeightSmall,
-
-                    // PASSWORD FIELD
-                    TextField(
-                      controller: _passwordcontroller,
-                      obscureText: true,
-                      decoration: InputDecoration(
-                        hintText: 'Password',
-                        border: const OutlineInputBorder(
-                          borderRadius: radiusMedium,
-                        ),
-                        fillColor: primaryText.withOpacity(0.1),
-                        filled: true,
-                      ),
-                    ),
-
-                    sizedBoxHeightTiny,
-
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: GestureDetector(
-                        onTap: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (context) => const ForgotPassword(),
-                            ),
-                          );
-                        },
-                        child: Text(
-                          'Forgot password?',
-                          style: kTextTheme.bodyMedium?.copyWith(
-                            color: accentColor,
-                          ),
-                        ),
-                      ),
-                    ),
-
-                    sizedBoxHeightXLarge,
-
-                    // SIGN IN BUTTON
-                    SizedBox(
-                      width: double.infinity,
-                      height: 50,
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: brandGreen,
-                          shape: RoundedRectangleBorder(
+                      TextField(
+                        controller: _emailcontroller,
+                        decoration: InputDecoration(
+                          hintText: 'Email',
+                          border: const OutlineInputBorder(
                             borderRadius: radiusMedium,
                           ),
-                        ),
-                        onPressed: () async {
-                          await signin();
-                        },
-                        child: Text(
-                          'Sign in',
-                          style: kTextTheme.titleLarge?.copyWith(
-                            color: primaryText,
-                          ),
+                          fillColor: primaryText.withOpacity(0.1),
+                          filled: true,
                         ),
                       ),
-                    ),
 
-                    sizedBoxHeightLarge,
+                      sizedBoxHeightSmall,
 
-                    //GOOGLE BUTTON
-                    GestureDetector(
-                      onTap: () async {
-                        try {
-                          await AuthService().signInWithGoogle();
-                        } on NoGoogleAccountChoosenException {
-                          return;
-                        } catch (e) {
-                          ToastService.showToast(
-                            context,
-                            backgroundColor: errorColor,
-                            dismissDirection: DismissDirection.endToStart,
-                            expandedHeight: 80,
-                            isClosable: true,
-                            leading: const Icon(Icons.error_outline),
-                            message: 'Unexpected error occurred,try again!',
-                            length: ToastLength.medium,
-                            positionCurve: Curves.bounceInOut,
-                            messageStyle: kTextTheme.bodyLarge?.copyWith(
-                              color: primaryBg,
-                            ),
-                            slideCurve: Curves.easeInOut,
-                            shadowColor: primaryText.withOpacity(0.5),
-                          );
-                        }
-
-                        Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const BottomNav(),
+                      // PASSWORD FIELD
+                      TextField(
+                        controller: _passwordcontroller,
+                        obscureText: true,
+                        decoration: InputDecoration(
+                          hintText: 'Password',
+                          border: const OutlineInputBorder(
+                            borderRadius: radiusMedium,
                           ),
-                        );
-                      },
-                      child: Container(
-                        height: 50,
-                        width: double.infinity,
-                        decoration: BoxDecoration(
-                          color: primaryBg,
-                          borderRadius: radiusMedium,
-                          border: Border.all(color: primaryText),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Image(
-                              image: AssetImage('assets/image/google.png'),
-                            ),
-                            sizedBoxWidthSmall,
-                            Text(
-                              'Or Sign in with Google',
-                              style: kTextTheme.bodyLarge,
-                            ),
-                          ],
+                          fillColor: primaryText.withOpacity(0.1),
+                          filled: true,
                         ),
                       ),
-                    ),
 
-                    sizedBoxHeightXLarge,
+                      sizedBoxHeightTiny,
 
-                    //  SIGNUP REDIRECT
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          'Don\'t have an account?',
-                          style: kTextTheme.bodyLarge,
-                        ),
-                        sizedBoxWidthSmall,
-                        GestureDetector(
-                          onTap: widget.showSignupPage,
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: GestureDetector(
+                          onTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (context) => const ForgotPassword(),
+                              ),
+                            );
+                          },
                           child: Text(
-                            'Register now',
-                            style: kTextTheme.bodyLarge?.copyWith(
+                            'Forgot password?',
+                            style: kTextTheme.bodyMedium?.copyWith(
                               color: accentColor,
                             ),
                           ),
                         ),
-                      ],
-                    ),
-                  ],
+                      ),
+
+                      sizedBoxHeightXLarge,
+
+                      // SIGN IN BUTTON
+                      SizedBox(
+                        width: double.infinity,
+                        height: 50,
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: brandGreen,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: radiusMedium,
+                            ),
+                          ),
+                          onPressed: () async {
+                            await signin();
+                          },
+                          child: Text(
+                            'Sign in',
+                            style: kTextTheme.titleLarge?.copyWith(
+                              color: primaryText,
+                            ),
+                          ),
+                        ),
+                      ),
+
+                      sizedBoxHeightLarge,
+
+                      //GOOGLE BUTTON
+                      GestureDetector(
+                        onTap: () async {
+                          try {
+                            await AuthService().signInWithGoogle();
+                            Navigator.pushReplacement(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const BottomNav(),
+                              ),
+                            );
+                          } on NoGoogleAccountChoosenException {
+                            return;
+                          } catch (e) {
+                            ToastService.showToast(
+                              context,
+                              backgroundColor: errorColor,
+                              dismissDirection: DismissDirection.endToStart,
+                              expandedHeight: 80,
+                              isClosable: true,
+                              leading: const Icon(Icons.error_outline),
+                              message: 'Unexpected error occurred,try again!',
+                              length: ToastLength.medium,
+                              positionCurve: Curves.bounceInOut,
+                              messageStyle: kTextTheme.bodyLarge?.copyWith(
+                                color: primaryBg,
+                              ),
+                              slideCurve: Curves.easeInOut,
+                              shadowColor: primaryText.withOpacity(0.5),
+                            );
+                            print('This is the signin by google error!!!😂');
+                            print(e.toString());
+                          }
+                        },
+                        child: Container(
+                          height: 50,
+                          width: double.infinity,
+                          decoration: BoxDecoration(
+                            color: primaryBg,
+                            borderRadius: radiusMedium,
+                            border: Border.all(color: primaryText),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Image(
+                                image: AssetImage('assets/image/google.png'),
+                              ),
+                              sizedBoxWidthSmall,
+                              Text(
+                                'Or Sign in with Google',
+                                style: kTextTheme.bodyLarge,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+
+                      sizedBoxHeightXLarge,
+
+                      //  SIGNUP REDIRECT
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            'Don\'t have an account?',
+                            style: kTextTheme.bodyLarge,
+                          ),
+                          sizedBoxWidthSmall,
+                          GestureDetector(
+                            onTap: widget.showSignupPage,
+                            child: Text(
+                              'Register now',
+                              style: kTextTheme.bodyLarge?.copyWith(
+                                color: accentColor,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

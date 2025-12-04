@@ -1,5 +1,7 @@
 // ignore_for_file: prefer_const_constructors
 
+import 'dart:convert';
+
 import 'package:final_project/Components/bottom_nav.dart';
 import 'package:final_project/Components/form_logo.dart';
 import 'package:final_project/Constants/colors.dart';
@@ -7,7 +9,10 @@ import 'package:final_project/Constants/spacing.dart';
 import 'package:final_project/Constants/typograpy.dart';
 import 'package:final_project/Firebase/auth_services.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
+import 'package:toasty_box/toast_enums.dart';
+import 'package:toasty_box/toast_service.dart';
 
 class ForgotPassword extends StatefulWidget {
   const ForgotPassword({super.key});
@@ -18,6 +23,7 @@ class ForgotPassword extends StatefulWidget {
 
 class _ForgotPasswordState extends State<ForgotPassword> {
   final _emailController = TextEditingController();
+  final String baseUrl = 'http://10.0.2.2:8080';
 
   @override
   void dispose() {
@@ -25,51 +31,23 @@ class _ForgotPasswordState extends State<ForgotPassword> {
     super.dispose();
   }
 
-  Future passwordReset() async {
+  Future<String> passwordReset({required String email}) async {
+    final url = Uri.parse('$baseUrl/reset-password');
     try {
-      await FirebaseAuth.instance.sendPasswordResetEmail(
-        email: _emailController.text.trim(),
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({'email': email}),
       );
-      showDialog(
-        context: context,
-        builder: (context) {
-          return AlertDialog(
-            backgroundColor: accentColor,
-            content: Text(
-              'Password reset email sent. Check your email.',
-              style: kTextTheme.bodyMedium,
-            ),
-          );
-        },
-      );
-    } on FirebaseAuthException catch (e) {
-      print(e);
-      showDialog(
-        context: context,
-        builder: (context) {
-          return AlertDialog(
-            backgroundColor: errorColor,
-            content: Text(
-              'Enter a valid email address.',
-              style: kTextTheme.bodyMedium,
-            ),
-          );
-        },
-      );
+      if (response.statusCode == 200) {
+        final body = jsonDecode(response.body);
+        return body['status'] ?? 'email sent';
+      } else {
+        final body = jsonDecode(response.body);
+        return body['status'] ?? 'error';
+      }
     } catch (e) {
-      print(e);
-      showDialog(
-        context: context,
-        builder: (context) {
-          return AlertDialog(
-            backgroundColor: primaryBg,
-            content: Text(
-              'An error occurred. Please try again later.',
-              style: kTextTheme.bodyMedium,
-            ),
-          );
-        },
-      );
+      return e.toString();
     }
   }
 
@@ -109,7 +87,7 @@ class _ForgotPasswordState extends State<ForgotPassword> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     formLogo,
-                
+
                     sizedBoxHeightLarge,
                     Text(
                       'Reset Your Password?',
@@ -132,7 +110,7 @@ class _ForgotPasswordState extends State<ForgotPassword> {
                         filled: true,
                       ),
                     ),
-                
+
                     sizedBoxHeightLarge,
                     SizedBox(
                       width: double.infinity,
@@ -144,7 +122,86 @@ class _ForgotPasswordState extends State<ForgotPassword> {
                             borderRadius: radiusMedium,
                           ),
                         ),
-                        onPressed: passwordReset,
+                        onPressed: () async {
+                          if (_emailController.text.isNotEmpty) {
+                            String result = await passwordReset(
+                              email: _emailController.text.trim(),
+                            );
+                            if (result == 'success') {
+                              ToastService.showToast(
+                                context,
+                                backgroundColor: accentColor,
+                                dismissDirection: DismissDirection.endToStart,
+                                expandedHeight: 80,
+                                isClosable: true,
+                                leading: const Icon(Icons.error_outline),
+                                message:
+                                    'Please enter both email and password!',
+                                length: ToastLength.medium,
+                                positionCurve: Curves.bounceInOut,
+                                messageStyle: kTextTheme.bodyLarge?.copyWith(
+                                  color: primaryBg,
+                                ),
+                                slideCurve: Curves.easeInOut,
+                                shadowColor: primaryText.withOpacity(0.5),
+                              );
+                            }
+                            if (result == 'error') {
+                              ToastService.showToast(
+                                context,
+                                backgroundColor: errorColor,
+                                dismissDirection: DismissDirection.endToStart,
+                                expandedHeight: 80,
+                                isClosable: true,
+                                leading: const Icon(Icons.error_outline),
+                                message: 'An error occured please try again',
+                                length: ToastLength.medium,
+                                positionCurve: Curves.bounceInOut,
+                                messageStyle: kTextTheme.bodyLarge?.copyWith(
+                                  color: primaryBg,
+                                ),
+                                slideCurve: Curves.easeInOut,
+                                shadowColor: primaryText.withOpacity(0.5),
+                              );
+                            } else {
+                              ToastService.showToast(
+                                context,
+                                backgroundColor: errorColor,
+                                dismissDirection: DismissDirection.endToStart,
+                                expandedHeight: 80,
+                                isClosable: true,
+                                leading: const Icon(Icons.error_outline),
+                                message: result,
+                                length: ToastLength.medium,
+                                positionCurve: Curves.bounceInOut,
+                                messageStyle: kTextTheme.bodyLarge?.copyWith(
+                                  color: primaryBg,
+                                ),
+                                slideCurve: Curves.easeInOut,
+                                shadowColor: primaryText.withOpacity(0.5),
+                              );
+                              print('this is the reset password error');
+                              print(result);
+                            }
+                          } else {
+                            ToastService.showToast(
+                              context,
+                              backgroundColor: errorColor,
+                              dismissDirection: DismissDirection.endToStart,
+                              expandedHeight: 80,
+                              isClosable: true,
+                              leading: const Icon(Icons.error_outline),
+                              message: 'Please enter both email and password!',
+                              length: ToastLength.medium,
+                              positionCurve: Curves.bounceInOut,
+                              messageStyle: kTextTheme.bodyLarge?.copyWith(
+                                color: primaryBg,
+                              ),
+                              slideCurve: Curves.easeInOut,
+                              shadowColor: primaryText.withOpacity(0.5),
+                            );
+                          }
+                        },
                         child: Text(
                           'Send Reset Link',
                           style: kTextTheme.titleLarge?.copyWith(
@@ -175,7 +232,7 @@ class _ForgotPasswordState extends State<ForgotPassword> {
                             },
                           );
                         }
-                
+
                         Navigator.pushReplacement(
                           context,
                           MaterialPageRoute(
