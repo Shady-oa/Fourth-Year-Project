@@ -3,7 +3,7 @@ import 'package:final_project/Components/back_button.dart';
 import 'package:final_project/Constants/colors.dart';
 import 'package:final_project/Constants/typograpy.dart';
 import 'package:flutter/material.dart';
-
+  //
 class Notifications extends StatelessWidget {
   const Notifications({super.key});
 
