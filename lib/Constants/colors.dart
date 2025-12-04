@@ -1,38 +1,49 @@
+import 'package:final_project/Constants/typograpy.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
-const Color brandGreen = Color(
-  0xFF00D09E,
-); // App brand color, Buttons, Active Nav
-const Color primaryBg = Color(0xFFF1FFF3); // Primary background
-
-const Color primaryText = Color(0xFF052224); // Primary text
-const Color accentColor = Color(0xFF2196F3); // Accent color, Highlights
+// --- Color Definitions ---
+const Color brandGreen = Color(0xFF00D09E);
+const Color lightBg = Color(0xFFF1FFF3);
+const Color darkBg = Color(0xFF052224);
+const Color textLightMode = Color(0xFF052224);
+const Color textDarkMode = Color(0xFFF1FFF3);
+const Color accentColor = Color(0xFF2196F3);
 const Color errorColor = Color(0xFFFF4C4C);
- // Error messages,
- // Within a StatelessWidget or StatefulWidget's build method:
+
+// --- Text Style Generator Function ---
+// This function creates a base text style for a given color.
+// We'll use this inside the ThemeData to set the color correctly.
 
 
-
+// --- Light Mode Theme Data ---
 ThemeData lightMode = ThemeData(
-  scaffoldBackgroundColor: primaryBg,
+  scaffoldBackgroundColor: lightBg,
   colorScheme: ColorScheme.light(
     brightness: Brightness.light,
-    surface: primaryBg,
-    primary: primaryText
-  )
+    surface: lightBg,
+    primary: brandGreen, // Primary button color, etc.
+    onSurface: textLightMode, // This is the color for text/icons on the surface (background)
+  ),
+  // Assign the TextTheme with the light mode text color
+  textTheme: createTextTheme(textLightMode),
 );
 
-
+// --- Dark Mode Theme Data ---
 ThemeData darkMode = ThemeData(
-  scaffoldBackgroundColor: Color(0xFF121212),
+  // I replaced your fixed dark color with your defined darkBg
+  scaffoldBackgroundColor: darkBg, 
   colorScheme: ColorScheme.dark(
     brightness: Brightness.dark,
-    surface: primaryText,
-    primary: primaryBg
-    
+    surface: darkBg,
+    primary: brandGreen, // Primary button color, etc.
+    onSurface: textDarkMode, // This is the color for text/icons on the surface (background)
   ),
+  // Assign the TextTheme with the dark mode text color
+  textTheme: createTextTheme(textDarkMode),
 );
 
+// --- Theme Provider Class ---
 class ThemeProvider with ChangeNotifier {
   ThemeData _currentTheme = lightMode;
 
