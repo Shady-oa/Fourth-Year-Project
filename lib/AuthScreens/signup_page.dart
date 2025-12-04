@@ -3,6 +3,7 @@
 import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:final_project/AuthScreens/login.dart';
 import 'package:final_project/Components/bottom_nav.dart';
 import 'package:final_project/Components/form_logo.dart';
 import 'package:final_project/Constants/colors.dart';
@@ -94,6 +95,17 @@ class _SignUpState extends State<SignUp> {
           _usernamecontroller.text.trim(),
           _emailcontroller.text.trim(),
         );
+        ToastService.showToast(
+          context,
+          backgroundColor: accentColor,
+          message: 'Account Created login',
+          length: ToastLength.medium,
+        );
+        _usernamecontroller.clear();
+        _emailcontroller.clear();
+        _confirmpasswordcontroller.clear();
+        _passwordcontroller.clear();
+        // Navigator.pushReplacement(context, MaterialPageRoute(builder: (context)=>Login(showSignupPage: showSignupPage) ));
       } on FirebaseAuthException catch (e) {
         // Handle specific Firebase errors (e.g., weak password, email already in use)
         ToastService.showToast(
@@ -161,187 +173,203 @@ class _SignUpState extends State<SignUp> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: brandGreen,
-      body: Column(
-        children: [
-          Container(
-            alignment: Alignment.center,
-            height: 100,
-            child: Text("Create Account", style: kTextTheme.displaySmall),
-          ),
-          Expanded(
-            child: Container(
-              padding: paddingAllMedium,
-              decoration: const BoxDecoration(
-                color: primaryBg,
-                borderRadius: topOnly,
-              ),
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  children: [
-                    formLogo,
+    return GestureDetector(
+      onTap: () {
+        FocusScope.of(context).unfocus();
+      },
+      child: Scaffold(
+        backgroundColor: brandGreen,
+        body: Column(
+          children: [
+            Container(
+              alignment: Alignment.center,
+              height: 100,
+              child: Text("Create Account", style: kTextTheme.displaySmall),
+            ),
+            Expanded(
+              child: Container(
+                padding: paddingAllMedium,
+                decoration: const BoxDecoration(
+                  color: primaryBg,
+                  borderRadius: topOnly,
+                ),
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    children: [
+                      formLogo,
 
-                    // 6. ADDED: Username Text Field
-                    TextField(
-                      controller: _usernamecontroller,
-                      decoration: InputDecoration(
-                        hintText: 'User Name',
-                        border: OutlineInputBorder(borderRadius: radiusMedium),
-                        fillColor: primaryText.withOpacity(0.1),
-                        filled: true,
-                      ),
-                    ),
-                    sizedBoxHeightSmall,
-
-                    TextField(
-                      controller: _emailcontroller,
-                      keyboardType: TextInputType.emailAddress,
-                      decoration: InputDecoration(
-                        hintText: 'Email',
-                        border: OutlineInputBorder(borderRadius: radiusMedium),
-                        fillColor: primaryText.withOpacity(0.1),
-                        filled: true,
-                      ),
-                    ),
-
-                    sizedBoxHeightSmall,
-                    TextField(
-                      controller: _passwordcontroller,
-                      obscureText: true,
-                      decoration: InputDecoration(
-                        hintText: 'Password',
-                        border: OutlineInputBorder(borderRadius: radiusMedium),
-                        fillColor: primaryText.withOpacity(0.1),
-                        filled: true,
-                      ),
-                    ),
-
-                    sizedBoxHeightSmall,
-                    TextField(
-                      controller: _confirmpasswordcontroller,
-                      obscureText: true,
-                      decoration: InputDecoration(
-                        hintText: 'Confirm password',
-                        border: OutlineInputBorder(borderRadius: radiusMedium),
-                        fillColor: primaryText.withOpacity(0.1),
-                        filled: true,
-                      ),
-                    ),
-
-                    sizedBoxHeightXLarge,
-                    SizedBox(
-                      width: double.infinity,
-                      height: 50,
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: brandGreen,
-                          shape: RoundedRectangleBorder(
+                      // 6. ADDED: Username Text Field
+                      TextField(
+                        controller: _usernamecontroller,
+                        decoration: InputDecoration(
+                          hintText: 'User Name',
+                          border: OutlineInputBorder(
                             borderRadius: radiusMedium,
                           ),
+                          fillColor: primaryText.withOpacity(0.1),
+                          filled: true,
                         ),
-                        onPressed: () async {
-                          await HandleSignup();
-                        },
-                        child: Text(
-                          'Sign Up',
-                          style: kTextTheme.titleLarge?.copyWith(
-                            color: primaryText,
+                      ),
+                      sizedBoxHeightSmall,
+
+                      TextField(
+                        controller: _emailcontroller,
+                        keyboardType: TextInputType.emailAddress,
+                        decoration: InputDecoration(
+                          hintText: 'Email',
+                          border: OutlineInputBorder(
+                            borderRadius: radiusMedium,
+                          ),
+                          fillColor: primaryText.withOpacity(0.1),
+                          filled: true,
+                        ),
+                      ),
+
+                      sizedBoxHeightSmall,
+                      TextField(
+                        controller: _passwordcontroller,
+                        obscureText: true,
+                        decoration: InputDecoration(
+                          hintText: 'Password',
+                          border: OutlineInputBorder(
+                            borderRadius: radiusMedium,
+                          ),
+                          fillColor: primaryText.withOpacity(0.1),
+                          filled: true,
+                        ),
+                      ),
+
+                      sizedBoxHeightSmall,
+                      TextField(
+                        controller: _confirmpasswordcontroller,
+                        obscureText: true,
+                        decoration: InputDecoration(
+                          hintText: 'Confirm password',
+                          border: OutlineInputBorder(
+                            borderRadius: radiusMedium,
+                          ),
+                          fillColor: primaryText.withOpacity(0.1),
+                          filled: true,
+                        ),
+                      ),
+
+                      sizedBoxHeightXLarge,
+                      SizedBox(
+                        width: double.infinity,
+                        height: 50,
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: brandGreen,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: radiusMedium,
+                            ),
+                          ),
+                          onPressed: () async {
+                            await HandleSignup();
+                          },
+                          child: Text(
+                            'Sign Up',
+                            style: kTextTheme.titleLarge?.copyWith(
+                              color: primaryText,
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                    sizedBoxHeightLarge,
+                      sizedBoxHeightLarge,
 
-                    GestureDetector(
-                      onTap: () async {
-                        try {
-                          final userCredential = await AuthService()
-                              .signInWithGoogle();
-                          // Automatically add/update user details after Google sign-in
-                          await users.doc(userCredential.user!.uid).set({
-                            'user name':
-                                userCredential.user!.displayName ??
-                                'Google User',
-                            'email': userCredential.user!.email ?? '',
-                            'created_at': Timestamp.now(),
-                          }, SetOptions(merge: true));
-                        
-                          Navigator.pushReplacement(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => BottomNav(),
-                            ),
-                          );
-                        } on NoGoogleAccountChoosenException {
-                          return;
-                        } catch (e) {
-                          showDialog(
-                            context: context,
-                            builder: (context) {
-                              return AlertDialog(
-                                backgroundColor: errorColor,
-                                content: Text(
-                                  'Error: ${e.toString()}',
-                                  style: kTextTheme.bodyMedium,
-                                ),
-                              );
-                            },
-                          );
-                        }
-                      },
-                      child: Container(
-                        height: 50,
-                        width: double.infinity,
-                        decoration: BoxDecoration(
-                          color: primaryBg,
-                          borderRadius: radiusMedium,
-                          border: Border.all(color: primaryText),
+                      GestureDetector(
+                        onTap: () async {
+                          try {
+                            final userCredential = await AuthService()
+                                .signInWithGoogle();
+                            // Automatically add/update user details after Google sign-in
+                            await users.doc(userCredential.user!.uid).set({
+                              'user name':
+                                  userCredential.user!.displayName ??
+                                  'Google User',
+                              'email': userCredential.user!.email ?? '',
+                              'created_at': Timestamp.now(),
+                            }, SetOptions(merge: true));
+
+                            Navigator.pushReplacement(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => BottomNav(),
+                              ),
+                            );
+                          } on NoGoogleAccountChoosenException {
+                            return;
+                          } catch (e) {
+                            showDialog(
+                              context: context,
+                              builder: (context) {
+                                return AlertDialog(
+                                  backgroundColor: errorColor,
+                                  content: Text(
+                                    'Error: ${e.toString()}',
+                                    style: kTextTheme.bodyMedium,
+                                  ),
+                                );
+                              },
+                            );
+                          }
+                        },
+                        child: Container(
+                          height: 50,
+                          width: double.infinity,
+                          decoration: BoxDecoration(
+                            color: primaryBg,
+                            borderRadius: radiusMedium,
+                            border: Border.all(color: primaryText),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Image.asset(
+                                'assets/image/google.png',
+                                height: 24,
+                              ),
+                              sizedBoxWidthSmall,
+                              Text(
+                                'Or Sign Up with Google',
+                                style: kTextTheme.bodyLarge,
+                              ),
+                            ],
+                          ),
                         ),
+                      ),
+
+                      // Removed extra sizedBoxWidthSmall here
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 20),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Image.asset('assets/image/google.png', height: 24),
-                            sizedBoxWidthSmall,
                             Text(
-                              'Or Sign Up with Google',
+                              'Already have an account?',
                               style: kTextTheme.bodyLarge,
+                            ),
+                            sizedBoxWidthSmall,
+                            GestureDetector(
+                              onTap: widget.showLoginpage,
+                              child: Text(
+                                'Sign In',
+                                style: kTextTheme.bodyLarge?.copyWith(
+                                  color: Colors.blue,
+                                ),
+                              ),
                             ),
                           ],
                         ),
                       ),
-                    ),
-
-                    // Removed extra sizedBoxWidthSmall here
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 20),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            'Already have an account?',
-                            style: kTextTheme.bodyLarge,
-                          ),
-                          sizedBoxWidthSmall,
-                          GestureDetector(
-                            onTap: widget.showLoginpage,
-                            child: Text(
-                              'Sign In',
-                              style: kTextTheme.bodyLarge?.copyWith(
-                                color: Colors.blue,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

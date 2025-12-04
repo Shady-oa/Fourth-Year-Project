@@ -60,7 +60,7 @@ class _ProfileContentState extends State<_ProfileContent> {
             _isDarkMode = value;
           });
         },
-        activeThumbColor: accentColor,
+        activeColor: accentColor,
       ),
       onTap: () {}, // Do nothing on list tile tap
     );
