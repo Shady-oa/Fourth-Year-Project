@@ -46,7 +46,11 @@ dependencies:
   cupertino_icons: ^1.0.8
   google_nav_bar: ^5.0.7
   flutter_launcher_icons: ^0.14.4
+<<<<<<< HEAD
+  provider: ^6.1.5+1
+=======
   http: ^1.6.0
+>>>>>>> 0dceca314563d43e4862693343a7ffc04c962132
 
 dev_dependencies:
   flutter_test:
