@@ -13,23 +13,6 @@ class SavingsPage extends StatefulWidget {
 }
 
 class _SavingsPageState extends State<SavingsPage> {
-  // List of categories
-  final List<Map<String, dynamic>> _categories = [
-    {'icon': Icons.directions_car, 'label': 'Transport'},
-    {'icon': Icons.medical_services, 'label': 'Medicine'},
-    {'icon': Icons.local_grocery_store, 'label': 'Groceries'},
-    {'icon': Icons.flight, 'label': 'Travel'},
-    {'icon': Icons.school, 'label': 'Education'},
-    {'icon': Icons.home, 'label': 'Rent'},
-  ];
-
-  // Function to add a new category
-  void _addCategory(String label) {
-    setState(() {
-      _categories.add({'icon': Icons.category, 'label': label});
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(

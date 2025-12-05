@@ -23,8 +23,6 @@ class _ProfileContent extends StatefulWidget {
 }
 
 class _ProfileContentState extends State<_ProfileContent> {
-  // State for switches
-  bool _isDarkMode = false;
 
   Widget _buildSettingsItem({
     required IconData icon,
