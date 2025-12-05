@@ -3,8 +3,23 @@ import 'package:google_fonts/google_fonts.dart';
 
 TextTheme createTextTheme(Color textColor) {
   return TextTheme(
+    displayLarge: GoogleFonts.urbanist(
+      fontSize: 40.0,
+      color: textColor,
+      fontWeight: FontWeight.bold,
+    ),
+    displayMedium: GoogleFonts.urbanist(
+      fontSize: 32.0,
+      color: textColor,
+      fontWeight: FontWeight.bold,
+    ),
     displaySmall: GoogleFonts.urbanist(
       fontSize: 28.0,
+      color: textColor,
+      fontWeight: FontWeight.bold,
+    ),
+    headlineMedium: GoogleFonts.urbanist(
+      fontSize: 24.0,
       color: textColor,
       fontWeight: FontWeight.bold,
     ),
