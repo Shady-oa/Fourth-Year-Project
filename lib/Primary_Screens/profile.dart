@@ -55,7 +55,7 @@ class _ProfileContentState extends State<_ProfileContent> {
     final isDarkMode = themeProvider.currentTheme == darkMode;
 
     return _buildSettingsItem(
-      icon: Icons.dark_mode,
+      icon: Icons.dark_mode_rounded,
       title: 'Dark Mode',
       trailing: Switch(
         value: isDarkMode,

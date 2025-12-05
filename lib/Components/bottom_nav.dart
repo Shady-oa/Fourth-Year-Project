@@ -46,7 +46,7 @@ class _BottomNavState extends State<BottomNav> {
           onTabChange: select,
           padding: paddingAllSmall,
           tabs: const [
-            GButton(icon: Icons.home, text: 'Home'),
+            GButton(icon: Icons.home_rounded, text: 'Home'),
             GButton(
               icon: Icons.swap_horizontal_circle_rounded,
               text: 'Transactions',
