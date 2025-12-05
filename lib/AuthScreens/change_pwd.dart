@@ -1,8 +1,10 @@
 // ignore_for_file: prefer_const_constructors, use_build_context_synchronously
 
 import 'package:final_project/Components/form_logo.dart';
+import 'package:final_project/Components/toast.dart';
 import 'package:final_project/Constants/colors.dart';
 import 'package:final_project/Constants/spacing.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:toasty_box/toast_enums.dart';
 import 'package:toasty_box/toasty_box.dart';
@@ -48,6 +50,8 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
 
   // --- Password Change Logic Placeholder ---
   Future<void> _handleChangePassword() async {
+    User user = FirebaseAuth.instance.currentUser!;
+    String email = user.email!;
     final currentPassword = _currentPasswordController.text.trim();
     final newPassword = _newPasswordController.text.trim();
     final confirmPassword = _confirmNewPasswordController.text.trim();
@@ -60,38 +64,42 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
     }
 
     if (newPassword != confirmPassword) {
+      _confirmNewPasswordController.clear();
+      _newPasswordController.clear();
+      _currentPasswordController.clear();
       _showToast('New passwords do not match.', errorColor);
+
       return;
     }
 
-    if (newPassword.length < 6) {
+    /*if (newPassword.length < 6) {
       // Firebase minimum password length
       _showToast('New password must be at least 6 characters.', errorColor);
       return;
-    }
+    }*/
 
-    // --- REAL LOGIC: Replace this placeholder with your actual Firebase/AuthService call ---
     try {
-      // Example of where you would call your AuthService:
-      // await AuthService().updatePassword(currentPassword, newPassword);
+      await user.reauthenticateWithCredential(
+        EmailAuthProvider.credential(email: email, password: currentPassword),
+      );
 
-      // Simulate a successful update
-      await Future.delayed(Duration(seconds: 1));
+      await user.updatePassword(newPassword);
+      showCustomToast(
+        context: context,
+        message: 'Password Changed',
+        backgroundColor: accentColor,
+        icon: Icons.check_circle_outline,
+      );
 
-      _showToast('Password successfully changed!', accentColor);
-
-      // Clear fields and navigate away (e.g., pop the screen)
-      _currentPasswordController.clear();
-      _newPasswordController.clear();
-      _confirmNewPasswordController.clear();
-
-      Navigator.pop(context); // Go back to the previous screen
+      Navigator.pop(context);
     } catch (e) {
-      // Handle errors from the authentication service (e.g., incorrect current password)
       _showToast(
         'Failed to change password: Check your current password.',
         errorColor,
       );
+      _confirmNewPasswordController.clear();
+      _newPasswordController.clear();
+      _currentPasswordController.clear();
     }
   }
 
@@ -102,7 +110,9 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
       backgroundColor: backgroundColor,
       message: message,
       length: ToastLength.medium,
-      messageStyle: Theme.of(context).textTheme.bodyLarge?.copyWith(color: Theme.of(context).colorScheme.surface),
+      messageStyle: Theme.of(context).textTheme.bodyLarge?.copyWith(
+        color: Theme.of(context).colorScheme.surface,
+      ),
     );
   }
 
@@ -127,7 +137,9 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                 ),
                 Text(
                   "Change Password",
-                  style: Theme.of(context).textTheme.displaySmall?.copyWith(color: Theme.of(context).colorScheme.onSurface),
+                  style: Theme.of(context).textTheme.displaySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
                 ),
               ],
             ),
@@ -194,8 +206,9 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                         child: Text(
                           'Save New Password',
                           style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            color:
-                                Theme.of(context).colorScheme.onSurface, // Using Theme.of(context).colorScheme.onSurface for contrast
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurface, // Using Theme.of(context).colorScheme.onSurface for contrast
                           ),
                         ),
                       ),

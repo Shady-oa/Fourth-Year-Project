@@ -1,5 +1,4 @@
 import 'package:final_project/Constants/colors.dart';
-import 'package:final_project/Constants/typograpy.dart';
 import 'package:flutter/material.dart';
 
 class SingleBudget extends StatefulWidget {
