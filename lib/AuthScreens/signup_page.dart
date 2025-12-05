@@ -3,12 +3,10 @@
 import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:final_project/AuthScreens/login.dart';
 import 'package:final_project/Components/bottom_nav.dart';
 import 'package:final_project/Components/form_logo.dart';
 import 'package:final_project/Constants/colors.dart';
 import 'package:final_project/Constants/spacing.dart';
-import 'package:final_project/Constants/typograpy.dart';
 import 'package:final_project/Firebase/auth_services.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -59,14 +57,14 @@ class _SignUpState extends State<SignUp> {
         message: 'Fill in all details',
         length: ToastLength.medium,
         positionCurve: Curves.bounceInOut,
-        messageStyle: kTextTheme.bodyLarge?.copyWith(color: primaryBg),
+        messageStyle: Theme.of(context).textTheme.bodyLarge?.copyWith(color: Theme.of(context).colorScheme.surface),
         slideCurve: Curves.easeInOut,
-        shadowColor: primaryText.withOpacity(0.5),
+        shadowColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
       );
     } else {
       ToastService.showToast(
         context,
-        backgroundColor: primaryText.withOpacity(0.5),
+        backgroundColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
         dismissDirection: DismissDirection.endToStart,
         expandedHeight: 80,
         isClosable: true,
@@ -74,9 +72,9 @@ class _SignUpState extends State<SignUp> {
         message: 'Password not the same!!',
         length: ToastLength.medium,
         positionCurve: Curves.bounceInOut,
-        messageStyle: kTextTheme.bodyLarge?.copyWith(color: primaryBg),
+        messageStyle: Theme.of(context).textTheme.bodyLarge?.copyWith(color: Theme.of(context).colorScheme.surface),
         slideCurve: Curves.easeInOut,
-        shadowColor: primaryText.withOpacity(0.5),
+        shadowColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
       );
     }
   }
@@ -120,17 +118,17 @@ class _SignUpState extends State<SignUp> {
         context: context,
         builder: (BuildContext context) {
           return AlertDialog(
-            backgroundColor: primaryBg,
-            title: Text('Alert Title', style: kTextTheme.headlineSmall),
+            backgroundColor: Theme.of(context).colorScheme.surface,
+            title: Text('Alert Title', style: Theme.of(context).textTheme.headlineSmall),
             content: Text(
               'password is not the same',
-              style: kTextTheme.bodyMedium,
+              style: Theme.of(context).textTheme.bodyMedium,
             ),
             actions: <Widget>[
               TextButton(
                 child: Text(
                   'OK',
-                  style: kTextTheme.bodyMedium?.copyWith(color: brandGreen),
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: brandGreen),
                 ),
                 onPressed: () {
                   Navigator.of(context).pop();
@@ -184,13 +182,13 @@ class _SignUpState extends State<SignUp> {
             Container(
               alignment: Alignment.center,
               height: 100,
-              child: Text("Create Account", style: kTextTheme.displaySmall),
+              child: Text("Create Account", style: Theme.of(context).textTheme.displaySmall),
             ),
             Expanded(
               child: Container(
                 padding: paddingAllMedium,
-                decoration: const BoxDecoration(
-                  color: primaryBg,
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surface,
                   borderRadius: topOnly,
                 ),
                 child: SingleChildScrollView(
@@ -207,7 +205,7 @@ class _SignUpState extends State<SignUp> {
                           border: OutlineInputBorder(
                             borderRadius: radiusMedium,
                           ),
-                          fillColor: primaryText.withOpacity(0.1),
+                          fillColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
                           filled: true,
                         ),
                       ),
@@ -221,7 +219,7 @@ class _SignUpState extends State<SignUp> {
                           border: OutlineInputBorder(
                             borderRadius: radiusMedium,
                           ),
-                          fillColor: primaryText.withOpacity(0.1),
+                          fillColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
                           filled: true,
                         ),
                       ),
@@ -235,7 +233,7 @@ class _SignUpState extends State<SignUp> {
                           border: OutlineInputBorder(
                             borderRadius: radiusMedium,
                           ),
-                          fillColor: primaryText.withOpacity(0.1),
+                          fillColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
                           filled: true,
                         ),
                       ),
@@ -249,7 +247,7 @@ class _SignUpState extends State<SignUp> {
                           border: OutlineInputBorder(
                             borderRadius: radiusMedium,
                           ),
-                          fillColor: primaryText.withOpacity(0.1),
+                          fillColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
                           filled: true,
                         ),
                       ),
@@ -270,8 +268,8 @@ class _SignUpState extends State<SignUp> {
                           },
                           child: Text(
                             'Sign Up',
-                            style: kTextTheme.titleLarge?.copyWith(
-                              color: primaryText,
+                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                              color: Theme.of(context).colorScheme.onSurface,
                             ),
                           ),
                         ),
@@ -308,7 +306,7 @@ class _SignUpState extends State<SignUp> {
                                   backgroundColor: errorColor,
                                   content: Text(
                                     'Error: ${e.toString()}',
-                                    style: kTextTheme.bodyMedium,
+                                    style: Theme.of(context).textTheme.bodyMedium,
                                   ),
                                 );
                               },
@@ -319,9 +317,9 @@ class _SignUpState extends State<SignUp> {
                           height: 50,
                           width: double.infinity,
                           decoration: BoxDecoration(
-                            color: primaryBg,
+                            color: Theme.of(context).colorScheme.surface,
                             borderRadius: radiusMedium,
-                            border: Border.all(color: primaryText),
+                            border: Border.all(color: Theme.of(context).colorScheme.onSurface),
                           ),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
@@ -333,7 +331,7 @@ class _SignUpState extends State<SignUp> {
                               sizedBoxWidthSmall,
                               Text(
                                 'Or Sign Up with Google',
-                                style: kTextTheme.bodyLarge,
+                                style: Theme.of(context).textTheme.bodyLarge,
                               ),
                             ],
                           ),
@@ -348,14 +346,14 @@ class _SignUpState extends State<SignUp> {
                           children: [
                             Text(
                               'Already have an account?',
-                              style: kTextTheme.bodyLarge,
+                              style: Theme.of(context).textTheme.bodyLarge,
                             ),
                             sizedBoxWidthSmall,
                             GestureDetector(
                               onTap: widget.showLoginpage,
                               child: Text(
                                 'Sign In',
-                                style: kTextTheme.bodyLarge?.copyWith(
+                                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                                   color: Colors.blue,
                                 ),
                               ),

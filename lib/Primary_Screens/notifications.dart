@@ -1,7 +1,5 @@
 import 'package:final_project/Components/Custom_header.dart';
 import 'package:final_project/Components/back_button.dart';
-import 'package:final_project/Constants/colors.dart';
-import 'package:final_project/Constants/typograpy.dart';
 import 'package:flutter/material.dart';
   //
 class Notifications extends StatelessWidget {
@@ -11,11 +9,11 @@ class Notifications extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: primaryBg,
+        backgroundColor: Theme.of(context).colorScheme.surface,
         leading: CustomBackButton(),
         title: CustomHeader(headerName: "Notifications"),
       ),
-      backgroundColor: primaryBg,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       // --- BODY: Empty State ---
       body: SafeArea(
         child: Column(
@@ -32,19 +30,19 @@ class Notifications extends StatelessWidget {
                       Icon(
                         Icons.mark_email_unread_outlined,
                         size: 64,
-                        color: primaryText.withOpacity(0.5),
+                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
                       ),
                       const SizedBox(height: 24),
 
                       // Title
-                      Text('No Notifications', style: kTextTheme.headlineSmall),
+                      Text('No Notifications', style: Theme.of(context).textTheme.headlineSmall),
                       const SizedBox(height: 8),
 
                       // Subtitle Text
                       Text(
                         'We\'ll let you know when there will be something to update you.',
                         textAlign: TextAlign.center,
-                        style: kTextTheme.bodyLarge,
+                        style: Theme.of(context).textTheme.bodyLarge,
                       ),
                     ],
                   ),

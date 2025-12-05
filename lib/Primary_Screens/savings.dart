@@ -1,7 +1,7 @@
 import 'package:final_project/Components/Custom_header.dart';
 import 'package:final_project/Constants/colors.dart';
 import 'package:final_project/Constants/spacing.dart';
-import 'package:final_project/Constants/typograpy.dart';
+import 'package:final_project/SecondaryScreens/single_saving.dart';
 import 'package:final_project/single_budget.dart';
 import 'package:flutter/material.dart';
 
@@ -34,10 +34,10 @@ class _SavingsPageState extends State<SavingsPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: primaryBg,
+        backgroundColor: Theme.of(context).colorScheme.surface,
         title: CustomHeader(headerName: "Savings"),
       ),
-      backgroundColor: primaryBg,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       body: SafeArea(
         child: Column(
           children: [
@@ -51,22 +51,34 @@ class _SavingsPageState extends State<SavingsPage> {
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text("Balance", style: kTextTheme.bodyLarge),
+                          Text(
+                            "Balance",
+                            style: Theme.of(context).textTheme.bodyLarge,
+                          ),
                           const SizedBox(height: 4),
-                          Text("\$1,187.40", style: kTextTheme.headlineMedium),
+                          Text(
+                            "\$1,187.40",
+                            style: Theme.of(context).textTheme.headlineMedium,
+                          ),
                         ],
                       ),
-                      Container(height: 50, width: 1, color: primaryText),
+                      Container(
+                        height: 50,
+                        width: 1,
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text("Total Target", style: kTextTheme.bodyLarge),
+                          Text(
+                            "Total Target",
+                            style: Theme.of(context).textTheme.bodyLarge,
+                          ),
                           const SizedBox(height: 4),
                           Text(
                             "\$7,783.00",
-                            style: kTextTheme.headlineMedium?.copyWith(
-                              color: accentColor,
-                            ),
+                            style: Theme.of(context).textTheme.headlineMedium
+                                ?.copyWith(color: accentColor),
                           ),
                         ],
                       ),
@@ -79,7 +91,9 @@ class _SavingsPageState extends State<SavingsPage> {
                         child: Container(
                           height: 10,
                           decoration: BoxDecoration(
-                            color: primaryText.withOpacity(0.2),
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurface.withOpacity(0.2),
                             borderRadius: BorderRadius.circular(5),
                           ),
                           child: FractionallySizedBox(
@@ -95,7 +109,10 @@ class _SavingsPageState extends State<SavingsPage> {
                         ),
                       ),
                       const SizedBox(width: 10),
-                      Text("\$7,783.00", style: kTextTheme.bodyMedium),
+                      Text(
+                        "\$7,783.00",
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
                     ],
                   ),
                   Align(
@@ -104,11 +121,26 @@ class _SavingsPageState extends State<SavingsPage> {
                       padding: const EdgeInsets.only(top: 10),
                       child: Text(
                         "18% of savings saved",
-                        style: kTextTheme.bodyMedium,
+                        style: Theme.of(context).textTheme.bodyMedium,
                       ),
                     ),
                   ),
                   const SizedBox(height: 24),
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const SingleSaving(),
+                        ),
+                      );
+                    },
+                    child: Text(
+                      'Travel',
+                      style: Theme.of(context).textTheme.headlineSmall,
+                    ),
+                  ),
+                  SizedBox(height: 20),
                   ElevatedButton(
                     onPressed: () {
                       Navigator.push(
@@ -118,7 +150,7 @@ class _SavingsPageState extends State<SavingsPage> {
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: brandGreen,
-                      foregroundColor: primaryText,
+                      foregroundColor: Theme.of(context).colorScheme.onSurface,
                       shape: RoundedRectangleBorder(borderRadius: radiusSmall),
                       padding: const EdgeInsets.symmetric(
                         horizontal: 40,
@@ -127,7 +159,7 @@ class _SavingsPageState extends State<SavingsPage> {
                     ),
                     child: Text(
                       'Savings Analysis',
-                      style: kTextTheme.bodyLarge,
+                      style: Theme.of(context).textTheme.bodyLarge,
                     ),
                   ),
                 ],

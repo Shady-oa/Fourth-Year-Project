@@ -1,7 +1,6 @@
 import 'package:final_project/Components/notification_icon.dart';
 import 'package:final_project/Constants/colors.dart';
 import 'package:final_project/Constants/spacing.dart';
-import 'package:final_project/Constants/typograpy.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 
@@ -34,18 +33,18 @@ class CustomHeader extends StatelessWidget {
                   children: [
                     Text(
                       "Penny",
-                      style: kTextTheme.bodyLarge?.copyWith(color: brandGreen),
+                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: brandGreen),
                     ),
                     Text(
                       'Wise',
-                      style: kTextTheme.bodyLarge?.copyWith(color: brandGreen),
+                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: brandGreen),
                     ),
                   ],
                 ),
               ],
             ),
             const Spacer(),
-            Text(headerName, style: kTextTheme.headlineSmall),
+            Text(headerName, style: Theme.of(context).textTheme.headlineSmall),
             const Spacer(),
 
             // Conditional rendering:

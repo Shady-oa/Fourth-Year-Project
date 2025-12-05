@@ -1,6 +1,5 @@
 import 'package:final_project/Constants/colors.dart';
 import 'package:final_project/Constants/spacing.dart';
-import 'package:final_project/Constants/typograpy.dart';
 import 'package:flutter/material.dart';
 
 class AddExpense extends StatelessWidget {
@@ -9,7 +8,7 @@ class AddExpense extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: primaryBg,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       body: SafeArea(
         child: Column(
           children: [
@@ -24,19 +23,19 @@ class AddExpense extends StatelessWidget {
                 children: [
                   Text(
                     "Add Expense",
-                    style: kTextTheme.headlineSmall,
+                    style: Theme.of(context).textTheme.headlineSmall,
                   ),
                   const Spacer(),
                   Container(
                     height: 30,
                     width: 30,
-                    decoration: const BoxDecoration(
+                    decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: primaryText,
+                      color: Theme.of(context).colorScheme.onSurface,
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.notifications_none_outlined,
-                      color: primaryBg,
+                      color: Theme.of(context).colorScheme.surface,
                     ),
                   ),
                 ],
@@ -48,12 +47,12 @@ class AddExpense extends StatelessWidget {
               child: SingleChildScrollView(
                 child: Container(
                   width: double.infinity,
-                  decoration: const BoxDecoration(
-                    borderRadius: BorderRadius.only(
+                  decoration: BoxDecoration(
+                    borderRadius: const BorderRadius.only(
                       topLeft: Radius.circular(50), // Custom value
                       topRight: Radius.circular(50), // Custom value
                     ),
-                    color: primaryText,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                   child: Padding(
                     padding: const EdgeInsets.only(
@@ -71,8 +70,8 @@ class AddExpense extends StatelessWidget {
                               bottom: spacerSmall), // Reduced padding for label
                           child: Text(
                             'Date',
-                            style: kTextTheme.bodyMedium
-                                ?.copyWith(color: primaryBg),
+                            style: Theme.of(context).textTheme.bodyMedium
+                                ?.copyWith(color: Theme.of(context).colorScheme.surface),
                           ),
                         ),
                         const SizedBox(
@@ -84,13 +83,13 @@ class AddExpense extends StatelessWidget {
                                 'April 30, 2024', // Placeholder inside the field
                             suffixIcon: const Icon(Icons.calendar_today),
                             filled: true,
-                            fillColor: primaryBg, // White background inside the field
+                            fillColor: Theme.of(context).colorScheme.surface, // White background inside the field
                             border: OutlineInputBorder(
                               borderRadius:
                                   radiusMedium, // Rounded corners
                             ),
                           ),
-                          style: kTextTheme.bodyMedium
+                          style: Theme.of(context).textTheme.bodyMedium
                               ?.copyWith(fontWeight: FontWeight.w600), // Black and bold text
                         ),
                         const SizedBox(
@@ -101,21 +100,21 @@ class AddExpense extends StatelessWidget {
                               bottom: spacerSmall), // Reduced padding for label
                           child: Text(
                             'Category',
-                            style: kTextTheme.bodyMedium
-                                ?.copyWith(color: primaryBg),
+                            style: Theme.of(context).textTheme.bodyMedium
+                                ?.copyWith(color: Theme.of(context).colorScheme.surface),
                           ),
                         ),
                         TextField(
                           decoration: InputDecoration(
                             hintText: 'Select the category',
                             filled: true,
-                            fillColor: primaryBg, // White background inside the field
+                            fillColor: Theme.of(context).colorScheme.surface, // White background inside the field
                             border: OutlineInputBorder(
                               borderRadius:
                                   radiusMedium, // Rounded corners
                             ),
                           ),
-                          style: kTextTheme.bodyMedium
+                          style: Theme.of(context).textTheme.bodyMedium
                               ?.copyWith(fontWeight: FontWeight.w600), // Black and bold text
                         ),
                         const SizedBox(height: spacerMedium),
@@ -124,21 +123,21 @@ class AddExpense extends StatelessWidget {
                               bottom: spacerSmall), // Reduced padding for label
                           child: Text(
                             'Amount',
-                            style: kTextTheme.bodyMedium
-                                ?.copyWith(color: primaryBg),
+                            style: Theme.of(context).textTheme.bodyMedium
+                                ?.copyWith(color: Theme.of(context).colorScheme.surface),
                           ),
                         ),
                         TextField(
                           decoration: InputDecoration(
                             hintText: '\$25.00',
                             filled: true,
-                            fillColor: primaryBg, // White background inside the field
+                            fillColor: Theme.of(context).colorScheme.surface, // White background inside the field
                             border: OutlineInputBorder(
                               borderRadius:
                                   radiusMedium, // Rounded corners
                             ),
                           ),
-                          style: kTextTheme.bodyMedium
+                          style: Theme.of(context).textTheme.bodyMedium
                               ?.copyWith(fontWeight: FontWeight.w600), // Black and bold text
                         ),
                         const SizedBox(height: spacerMedium),
@@ -147,21 +146,21 @@ class AddExpense extends StatelessWidget {
                               bottom: spacerSmall), // Reduced padding for label
                           child: Text(
                             'Expense Title',
-                            style: kTextTheme.bodyMedium
-                                ?.copyWith(color: primaryBg),
+                            style: Theme.of(context).textTheme.bodyMedium
+                                ?.copyWith(color: Theme.of(context).colorScheme.surface),
                           ),
                         ),
                         TextField(
                           decoration: InputDecoration(
                             hintText: 'Dinner',
                             filled: true,
-                            fillColor: primaryBg,
+                            fillColor: Theme.of(context).colorScheme.surface,
                             border: OutlineInputBorder(
                               borderRadius:
                                   radiusMedium, // Rounded corners
                             ),
                           ),
-                          style: kTextTheme.bodyMedium
+                          style: Theme.of(context).textTheme.bodyMedium
                               ?.copyWith(fontWeight: FontWeight.w600),
                         ),
                         const SizedBox(height: spacerMedium),
@@ -170,13 +169,13 @@ class AddExpense extends StatelessWidget {
                           decoration: InputDecoration(
                             hintText: 'Write any additional notes here',
                             filled: true,
-                            fillColor: primaryBg, // White background inside the field
+                            fillColor: Theme.of(context).colorScheme.surface, // White background inside the field
                             border: OutlineInputBorder(
                               borderRadius:
                                   radiusMedium, // Rounded corners
                             ),
                           ),
-                          style: kTextTheme.bodyMedium
+                          style: Theme.of(context).textTheme.bodyMedium
                               ?.copyWith(fontWeight: FontWeight.w600),
                         ),
                         const SizedBox(height: spacerMedium),
@@ -193,8 +192,8 @@ class AddExpense extends StatelessWidget {
                               ),
                               child: Text(
                                 'Save',
-                                style: kTextTheme.bodyMedium?.copyWith(
-                                    color: primaryText,
+                                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    color: Theme.of(context).colorScheme.onSurface,
                                     fontWeight: FontWeight.w600),
                               ),
                             ),

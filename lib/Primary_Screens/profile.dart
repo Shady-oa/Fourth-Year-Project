@@ -3,8 +3,8 @@ import 'package:final_project/AuthScreens/login.dart';
 import 'package:final_project/Components/Custom_header.dart';
 import 'package:final_project/Constants/colors.dart';
 import 'package:final_project/Constants/spacing.dart';
-import 'package:final_project/Constants/typograpy.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 class Profile extends StatelessWidget {
   const Profile({super.key});
@@ -26,7 +26,6 @@ class _ProfileContentState extends State<_ProfileContent> {
   // State for switches
   bool _isDarkMode = false;
 
-  // Helper for building basic settings items
   Widget _buildSettingsItem({
     required IconData icon,
     required String title,
@@ -34,35 +33,42 @@ class _ProfileContentState extends State<_ProfileContent> {
     Widget? trailing,
     VoidCallback? onTap,
   }) {
-    // 3. REFACTOR: Simplified trailing logic
     return ListTile(
-      leading: Icon(icon, color: primaryText),
-      title: Text(title, style: kTextTheme.bodyLarge),
+      leading: Icon(icon, color: Theme.of(context).colorScheme.onSurface),
+      title: Text(title, style: Theme.of(context).textTheme.bodyLarge),
       subtitle: subtitle != null
-          ? Text(subtitle, style: kTextTheme.bodySmall)
+          ? Text(subtitle, style: Theme.of(context).textTheme.bodySmall)
           : null,
-      // Use the provided trailing widget or default to a chevron icon
-      trailing: trailing ?? Icon(Icons.chevron_right, color: primaryText),
+      trailing:
+          trailing ??
+          Icon(
+            Icons.chevron_right,
+            color: Theme.of(context).colorScheme.onSurface,
+          ),
       onTap: onTap,
       contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 2),
     );
   }
 
-  // 4. REFACTOR: Created a separate widget for the Dark Mode toggle
+  
   Widget _buildDarkModeToggle() {
+    final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
+
+    final isDarkMode = themeProvider.currentTheme == darkMode;
+
     return _buildSettingsItem(
       icon: Icons.dark_mode,
       title: 'Dark Mode',
       trailing: Switch(
-        value: _isDarkMode,
+        value: isDarkMode,
         onChanged: (bool value) {
-          setState(() {
-            _isDarkMode = value;
-          });
+          themeProvider.toggleTheme();
         },
         activeColor: accentColor,
       ),
-      onTap: () {}, // Do nothing on list tile tap
+      onTap: () {
+        themeProvider.toggleTheme();
+      },
     );
   }
 
@@ -70,10 +76,10 @@ class _ProfileContentState extends State<_ProfileContent> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: primaryBg,
+        backgroundColor: Theme.of(context).colorScheme.surface,
         title: CustomHeader(headerName: "Profile"),
       ),
-      backgroundColor: primaryBg,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       body: Padding(
         padding: paddingAllMedium,
         child: SingleChildScrollView(
@@ -91,9 +97,15 @@ class _ProfileContentState extends State<_ProfileContent> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Shady_o.a', style: kTextTheme.headlineMedium),
+                      Text(
+                        'Shady_o.a',
+                        style: Theme.of(context).textTheme.headlineMedium,
+                      ),
                       const SizedBox(height: 4),
-                      Text('Kisii, Kenya', style: kTextTheme.bodySmall),
+                      Text(
+                        'Kisii, Kenya',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
                     ],
                   ),
                 ],
@@ -104,7 +116,10 @@ class _ProfileContentState extends State<_ProfileContent> {
                 children: [
                   Padding(
                     padding: const EdgeInsets.fromLTRB(20, 0, 20, 0),
-                    child: Text('Settings', style: kTextTheme.headlineSmall),
+                    child: Text(
+                      'Settings',
+                      style: Theme.of(context).textTheme.headlineSmall,
+                    ),
                   ),
 
                   _buildDarkModeToggle(),
@@ -134,7 +149,7 @@ class _ProfileContentState extends State<_ProfileContent> {
                         children: [
                           Text(
                             'Penny Wise is a personal finance management app designed to help you track your expenses, manage budgets, and achieve your financial goals.',
-                            style: kTextTheme.bodyMedium,
+                            style: Theme.of(context).textTheme.bodyMedium,
                           ),
                         ],
                       );

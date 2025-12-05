@@ -1,6 +1,5 @@
 // ignore_for_file: prefer_const_constructors
 
-import 'package:final_project/Constants/colors.dart';
 import 'package:final_project/Firebase/auth_page.dart';
 // import 'package:firebase/auth_page.dart';
 //import 'package:firebase/login.dart';
@@ -14,7 +13,7 @@ class MainPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: primaryBg,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       body: StreamBuilder<User?>(
         stream: FirebaseAuth.instance.authStateChanges(),
         builder: (context, snapshot) {

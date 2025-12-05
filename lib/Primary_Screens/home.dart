@@ -1,7 +1,6 @@
 import 'package:final_project/Components/notification_icon.dart';
 import 'package:final_project/Constants/colors.dart';
 import 'package:final_project/Constants/spacing.dart';
-import 'package:final_project/Constants/typograpy.dart';
 import 'package:flutter/material.dart';
 
 class HomePage extends StatelessWidget {
@@ -11,7 +10,7 @@ class HomePage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: primaryBg,
+        backgroundColor: Theme.of(context).colorScheme.surface,
         elevation: 0,
         leading: Padding(
           padding: paddingAllTiny,
@@ -23,13 +22,13 @@ class HomePage extends StatelessWidget {
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Good Morning', style: kTextTheme.headlineSmall),
-            Text('Alex', style: kTextTheme.bodyLarge),
+            Text('Good Morning', style: Theme.of(context).textTheme.headlineSmall),
+            Text('Alex', style: Theme.of(context).textTheme.bodyLarge),
           ],
         ),
         actions: [Padding(padding: paddingAllTiny, child: NotificationIcon())],
       ),
-      backgroundColor: primaryBg,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       body: Column(
         children: [
           // Header Section
@@ -45,17 +44,17 @@ class HomePage extends StatelessWidget {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Total Balance', style: kTextTheme.bodyMedium),
-                        Text('\$7,783.00', style: kTextTheme.headlineMedium),
+                        Text('Total Balance', style: Theme.of(context).textTheme.bodyMedium),
+                        Text('\$7,783.00', style: Theme.of(context).textTheme.headlineMedium),
                       ],
                     ),
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
-                        Text('Total Expense', style: kTextTheme.bodyMedium),
+                        Text('Total Expense', style: Theme.of(context).textTheme.bodyMedium),
                         Text(
                           '-\$1,187.40',
-                          style: kTextTheme.headlineMedium?.copyWith(
+                          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                             color: accentColor,
                           ),
                         ),
@@ -69,20 +68,20 @@ class HomePage extends StatelessWidget {
                     Expanded(
                       child: LinearProgressIndicator(
                         value: 0.3,
-                        backgroundColor: primaryText.withOpacity(0.2),
+                        backgroundColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.2),
                         valueColor: const AlwaysStoppedAnimation<Color>(
                           brandGreen,
                         ),
                       ),
                     ),
                     const SizedBox(width: 10),
-                    Text('\$20,000.00', style: kTextTheme.bodyMedium),
+                    Text('\$20,000.00', style: Theme.of(context).textTheme.bodyMedium),
                   ],
                 ),
                 const SizedBox(height: 10),
                 Text(
                   '30% Of Your Expenses, Looks Good.',
-                  style: kTextTheme.bodyMedium,
+                  style: Theme.of(context).textTheme.bodyMedium,
                 ),
               ],
             ),

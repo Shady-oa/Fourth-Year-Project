@@ -1,6 +1,5 @@
 import 'package:final_project/Constants/colors.dart';
 import 'package:final_project/Constants/spacing.dart';
-import 'package:final_project/Constants/typograpy.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -108,21 +107,21 @@ class _BudgetState extends State<Budget> {
     await showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: primaryBg,
-        title: Text("Add New Budget", style: kTextTheme.headlineSmall),
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        title: Text("Add New Budget", style: Theme.of(context).textTheme.headlineSmall),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             TextField(
               controller: categoryController,
               decoration: const InputDecoration(labelText: "Category"),
-              style: kTextTheme.bodyMedium,
+              style: Theme.of(context).textTheme.bodyMedium,
             ),
             TextField(
               controller: amountController,
               keyboardType: TextInputType.number,
               decoration: const InputDecoration(labelText: "Budgeted Amount"),
-              style: kTextTheme.bodyMedium,
+              style: Theme.of(context).textTheme.bodyMedium,
             ),
             const SizedBox(height: spacerMedium),
             TextButton(
@@ -143,7 +142,7 @@ class _BudgetState extends State<Budget> {
                 selectedDate == null
                     ? "Select End Date"
                     : "Selected: ${selectedDate?.toLocal()}".split(' ')[0],
-                style: kTextTheme.bodyMedium?.copyWith(color: brandGreen),
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: brandGreen),
               ),
             ),
           ],
@@ -153,7 +152,7 @@ class _BudgetState extends State<Budget> {
             onPressed: () {
               Navigator.pop(context);
             },
-            child: Text("Cancel", style: kTextTheme.bodyMedium),
+            child: Text("Cancel", style: Theme.of(context).textTheme.bodyMedium),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: brandGreen),
@@ -178,7 +177,7 @@ class _BudgetState extends State<Budget> {
               }
             },
             child: Text("Add",
-                style: kTextTheme.bodyMedium?.copyWith(color: primaryText)),
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.onSurface)),
           ),
         ],
       ),
@@ -198,7 +197,7 @@ class _BudgetState extends State<Budget> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: primaryBg,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       body: SafeArea(
         child: Column(
           children: [
@@ -212,20 +211,20 @@ class _BudgetState extends State<Budget> {
                       Center(
                         child: Text(
                           "Budgets",
-                          style: kTextTheme.headlineSmall,
+                          style: Theme.of(context).textTheme.headlineSmall,
                         ),
                       ),
                       const Spacer(),
                       Container(
                         height: 30,
                         width: 30,
-                        decoration: const BoxDecoration(
+                        decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: primaryText,
+                          color: Theme.of(context).colorScheme.onSurface,
                         ),
-                        child: const Icon(
+                        child: Icon(
                           Icons.notifications_none,
-                          color: primaryBg,
+                          color: Theme.of(context).colorScheme.surface,
                         ),
                       )
                     ],
@@ -242,27 +241,27 @@ class _BudgetState extends State<Budget> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text("Total Budget", style: kTextTheme.bodyLarge),
+                      Text("Total Budget", style: Theme.of(context).textTheme.bodyLarge),
                       const SizedBox(height: spacerTiny),
                       Text(
                         "\$${totalBudget.toStringAsFixed(2)}",
-                        style: kTextTheme.headlineMedium,
+                        style: Theme.of(context).textTheme.headlineMedium,
                       ),
                     ],
                   ),
                   Container(
                     height: 50,
                     width: 1,
-                    color: primaryText,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text("Total Expense", style: kTextTheme.bodyLarge),
+                      Text("Total Expense", style: Theme.of(context).textTheme.bodyLarge),
                       const SizedBox(height: spacerTiny),
                       Text(
                         "\$${totalExpenses.toStringAsFixed(2)}",
-                        style: kTextTheme.headlineMedium
+                        style: Theme.of(context).textTheme.headlineMedium
                             ?.copyWith(color: Colors.blue),
                       ),
                     ],
@@ -275,12 +274,12 @@ class _BudgetState extends State<Budget> {
             Expanded(
               child: Container(
                 width: double.infinity,
-                decoration: const BoxDecoration(
-                  borderRadius: BorderRadius.only(
+                decoration: BoxDecoration(
+                  borderRadius: const BorderRadius.only(
                     topLeft: Radius.circular(50),
                     topRight: Radius.circular(50),
                   ),
-                  color: primaryText,
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
                 child: Padding(
                   padding: paddingAllMedium,
@@ -294,7 +293,7 @@ class _BudgetState extends State<Budget> {
                           margin: const EdgeInsets.only(bottom: spacerMedium),
                           padding: paddingAllMedium,
                           decoration: BoxDecoration(
-                            color: primaryText.withOpacity(0.8),
+                            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.8),
                             borderRadius: radiusMedium,
                           ),
                           child: Column(
@@ -302,19 +301,19 @@ class _BudgetState extends State<Budget> {
                             children: [
                               Text(
                                 budget['category'],
-                                style: kTextTheme.titleLarge
-                                    ?.copyWith(color: primaryBg),
+                                style: Theme.of(context).textTheme.titleLarge
+                                    ?.copyWith(color: Theme.of(context).colorScheme.surface),
                               ),
                               const SizedBox(height: 8),
                               Text(
                                 "Amount: \$${budget['amount']}",
-                                style: kTextTheme.bodyMedium
-                                    ?.copyWith(color: primaryBg),
+                                style: Theme.of(context).textTheme.bodyMedium
+                                    ?.copyWith(color: Theme.of(context).colorScheme.surface),
                               ),
                               Text(
                                 "End Date: ${budget['endDate']}",
-                                style: kTextTheme.bodyMedium
-                                    ?.copyWith(color: primaryBg.withOpacity(0.7)),
+                                style: Theme.of(context).textTheme.bodyMedium
+                                    ?.copyWith(color: Theme.of(context).colorScheme.surface.withOpacity(0.7)),
                               ),
                             ],
                           ),
@@ -343,7 +342,7 @@ class _BudgetState extends State<Budget> {
                   onPressed: addBudget,
                   child: Text(
                     "Add Budget",
-                    style: kTextTheme.bodyMedium?.copyWith(color: primaryText),
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.onSurface),
                   ),
                 ),
               ),
@@ -426,21 +425,21 @@ class _BudgetDetailsPageState extends State<BudgetDetailsPage> {
     await showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: primaryBg,
-        title: Text("Add Expense", style: kTextTheme.headlineSmall),
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        title: Text("Add Expense", style: Theme.of(context).textTheme.headlineSmall),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             TextField(
               controller: descriptionController,
               decoration: const InputDecoration(labelText: "Description"),
-              style: kTextTheme.bodyMedium,
+              style: Theme.of(context).textTheme.bodyMedium,
             ),
             TextField(
               controller: amountController,
               keyboardType: TextInputType.number,
               decoration: const InputDecoration(labelText: "Amount"),
-              style: kTextTheme.bodyMedium,
+              style: Theme.of(context).textTheme.bodyMedium,
             ),
           ],
         ),
@@ -449,7 +448,7 @@ class _BudgetDetailsPageState extends State<BudgetDetailsPage> {
             onPressed: () {
               Navigator.pop(context);
             },
-            child: Text("Cancel", style: kTextTheme.bodyMedium),
+            child: Text("Cancel", style: Theme.of(context).textTheme.bodyMedium),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: brandGreen),
@@ -475,7 +474,7 @@ class _BudgetDetailsPageState extends State<BudgetDetailsPage> {
               }
             },
             child: Text("Add",
-                style: kTextTheme.bodyMedium?.copyWith(color: primaryText)),
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.onSurface)),
           ),
         ],
       ),
@@ -485,7 +484,7 @@ class _BudgetDetailsPageState extends State<BudgetDetailsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: primaryBg,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       body: SafeArea(
         child: Column(
           children: [
@@ -496,19 +495,19 @@ class _BudgetDetailsPageState extends State<BudgetDetailsPage> {
                 children: [
                   Text(
                     "${budgetDetails['Category']} Budget",
-                    style: kTextTheme.headlineSmall,
+                    style: Theme.of(context).textTheme.headlineSmall,
                   ),
                   const Spacer(),
                   Container(
                     height: 30,
                     width: 30,
-                    decoration: const BoxDecoration(
+                    decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: primaryText,
+                      color: Theme.of(context).colorScheme.onSurface,
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.notifications_none,
-                      color: primaryBg,
+                      color: Theme.of(context).colorScheme.surface,
                     ),
                   )
                 ],
@@ -522,27 +521,27 @@ class _BudgetDetailsPageState extends State<BudgetDetailsPage> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text("Total Budget", style: kTextTheme.bodyLarge),
+                      Text("Total Budget", style: Theme.of(context).textTheme.bodyLarge),
                       const SizedBox(height: spacerTiny),
                       Text(
                         "\$${budgetDetails['Total amount']}",
-                        style: kTextTheme.headlineMedium,
+                        style: Theme.of(context).textTheme.headlineMedium,
                       ),
                     ],
                   ),
                   Container(
                     height: 50,
                     width: 1,
-                    color: primaryText,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text("Total Expense", style: kTextTheme.bodyLarge),
+                      Text("Total Expense", style: Theme.of(context).textTheme.bodyLarge),
                       const SizedBox(height: spacerTiny),
                       Text(
                         " \$${totalExpenses.toStringAsFixed(2)}",
-                        style: kTextTheme.headlineMedium
+                        style: Theme.of(context).textTheme.headlineMedium
                             ?.copyWith(color: Colors.blue),
                       ),
                     ],
@@ -555,12 +554,12 @@ class _BudgetDetailsPageState extends State<BudgetDetailsPage> {
             Expanded(
               child: Container(
                 width: double.infinity,
-                decoration: const BoxDecoration(
-                  borderRadius: BorderRadius.only(
+                decoration: BoxDecoration(
+                  borderRadius: const BorderRadius.only(
                     topLeft: Radius.circular(50),
                     topRight: Radius.circular(50),
                   ),
-                  color: primaryText,
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
                 child: Padding(
                   padding: paddingAllMedium,
@@ -584,7 +583,7 @@ class _BudgetDetailsPageState extends State<BudgetDetailsPage> {
                               margin: const EdgeInsets.symmetric(vertical: spacerSmall),
                               padding: paddingAllMedium,
                               decoration: BoxDecoration(
-                                color: primaryText.withOpacity(0.8),
+                                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.8),
                                 borderRadius: radiusSmall,
                               ),
                               child: Row(
@@ -597,8 +596,8 @@ class _BudgetDetailsPageState extends State<BudgetDetailsPage> {
                                       children: [
                                         Text(
                                           expense['description'],
-                                          style: kTextTheme.titleLarge
-                                              ?.copyWith(color: primaryBg),
+                                          style: Theme.of(context).textTheme.titleLarge
+                                              ?.copyWith(color: Theme.of(context).colorScheme.surface),
                                         ),
                                         const SizedBox(height: spacerSmall),
                                         Row(
@@ -609,17 +608,17 @@ class _BudgetDetailsPageState extends State<BudgetDetailsPage> {
                                               children: [
                                                 Text(
                                                   formattedDate,
-                                                  style: kTextTheme.bodySmall
+                                                  style: Theme.of(context).textTheme.bodySmall
                                                       ?.copyWith(
-                                                          color: primaryBg
+                                                          color: Theme.of(context).colorScheme.surface
                                                               .withOpacity(0.7)),
                                                 ),
                                                 const SizedBox(height: spacerTiny),
                                                 Text(
                                                   formattedTime,
-                                                  style: kTextTheme.bodySmall
+                                                  style: Theme.of(context).textTheme.bodySmall
                                                       ?.copyWith(
-                                                          color: primaryBg
+                                                          color: Theme.of(context).colorScheme.surface
                                                               .withOpacity(0.7)),
                                                 ),
                                               ],
@@ -634,8 +633,8 @@ class _BudgetDetailsPageState extends State<BudgetDetailsPage> {
                                     padding: const EdgeInsets.only(left: spacerSmall),
                                     child: Text(
                                       "\$${expense['amount']}",
-                                      style: kTextTheme.bodyMedium
-                                          ?.copyWith(color: primaryBg.withOpacity(0.7)),
+                                      style: Theme.of(context).textTheme.bodyMedium
+                                          ?.copyWith(color: Theme.of(context).colorScheme.surface.withOpacity(0.7)),
                                     ),
                                   ),
                                 ],
@@ -661,8 +660,8 @@ class _BudgetDetailsPageState extends State<BudgetDetailsPage> {
                             onPressed: addExpense,
                             child: Text(
                               "Add Expense",
-                              style: kTextTheme.bodyMedium
-                                  ?.copyWith(color: primaryText),
+                              style: Theme.of(context).textTheme.bodyMedium
+                                  ?.copyWith(color: Theme.of(context).colorScheme.onSurface),
                             ),
                           ),
                         ),

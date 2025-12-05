@@ -1,21 +1,28 @@
 import 'package:final_project/Components/Custom_header.dart';
 import 'package:final_project/Components/back_button.dart';
 import 'package:final_project/Constants/colors.dart';
-import 'package:final_project/Constants/typograpy.dart';
+import 'package:final_project/Constants/spacing.dart';
+import 'package:final_project/SecondaryScreens/add_expense.dart';
+import 'package:final_project/SecondaryScreens/single_expense.dart';
 import 'package:flutter/material.dart';
 
-class Expenses extends StatelessWidget {
+class Expenses extends StatefulWidget {
   const Expenses({super.key});
 
+  @override
+  State<Expenses> createState() => _ExpensesState();
+}
+
+class _ExpensesState extends State<Expenses> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: primaryBg,
+        backgroundColor: Theme.of(context).colorScheme.surface,
         leading: const CustomBackButton(),
         title: CustomHeader(headerName: "Expenses"),
       ),
-      backgroundColor: primaryBg,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
@@ -29,21 +36,29 @@ class Expenses extends StatelessWidget {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text("Total Balance", style: kTextTheme.bodyLarge),
+                      Text(
+                        "Total Balance",
+                        style: Theme.of(context).textTheme.bodyLarge,
+                      ),
                       const SizedBox(height: 4),
-                      Text("\$7,783.00", style: kTextTheme.headlineMedium),
+                      Text(
+                        "\$7,783.00",
+                        style: Theme.of(context).textTheme.headlineMedium,
+                      ),
                     ],
                   ),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text("Total Expense", style: kTextTheme.bodyLarge),
+                      Text(
+                        "Total Expense",
+                        style: Theme.of(context).textTheme.bodyLarge,
+                      ),
                       const SizedBox(height: 4),
                       Text(
                         "-\$1,187.40",
-                        style: kTextTheme.headlineMedium?.copyWith(
-                          color: Colors.blue,
-                        ),
+                        style: Theme.of(context).textTheme.headlineMedium
+                            ?.copyWith(color: Colors.blue),
                       ),
                     ],
                   ),
@@ -77,20 +92,24 @@ class Expenses extends StatelessWidget {
               // Add More Button
               Center(
                 child: ElevatedButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => AddExpense()),
+                    );
+                  },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: brandGreen,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
+                    foregroundColor: Theme.of(context).colorScheme.onSurface,
+                    shape: RoundedRectangleBorder(borderRadius: radiusSmall),
                     padding: const EdgeInsets.symmetric(
                       horizontal: 40,
-                      vertical: 12,
+                      vertical: 14,
                     ),
                   ),
-                  onPressed: () {},
                   child: Text(
-                    "Add More",
-                    style: kTextTheme.bodyMedium?.copyWith(color: primaryText),
+                    'Add More',
+                    style: Theme.of(context).textTheme.bodyLarge,
                   ),
                 ),
               ),
@@ -105,190 +124,20 @@ class Expenses extends StatelessWidget {
   Widget savingsGoalItem(String title, IconData icon) {
     return Container(
       decoration: BoxDecoration(
-        color: primaryText.withOpacity(0.1),
+        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, color: primaryText, size: 40),
+          Icon(icon, color: Theme.of(context).colorScheme.onSurface, size: 40),
           const SizedBox(height: 8),
           Text(
             title,
-            style: kTextTheme.bodyLarge?.copyWith(color: primaryText),
+            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
           ),
-        ],
-      ),
-    );
-  }
-}
-
-class TravelSavingsPage extends StatelessWidget {
-  const TravelSavingsPage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: primaryBg,
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Top Bar
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  CustomBackButton(),
-
-                  Text("Travel", style: kTextTheme.headlineSmall),
-                ],
-              ),
-              const SizedBox(height: 20),
-
-              // Goal and Amount Saved
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text("Goal", style: kTextTheme.bodyLarge),
-                      const SizedBox(height: 4),
-                      Text("\$1,962.93", style: kTextTheme.headlineMedium),
-                    ],
-                  ),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text("Amount Saved", style: kTextTheme.bodyLarge),
-                      const SizedBox(height: 4),
-                      Text(
-                        "\$653.31",
-                        style: kTextTheme.headlineMedium?.copyWith(
-                          color: brandGreen,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
-
-              // Progress bar
-              Row(
-                children: [
-                  Expanded(
-                    child: Container(
-                      height: 10,
-                      decoration: BoxDecoration(
-                        color: primaryText.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(5),
-                      ),
-                      child: FractionallySizedBox(
-                        alignment: Alignment.centerLeft,
-                        widthFactor: 0.4, // 40% progress
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: brandGreen,
-                            borderRadius: BorderRadius.circular(5),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Text("\$1,962.93", style: kTextTheme.bodyMedium),
-                ],
-              ),
-              const SizedBox(height: 10),
-              Text(
-                "30% Of Your Expenses, Looks Good.",
-                style: kTextTheme.bodyMedium?.copyWith(
-                  color: primaryText.withOpacity(0.7),
-                ),
-              ),
-              const SizedBox(height: 20),
-
-              // Transaction List
-              Text("April", style: kTextTheme.titleLarge),
-              Expanded(
-                child: ListView(
-                  children: [
-                    transactionItem(
-                      "Travel Deposit",
-                      "19:56 - April 30",
-                      "\$217.77",
-                    ),
-                    transactionItem(
-                      "Travel Deposit",
-                      "17:42 - April 14",
-                      "\$217.77",
-                    ),
-                    transactionItem(
-                      "Travel Deposit",
-                      "12:30 - April 02",
-                      "\$217.77",
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 20),
-
-              // Add Savings Button
-              Center(
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: brandGreen,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 40,
-                      vertical: 12,
-                    ),
-                  ),
-                  onPressed: () {},
-                  child: Text(
-                    "Add Savings",
-                    style: kTextTheme.bodyMedium?.copyWith(color: primaryText),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget transactionItem(String title, String date, String amount) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Row(
-            children: [
-              const Icon(Icons.flight, color: Colors.blue, size: 40),
-              const SizedBox(width: 10),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(title, style: kTextTheme.bodyLarge),
-                  Text(
-                    date,
-                    style: kTextTheme.bodySmall?.copyWith(
-                      color: primaryText.withOpacity(0.7),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-          Text(amount, style: kTextTheme.bodyLarge),
         ],
       ),
     );

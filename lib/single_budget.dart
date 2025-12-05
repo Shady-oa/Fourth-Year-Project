@@ -2,13 +2,18 @@ import 'package:final_project/Constants/colors.dart';
 import 'package:final_project/Constants/typograpy.dart';
 import 'package:flutter/material.dart';
 
-class SingleBudget extends StatelessWidget {
+class SingleBudget extends StatefulWidget {
   const SingleBudget({super.key});
 
   @override
+  State<SingleBudget> createState() => _SingleBudgetState();
+}
+
+class _SingleBudgetState extends State<SingleBudget> {
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: primaryBg,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       body: SafeArea(
         child: Column(
           children: [
@@ -23,20 +28,20 @@ class SingleBudget extends StatelessWidget {
                       Center(
                         child: Text(
                           "Transport",
-                          style: kTextTheme.headlineSmall,
+                          style: Theme.of(context).textTheme.headlineSmall,
                         ),
                       ),
                       const Spacer(),
                       Container(
                         height: 30,
                         width: 30,
-                        decoration: const BoxDecoration(
+                        decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: primaryText,
+                          color: Theme.of(context).colorScheme.onSurface,
                         ),
-                        child: const Icon(
+                        child: Icon(
                           Icons.notifications_none,
-                          color: primaryBg,
+                          color: Theme.of(context).colorScheme.surface,
                         ),
                       ),
                     ],
@@ -48,20 +53,20 @@ class SingleBudget extends StatelessWidget {
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text("Budget", style: kTextTheme.bodyLarge),
+                          Text("Budget", style: Theme.of(context).textTheme.bodyLarge),
                           const SizedBox(height: 4),
-                          Text("\$2,187.40", style: kTextTheme.headlineMedium),
+                          Text("\$2,187.40", style: Theme.of(context).textTheme.headlineMedium),
                         ],
                       ),
-                      Container(height: 50, width: 1, color: primaryText),
+                      Container(height: 50, width: 1, color: Theme.of(context).colorScheme.onSurface),
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text("Expenses", style: kTextTheme.bodyLarge),
+                          Text("Expenses", style: Theme.of(context).textTheme.bodyLarge),
                           const SizedBox(height: 4),
                           Text(
                             " \$1,783.00",
-                            style: kTextTheme.headlineMedium?.copyWith(
+                            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                               color: Colors.blue,
                             ),
                           ),
@@ -77,7 +82,7 @@ class SingleBudget extends StatelessWidget {
                         child: Container(
                           height: 10,
                           decoration: BoxDecoration(
-                            color: primaryText.withOpacity(0.2),
+                            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2),
                             borderRadius: const BorderRadius.all(
                               Radius.circular(5),
                             ),
@@ -95,7 +100,7 @@ class SingleBudget extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(width: 10),
-                      Text("\$2,187.40", style: kTextTheme.bodyMedium),
+                      Text("\$2,187.40", style: Theme.of(context).textTheme.bodyMedium),
                     ],
                   ),
                   Align(
@@ -104,12 +109,12 @@ class SingleBudget extends StatelessWidget {
                       padding: const EdgeInsets.only(top: 10),
                       child: Text(
                         "18% Of Budget Used",
-                        style: kTextTheme.bodyMedium,
+                        style: Theme.of(context).textTheme.bodyMedium,
                       ),
                     ),
                   ),
                   const SizedBox(height: 20),
-                  Text("Transactions", style: kTextTheme.titleLarge),
+                  Text("Transactions", style: Theme.of(context).textTheme.titleLarge),
                 ],
               ),
             ),
@@ -118,12 +123,12 @@ class SingleBudget extends StatelessWidget {
             Expanded(
               child: Container(
                 width: double.infinity,
-                decoration: const BoxDecoration(
-                  borderRadius: BorderRadius.only(
+                decoration: BoxDecoration(
+                  borderRadius: const BorderRadius.only(
                     topLeft: Radius.circular(50),
                     topRight: Radius.circular(50),
                   ),
-                  color: primaryText,
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
                 child: Padding(
                   padding: const EdgeInsets.only(left: 38, right: 38, top: 30),
@@ -171,8 +176,8 @@ class SingleBudget extends StatelessWidget {
                           child: Center(
                             child: Text(
                               "Add Expense",
-                              style: kTextTheme.bodyMedium?.copyWith(
-                                color: primaryText,
+                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                color: Theme.of(context).colorScheme.onSurface,
                               ),
                             ),
                           ),
@@ -200,29 +205,29 @@ class SingleBudget extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: Row(
         children: [
-          const Icon(Icons.circle, color: primaryBg, size: 40),
+          Icon(Icons.circle, color: Theme.of(context).colorScheme.surface, size: 40),
           const SizedBox(width: 16),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 title,
-                style: kTextTheme.bodyLarge?.copyWith(color: primaryBg),
+                style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: Theme.of(context).colorScheme.surface),
               ),
               Text(
                 description,
-                style: kTextTheme.bodySmall?.copyWith(
-                  color: primaryBg.withOpacity(0.8),
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.surface.withOpacity(0.8),
                 ),
               ),
               Text(
                 date,
-                style: kTextTheme.bodySmall?.copyWith(color: Colors.blue),
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.blue),
               ),
             ],
           ),
           const Spacer(),
-          Text(amount, style: kTextTheme.bodyLarge?.copyWith(color: primaryBg)),
+          Text(amount, style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: Theme.of(context).colorScheme.surface)),
         ],
       ),
     );

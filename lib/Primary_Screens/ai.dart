@@ -1,7 +1,6 @@
 import 'package:final_project/Components/Custom_header.dart';
 import 'package:final_project/Constants/colors.dart';
 import 'package:final_project/Constants/spacing.dart';
-import 'package:final_project/Constants/typograpy.dart';
 import 'package:flutter/material.dart';
 
 // --- Message Model ---
@@ -102,19 +101,21 @@ class _AiPageState extends State<AiPage> {
           children: [
             Text(
               message.text,
-              style: kTextTheme.bodyLarge!.copyWith(
+              style: Theme.of(context).textTheme.bodyLarge!.copyWith(
                 color: isUser
-                    ? primaryText
-                    : primaryBg, // Light text for AI, dark for user
+                    ? Theme.of(context).colorScheme.onSurface
+                    : Theme.of(
+                        context,
+                      ).colorScheme.surface, // Light text for AI, dark for user
               ),
             ),
             const SizedBox(height: 4),
             Text(
               "${message.timestamp.hour}:${message.timestamp.minute.toString().padLeft(2, '0')}",
-              style: kTextTheme.bodySmall!.copyWith(
+              style: Theme.of(context).textTheme.bodySmall!.copyWith(
                 color: isUser
-                    ? primaryText.withOpacity(0.6)
-                    : primaryBg.withOpacity(0.6),
+                    ? Theme.of(context).colorScheme.onSurface.withOpacity(0.6)
+                    : Theme.of(context).colorScheme.surface.withOpacity(0.6),
                 fontSize: 10,
               ),
             ),
@@ -137,19 +138,43 @@ class _AiPageState extends State<AiPage> {
               decoration: InputDecoration(
                 hintText: 'Ask penny AI about your finances...',
                 border: const OutlineInputBorder(borderRadius: radiusLarge),
-                fillColor: primaryText.withOpacity(0.1),
+                fillColor: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withOpacity(0.1),
                 filled: true,
               ),
               onSubmitted: (_) => _handleSend(),
             ),
           ),
           const SizedBox(width: 8),
-          FloatingActionButton(
-            onPressed: _handleSend,
-            backgroundColor: primaryText,
-            elevation: 0,
-            mini: true,
-            child: const Icon(Icons.send, color: Colors.white),
+          // To add a border, we wrap the FloatingActionButton in a Container or ClipRRect
+          ClipRRect(
+            borderRadius: BorderRadius.circular(
+              50,
+            ), // Matches the circular FAB shape
+            child: Container(
+              // The Container adds the border decoration
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  // Using onSurface color for the border for good contrast against surface
+                  color: Theme.of(context).colorScheme.onSurface,
+                  width: 2.0, // Set the desired border thickness
+                ),
+              ),
+              child: FloatingActionButton(
+                onPressed: _handleSend,
+                // The button's background is the surface color
+                backgroundColor: Theme.of(context).colorScheme.surface,
+                elevation: 0,
+                mini: true,
+                // Icon color should contrast with the surface background
+                child: Icon(
+                  Icons.send,
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+              ),
+            ),
           ),
         ],
       ),
@@ -160,10 +185,10 @@ class _AiPageState extends State<AiPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: primaryBg,
+        backgroundColor: Theme.of(context).colorScheme.surface,
         title: CustomHeader(headerName: "Penny AI"),
       ),
-      backgroundColor: primaryBg,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       body: Column(
         children: <Widget>[
           // Chat Messages List

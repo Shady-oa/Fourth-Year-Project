@@ -1,5 +1,3 @@
-import 'package:final_project/Constants/colors.dart';
-import 'package:final_project/Constants/typograpy.dart';
 import 'package:flutter/material.dart';
 import 'package:toasty_box/toast_enums.dart';
 import 'package:toasty_box/toast_service.dart';
@@ -20,9 +18,9 @@ void showCustomToast({
     leading: Icon(icon),
     length: ToastLength.medium,
     positionCurve: Curves.bounceInOut,
-    messageStyle: kTextTheme.bodyLarge!.copyWith(color: primaryBg),
+    messageStyle: Theme.of(context).textTheme.bodyLarge!.copyWith(color: Theme.of(context).colorScheme.surface),
     slideCurve: Curves.easeInOut,
-    shadowColor: primaryText.withOpacity(0.5),
+    shadowColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
   );
 }
 

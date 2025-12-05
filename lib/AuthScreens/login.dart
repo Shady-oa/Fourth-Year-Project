@@ -3,7 +3,6 @@ import 'package:final_project/Components/bottom_nav.dart';
 import 'package:final_project/Components/form_logo.dart';
 import 'package:final_project/Constants/colors.dart';
 import 'package:final_project/Constants/spacing.dart';
-import 'package:final_project/Constants/typograpy.dart';
 import 'package:final_project/Firebase/auth_services.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -42,9 +41,9 @@ class _LoginState extends State<Login> {
         message: 'Please enter both email and password!',
         length: ToastLength.medium,
         positionCurve: Curves.bounceInOut,
-        messageStyle: kTextTheme.bodyLarge?.copyWith(color: primaryBg),
+        messageStyle: Theme.of(context).textTheme.bodyLarge?.copyWith(color: Theme.of(context).colorScheme.surface),
         slideCurve: Curves.easeInOut,
-        shadowColor: primaryText.withOpacity(0.5),
+        shadowColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
       );
       return;
     }
@@ -69,9 +68,9 @@ class _LoginState extends State<Login> {
         message: 'Wrong email or password!',
         length: ToastLength.medium,
         positionCurve: Curves.bounceInOut,
-        messageStyle: kTextTheme.bodyLarge?.copyWith(color: primaryBg),
+        messageStyle: Theme.of(context).textTheme.bodyLarge?.copyWith(color: Theme.of(context).colorScheme.surface),
         slideCurve: Curves.easeInOut,
-        shadowColor: primaryText.withOpacity(0.5),
+        shadowColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
       );
       print('this is the error');
       print(e.toString());
@@ -94,14 +93,14 @@ class _LoginState extends State<Login> {
             Container(
               alignment: Alignment.center,
               height: 100,
-              child: Text("Welcome Back", style: kTextTheme.displaySmall),
+              child: Text("Welcome Back", style: Theme.of(context).textTheme.displaySmall),
             ),
 
             Expanded(
               child: Container(
                 padding: paddingAllMedium,
-                decoration: const BoxDecoration(
-                  color: primaryBg,
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surface,
                   borderRadius: topOnly,
                 ),
 
@@ -118,7 +117,7 @@ class _LoginState extends State<Login> {
                           border: const OutlineInputBorder(
                             borderRadius: radiusMedium,
                           ),
-                          fillColor: primaryText.withOpacity(0.1),
+                          fillColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
                           filled: true,
                         ),
                       ),
@@ -134,7 +133,7 @@ class _LoginState extends State<Login> {
                           border: const OutlineInputBorder(
                             borderRadius: radiusMedium,
                           ),
-                          fillColor: primaryText.withOpacity(0.1),
+                          fillColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
                           filled: true,
                         ),
                       ),
@@ -153,7 +152,7 @@ class _LoginState extends State<Login> {
                           },
                           child: Text(
                             'Forgot password?',
-                            style: kTextTheme.bodyMedium?.copyWith(
+                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                               color: accentColor,
                             ),
                           ),
@@ -178,8 +177,8 @@ class _LoginState extends State<Login> {
                           },
                           child: Text(
                             'Sign in',
-                            style: kTextTheme.titleLarge?.copyWith(
-                              color: primaryText,
+                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                              color: Theme.of(context).colorScheme.onSurface,
                             ),
                           ),
                         ),
@@ -211,11 +210,11 @@ class _LoginState extends State<Login> {
                               message: 'Unexpected error occurred,try again!',
                               length: ToastLength.medium,
                               positionCurve: Curves.bounceInOut,
-                              messageStyle: kTextTheme.bodyLarge?.copyWith(
-                                color: primaryBg,
+                              messageStyle: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                                color: Theme.of(context).colorScheme.surface,
                               ),
                               slideCurve: Curves.easeInOut,
-                              shadowColor: primaryText.withOpacity(0.5),
+                              shadowColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
                             );
                             print('This is the signin by google error!!!😂');
                             print(e.toString());
@@ -225,9 +224,9 @@ class _LoginState extends State<Login> {
                           height: 50,
                           width: double.infinity,
                           decoration: BoxDecoration(
-                            color: primaryBg,
+                            color: Theme.of(context).colorScheme.surface,
                             borderRadius: radiusMedium,
-                            border: Border.all(color: primaryText),
+                            border: Border.all(color: Theme.of(context).colorScheme.onSurface),
                           ),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
@@ -238,7 +237,7 @@ class _LoginState extends State<Login> {
                               sizedBoxWidthSmall,
                               Text(
                                 'Or Sign in with Google',
-                                style: kTextTheme.bodyLarge,
+                                style: Theme.of(context).textTheme.bodyLarge,
                               ),
                             ],
                           ),
@@ -253,14 +252,14 @@ class _LoginState extends State<Login> {
                         children: [
                           Text(
                             'Don\'t have an account?',
-                            style: kTextTheme.bodyLarge,
+                            style: Theme.of(context).textTheme.bodyLarge,
                           ),
                           sizedBoxWidthSmall,
                           GestureDetector(
                             onTap: widget.showSignupPage,
                             child: Text(
                               'Register now',
-                              style: kTextTheme.bodyLarge?.copyWith(
+                              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                                 color: accentColor,
                               ),
                             ),

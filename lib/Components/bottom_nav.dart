@@ -1,4 +1,3 @@
-import 'package:final_project/Constants/colors.dart';
 import 'package:final_project/Constants/spacing.dart';
 import 'package:final_project/Primary_Screens/ai.dart';
 import 'package:final_project/Primary_Screens/home.dart';
@@ -34,15 +33,15 @@ class _BottomNavState extends State<BottomNav> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: primaryBg,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       body: pages[current_index],
       bottomNavigationBar: Container(
         padding: paddingAllTiny,
         child: GNav(
-          backgroundColor: primaryBg,
-          color: primaryText,
-          activeColor: primaryBg,
-          tabBackgroundColor: primaryText,
+          backgroundColor: Theme.of(context).colorScheme.surface,
+          color: Theme.of(context).colorScheme.onSurface,
+          activeColor: Theme.of(context).colorScheme.surface,
+          tabBackgroundColor: Theme.of(context).colorScheme.onSurface,
           gap: 8,
           onTabChange: select,
           padding: paddingAllSmall,

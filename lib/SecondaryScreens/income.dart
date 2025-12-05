@@ -1,6 +1,5 @@
 import 'package:final_project/Components/Custom_header.dart';
 import 'package:final_project/Components/back_button.dart';
-import 'package:final_project/Constants/colors.dart';
 import 'package:flutter/material.dart';
 
 class Income extends StatefulWidget {
@@ -15,7 +14,7 @@ class _IncomeState extends State<Income> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: primaryBg,
+        backgroundColor: Theme.of(context).colorScheme.surface,
         leading: CustomBackButton(),
         title: CustomHeader(headerName: "Income"),
       ),

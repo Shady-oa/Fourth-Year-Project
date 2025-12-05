@@ -6,9 +6,7 @@ import 'package:final_project/Components/bottom_nav.dart';
 import 'package:final_project/Components/form_logo.dart';
 import 'package:final_project/Constants/colors.dart';
 import 'package:final_project/Constants/spacing.dart';
-import 'package:final_project/Constants/typograpy.dart';
 import 'package:final_project/Firebase/auth_services.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:toasty_box/toast_enums.dart';
@@ -61,7 +59,7 @@ class _ForgotPasswordState extends State<ForgotPassword> {
           Row(
             children: [
               IconButton(
-                icon: Icon(Icons.arrow_back_ios_sharp, color: primaryText),
+                icon: Icon(Icons.arrow_back_ios_sharp, color: Theme.of(context).colorScheme.onSurface),
                 onPressed: () {
                   Navigator.pop(context);
                 },
@@ -70,15 +68,15 @@ class _ForgotPasswordState extends State<ForgotPassword> {
               Container(
                 alignment: Alignment.center,
                 height: 100,
-                child: Text("Forgot Password", style: kTextTheme.displaySmall),
+                child: Text("Forgot Password", style: Theme.of(context).textTheme.displaySmall),
               ),
             ],
           ),
           Expanded(
             child: Container(
               padding: paddingAllMedium,
-              decoration: const BoxDecoration(
-                color: primaryBg,
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surface,
                 borderRadius: topOnly,
               ),
               child: SingleChildScrollView(
@@ -91,13 +89,13 @@ class _ForgotPasswordState extends State<ForgotPassword> {
                     sizedBoxHeightLarge,
                     Text(
                       'Reset Your Password?',
-                      style: kTextTheme.headlineMedium,
+                      style: Theme.of(context).textTheme.headlineMedium,
                       textAlign: TextAlign.center,
                     ),
                     sizedBoxHeightSmall,
                     Text(
                       'Enter your email to receive a password reset link.',
-                      style: kTextTheme.bodyLarge,
+                      style: Theme.of(context).textTheme.bodyLarge,
                       textAlign: TextAlign.left,
                     ),
                     sizedBoxHeightSmall,
@@ -106,7 +104,7 @@ class _ForgotPasswordState extends State<ForgotPassword> {
                       decoration: InputDecoration(
                         hintText: 'Email',
                         border: OutlineInputBorder(borderRadius: radiusMedium),
-                        fillColor: primaryBg.withOpacity(0.8),
+                        fillColor: Theme.of(context).colorScheme.surface.withOpacity(0.8),
                         filled: true,
                       ),
                     ),
@@ -139,11 +137,11 @@ class _ForgotPasswordState extends State<ForgotPassword> {
                                     'Please enter both email and password!',
                                 length: ToastLength.medium,
                                 positionCurve: Curves.bounceInOut,
-                                messageStyle: kTextTheme.bodyLarge?.copyWith(
-                                  color: primaryBg,
+                                messageStyle: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                                  color: Theme.of(context).colorScheme.surface,
                                 ),
                                 slideCurve: Curves.easeInOut,
-                                shadowColor: primaryText.withOpacity(0.5),
+                                shadowColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
                               );
                             }
                             if (result == 'error') {
@@ -157,11 +155,11 @@ class _ForgotPasswordState extends State<ForgotPassword> {
                                 message: 'An error occured please try again',
                                 length: ToastLength.medium,
                                 positionCurve: Curves.bounceInOut,
-                                messageStyle: kTextTheme.bodyLarge?.copyWith(
-                                  color: primaryBg,
+                                messageStyle: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                                  color: Theme.of(context).colorScheme.surface,
                                 ),
                                 slideCurve: Curves.easeInOut,
-                                shadowColor: primaryText.withOpacity(0.5),
+                                shadowColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
                               );
                             } else {
                               ToastService.showToast(
@@ -174,11 +172,11 @@ class _ForgotPasswordState extends State<ForgotPassword> {
                                 message: result,
                                 length: ToastLength.medium,
                                 positionCurve: Curves.bounceInOut,
-                                messageStyle: kTextTheme.bodyLarge?.copyWith(
-                                  color: primaryBg,
+                                messageStyle: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                                  color: Theme.of(context).colorScheme.surface,
                                 ),
                                 slideCurve: Curves.easeInOut,
-                                shadowColor: primaryText.withOpacity(0.5),
+                                shadowColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
                               );
                               print('this is the reset password error');
                               print(result);
@@ -194,18 +192,18 @@ class _ForgotPasswordState extends State<ForgotPassword> {
                               message: 'Please enter both email and password!',
                               length: ToastLength.medium,
                               positionCurve: Curves.bounceInOut,
-                              messageStyle: kTextTheme.bodyLarge?.copyWith(
-                                color: primaryBg,
+                              messageStyle: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                                color: Theme.of(context).colorScheme.surface,
                               ),
                               slideCurve: Curves.easeInOut,
-                              shadowColor: primaryText.withOpacity(0.5),
+                              shadowColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
                             );
                           }
                         },
                         child: Text(
                           'Send Reset Link',
-                          style: kTextTheme.titleLarge?.copyWith(
-                            color: primaryText,
+                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            color: Theme.of(context).colorScheme.onSurface,
                           ),
                         ),
                       ),
@@ -226,7 +224,7 @@ class _ForgotPasswordState extends State<ForgotPassword> {
                                 backgroundColor: errorColor,
                                 content: Text(
                                   'Unknown error occurred',
-                                  style: kTextTheme.bodyMedium,
+                                  style: Theme.of(context).textTheme.bodyMedium,
                                 ),
                               );
                             },
@@ -244,9 +242,9 @@ class _ForgotPasswordState extends State<ForgotPassword> {
                         height: 50,
                         width: double.infinity,
                         decoration: BoxDecoration(
-                          color: primaryBg,
+                          color: Theme.of(context).colorScheme.surface,
                           borderRadius: radiusMedium,
-                          border: Border.all(color: primaryText),
+                          border: Border.all(color: Theme.of(context).colorScheme.onSurface),
                         ),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -257,7 +255,7 @@ class _ForgotPasswordState extends State<ForgotPassword> {
                             sizedBoxWidthSmall,
                             Text(
                               'Or Sign in with Google',
-                              style: kTextTheme.bodyLarge,
+                              style: Theme.of(context).textTheme.bodyLarge,
                             ),
                           ],
                         ),

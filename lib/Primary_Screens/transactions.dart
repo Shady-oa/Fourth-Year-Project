@@ -1,7 +1,6 @@
 import 'package:final_project/Components/Custom_header.dart';
 import 'package:final_project/Constants/colors.dart';
 import 'package:final_project/Constants/spacing.dart';
-import 'package:final_project/Constants/typograpy.dart';
 import 'package:final_project/SecondaryScreens/expenses.dart';
 import 'package:final_project/SecondaryScreens/income.dart';
 import 'package:flutter/material.dart';
@@ -21,10 +20,10 @@ class _TransactionsState extends State<Transactions> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: primaryBg,
+        backgroundColor: Theme.of(context).colorScheme.surface,
         title: CustomHeader(headerName: "Transactions"),
       ),
-      backgroundColor: primaryBg,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -44,11 +43,11 @@ class _TransactionsState extends State<Transactions> {
                         children: [
                           Text(
                             'Total Balance',
-                            style: kTextTheme.bodyMedium?.copyWith(
-                              color: primaryText.withOpacity(0.7),
+                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
                             ),
                           ),
-                          Text('\$7,783.00', style: kTextTheme.headlineMedium),
+                          Text('\$7,783.00', style: Theme.of(context).textTheme.headlineMedium),
                         ],
                       ),
                       Column(
@@ -56,13 +55,13 @@ class _TransactionsState extends State<Transactions> {
                         children: [
                           Text(
                             'Total Expense',
-                            style: kTextTheme.bodyMedium?.copyWith(
-                              color: primaryText.withOpacity(0.7),
+                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
                             ),
                           ),
                           Text(
                             '-\$1,187.40',
-                            style: kTextTheme.headlineMedium?.copyWith(
+                            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                               color: accentColor,
                             ),
                           ),
@@ -76,21 +75,21 @@ class _TransactionsState extends State<Transactions> {
                       Expanded(
                         child: LinearProgressIndicator(
                           value: 0.3,
-                          backgroundColor: primaryText.withOpacity(0.2),
+                          backgroundColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.2),
                           valueColor: const AlwaysStoppedAnimation<Color>(
                             brandGreen,
                           ),
                         ),
                       ),
                       const SizedBox(width: spacerSmall),
-                      Text('\$20,000.00', style: kTextTheme.bodyMedium),
+                      Text('\$20,000.00', style: Theme.of(context).textTheme.bodyMedium),
                     ],
                   ),
                   const SizedBox(height: spacerSmall),
                   Text(
                     '30% Of Your Expenses, Looks Good.',
-                    style: kTextTheme.bodyMedium?.copyWith(
-                      color: primaryText.withOpacity(0.7),
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
                     ),
                   ),
                 ],
@@ -116,7 +115,7 @@ class _TransactionsState extends State<Transactions> {
                       child: Container(
                         padding: paddingAllMedium,
                         decoration: BoxDecoration(
-                          color: primaryText.withOpacity(0.1),
+                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
                           borderRadius: radiusMedium,
                         ),
                         child: Column(
@@ -128,14 +127,14 @@ class _TransactionsState extends State<Transactions> {
                             const SizedBox(height: spacerSmall),
                             Text(
                               "Income",
-                              style: kTextTheme.bodyMedium?.copyWith(
-                                color: primaryText.withOpacity(0.7),
+                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
                               ),
                             ),
                             const SizedBox(height: spacerTiny),
                             Text(
                               "\$${latestTransactionAmount.toStringAsFixed(2)}", // Dynamically display the latest transaction
-                              style: kTextTheme.titleLarge,
+                              style: Theme.of(context).textTheme.titleLarge,
                             ),
                           ],
                         ),
@@ -155,7 +154,7 @@ class _TransactionsState extends State<Transactions> {
                       child: Container(
                         padding: paddingAllMedium,
                         decoration: BoxDecoration(
-                          color: primaryText.withOpacity(0.1),
+                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
                           borderRadius: radiusMedium,
                         ),
                         child: Column(
@@ -167,12 +166,12 @@ class _TransactionsState extends State<Transactions> {
                             const SizedBox(height: spacerSmall),
                             Text(
                               "Expense",
-                              style: kTextTheme.bodyMedium?.copyWith(
-                                color: primaryText.withOpacity(0.7),
+                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
                               ),
                             ),
                             const SizedBox(height: spacerTiny),
-                            Text("\$1,187.40", style: kTextTheme.titleLarge),
+                            Text("\$1,187.40", style: Theme.of(context).textTheme.titleLarge),
                           ],
                         ),
                       ),

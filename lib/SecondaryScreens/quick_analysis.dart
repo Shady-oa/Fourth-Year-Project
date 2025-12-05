@@ -1,5 +1,4 @@
 import 'package:final_project/Constants/colors.dart';
-import 'package:final_project/Constants/typograpy.dart';
 import 'package:flutter/material.dart';
 
 class Analysis extends StatefulWidget {
@@ -13,7 +12,7 @@ class _AnalysisState extends State<Analysis> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: primaryBg,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       body: SafeArea(
         child: Column(
           children: [
@@ -25,20 +24,20 @@ class _AnalysisState extends State<Analysis> {
                     onTap: () {
                       Navigator.pop(context);
                     },
-                    child: const Icon(Icons.arrow_back, color: primaryText),
+                    child: Icon(Icons.arrow_back, color: Theme.of(context).colorScheme.onSurface),
                   ),
                   const Spacer(),
                   Text(
                     'Quickly Analysis',
-                    style: kTextTheme.headlineSmall,
+                    style: Theme.of(context).textTheme.headlineSmall,
                   ),
                   const Spacer(),
-                  const CircleAvatar(
+                  CircleAvatar(
                     radius: 15,
-                    backgroundColor: primaryText,
+                    backgroundColor: Theme.of(context).colorScheme.onSurface,
                     child: Icon(
                       Icons.notifications_outlined,
-                      color: primaryBg,
+                      color: Theme.of(context).colorScheme.surface,
                     ),
                   ),
                 ],
@@ -52,15 +51,15 @@ class _AnalysisState extends State<Analysis> {
                 children: [
                   Column(
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.directions_car,
-                        color: primaryText,
+                        color: Theme.of(context).colorScheme.onSurface,
                         size: 40,
                       ),
                       const SizedBox(height: 10),
                       Text(
                         'Savings On Goals',
-                        style: kTextTheme.bodyMedium,
+                        style: Theme.of(context).textTheme.bodyMedium,
                         textAlign: TextAlign.center,
                       ),
                     ],
@@ -69,22 +68,22 @@ class _AnalysisState extends State<Analysis> {
                     children: [
                       Text(
                         'Revenue Last Week',
-                        style: kTextTheme.bodyMedium
+                        style: Theme.of(context).textTheme.bodyMedium
                             ?.copyWith(color: brandGreen),
                       ),
                       Text(
                         '\$4,000.00',
-                        style: kTextTheme.bodyLarge,
+                        style: Theme.of(context).textTheme.bodyLarge,
                       ),
                       const SizedBox(height: 15),
                       Text(
                         'Food Last Week',
-                        style: kTextTheme.bodyMedium
+                        style: Theme.of(context).textTheme.bodyMedium
                             ?.copyWith(color: brandGreen),
                       ),
                       Text(
                         '-\$100.00',
-                        style: kTextTheme.bodyLarge
+                        style: Theme.of(context).textTheme.bodyLarge
                             ?.copyWith(color: Colors.blue),
                       ),
                     ],
@@ -95,12 +94,12 @@ class _AnalysisState extends State<Analysis> {
             const SizedBox(height: 40),
             Expanded(
               child: Container(
-                decoration: const BoxDecoration(
-                  borderRadius: BorderRadius.only(
+                decoration: BoxDecoration(
+                  borderRadius: const BorderRadius.only(
                     topLeft: Radius.circular(50),
                     topRight: Radius.circular(50),
                   ),
-                  color: primaryText,
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
@@ -113,11 +112,11 @@ class _AnalysisState extends State<Analysis> {
                         height: 200,
                         width: double.infinity,
                         decoration: BoxDecoration(
-                          color: primaryBg,
+                          color: Theme.of(context).colorScheme.surface,
                           borderRadius: BorderRadius.circular(50),
                         ),
                         child: Center(
-                            child: Text('Graph', style: kTextTheme.headlineSmall)),
+                            child: Text('Graph', style: Theme.of(context).textTheme.headlineSmall)),
                       ),
                       const SizedBox(height: 20),
                       const Expanded(
@@ -192,7 +191,7 @@ class TransactionItem extends StatelessWidget {
         children: [
           CircleAvatar(
             backgroundColor: isIncome ? brandGreen : Colors.red,
-            child: const Icon(Icons.category, color: primaryText),
+            child: Icon(Icons.category, color: Theme.of(context).colorScheme.onSurface),
           ),
           const SizedBox(width: 16),
           Column(
@@ -200,17 +199,17 @@ class TransactionItem extends StatelessWidget {
             children: [
               Text(
                 title,
-                style: kTextTheme.bodyLarge?.copyWith(color: primaryBg),
+                style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: Theme.of(context).colorScheme.surface),
               ),
               Text(date,
-                  style: kTextTheme.bodySmall
-                      ?.copyWith(color: primaryBg.withOpacity(0.7))),
+                  style: Theme.of(context).textTheme.bodySmall
+                      ?.copyWith(color: Theme.of(context).colorScheme.surface.withOpacity(0.7))),
             ],
           ),
           const Spacer(),
           Text(
             amount,
-            style: kTextTheme.bodyLarge?.copyWith(
+            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
               color: isIncome ? brandGreen : Colors.red,
             ),
           ),

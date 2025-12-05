@@ -1,4 +1,3 @@
- import 'package:final_project/Constants/colors.dart';
 import 'package:final_project/Primary_Screens/notifications.dart';
 import 'package:flutter/material.dart';
 
@@ -11,7 +10,7 @@ class NotificationIcon extends StatelessWidget {
       icon: Icon(
         Icons.circle_notifications_rounded,
         size: 30,
-        color: primaryText,
+        color: Theme.of(context).colorScheme.onSurface,
       ),
       onPressed: () {
         Navigator.of(context).push(

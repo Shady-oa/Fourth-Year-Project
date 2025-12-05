@@ -1,5 +1,4 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:final_project/Constants/typograpy.dart';
 import 'package:flutter/material.dart';
 
 class GetUserData extends StatelessWidget {
@@ -19,10 +18,10 @@ class GetUserData extends StatelessWidget {
               snapshot.data!.data() as Map<String, dynamic>;
           return Text(
             'First Name: ${data['first name']} ${data['last name']}',
-            style: kTextTheme.bodyLarge,
+            style: Theme.of(context).textTheme.bodyLarge,
           );
         }
-        return Text('loading...', style: kTextTheme.bodyMedium);
+        return Text('loading...', style: Theme.of(context).textTheme.bodyMedium);
       }),
     );
   }

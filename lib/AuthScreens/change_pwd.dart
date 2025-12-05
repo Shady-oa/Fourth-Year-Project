@@ -3,7 +3,6 @@
 import 'package:final_project/Components/form_logo.dart';
 import 'package:final_project/Constants/colors.dart';
 import 'package:final_project/Constants/spacing.dart';
-import 'package:final_project/Constants/typograpy.dart';
 import 'package:flutter/material.dart';
 import 'package:toasty_box/toast_enums.dart';
 import 'package:toasty_box/toasty_box.dart';
@@ -41,7 +40,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
       decoration: InputDecoration(
         hintText: hintText,
         border: OutlineInputBorder(borderRadius: radiusMedium),
-        fillColor: primaryText.withOpacity(0.1),
+        fillColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
         filled: true,
       ),
     );
@@ -103,7 +102,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
       backgroundColor: backgroundColor,
       message: message,
       length: ToastLength.medium,
-      messageStyle: kTextTheme.bodyLarge?.copyWith(color: primaryBg),
+      messageStyle: Theme.of(context).textTheme.bodyLarge?.copyWith(color: Theme.of(context).colorScheme.surface),
     );
   }
 
@@ -128,7 +127,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                 ),
                 Text(
                   "Change Password",
-                  style: kTextTheme.displaySmall?.copyWith(color: primaryText),
+                  style: Theme.of(context).textTheme.displaySmall?.copyWith(color: Theme.of(context).colorScheme.onSurface),
                 ),
               ],
             ),
@@ -137,8 +136,8 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
           Expanded(
             child: Container(
               padding: paddingAllMedium,
-              decoration: const BoxDecoration(
-                color: primaryBg,
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surface,
                 borderRadius: topOnly,
               ),
               child: SingleChildScrollView(
@@ -151,7 +150,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                     sizedBoxHeightLarge,
                     Text(
                       'Reset Your Password',
-                      style: kTextTheme.headlineMedium,
+                      style: Theme.of(context).textTheme.headlineMedium,
                       textAlign: TextAlign.center,
                     ),
                     sizedBoxHeightSmall,
@@ -194,9 +193,9 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                         onPressed: _handleChangePassword,
                         child: Text(
                           'Save New Password',
-                          style: kTextTheme.titleLarge?.copyWith(
+                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
                             color:
-                                primaryText, // Using primaryText for contrast
+                                Theme.of(context).colorScheme.onSurface, // Using Theme.of(context).colorScheme.onSurface for contrast
                           ),
                         ),
                       ),

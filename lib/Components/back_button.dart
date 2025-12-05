@@ -1,4 +1,3 @@
-import 'package:final_project/Constants/colors.dart';
 import 'package:flutter/material.dart';
 
 class CustomBackButton extends StatelessWidget {
@@ -10,7 +9,7 @@ class CustomBackButton extends StatelessWidget {
       onPressed: () {
         Navigator.of(context).pop();
       },
-      icon: const Icon(Icons.arrow_back_ios, color: primaryText),
+      icon: Icon(Icons.arrow_back_ios, color: Theme.of(context).colorScheme.onSurface),
     );
   }
 }

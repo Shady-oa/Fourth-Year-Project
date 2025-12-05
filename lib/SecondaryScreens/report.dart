@@ -1,5 +1,4 @@
 import 'package:final_project/Constants/colors.dart';
-import 'package:final_project/Constants/typograpy.dart';
 import 'package:flutter/material.dart';
 
 class Report extends StatelessWidget {
@@ -19,7 +18,7 @@ class Report extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: primaryBg,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.only(top: 20),
@@ -32,15 +31,15 @@ class Report extends StatelessWidget {
                     const Spacer(),
                     Text(
                       'Quickly Analysis',
-                      style: kTextTheme.headlineSmall,
+                      style: Theme.of(context).textTheme.headlineSmall,
                     ),
                     const Spacer(),
-                    const CircleAvatar(
+                    CircleAvatar(
                       radius: 15,
-                      backgroundColor: primaryText,
+                      backgroundColor: Theme.of(context).colorScheme.onSurface,
                       child: Icon(
                         Icons.notifications_outlined,
-                        color: primaryBg,
+                        color: Theme.of(context).colorScheme.surface,
                       ),
                     ),
                   ],
@@ -57,11 +56,11 @@ class Report extends StatelessWidget {
                       children: [
                         Text(
                           'Total Balance',
-                          style: kTextTheme.bodyMedium,
+                          style: Theme.of(context).textTheme.bodyMedium,
                         ),
                         Text(
                           '\$7,783.00',
-                          style: kTextTheme.headlineMedium,
+                          style: Theme.of(context).textTheme.headlineMedium,
                         ),
                       ],
                     ),
@@ -70,11 +69,11 @@ class Report extends StatelessWidget {
                       children: [
                         Text(
                           'Total Expense',
-                          style: kTextTheme.bodyMedium,
+                          style: Theme.of(context).textTheme.bodyMedium,
                         ),
                         Text(
                           '-\$1,187.40',
-                          style: kTextTheme.headlineMedium
+                          style: Theme.of(context).textTheme.headlineMedium
                               ?.copyWith(color: Colors.blue),
                         ),
                       ],
@@ -90,7 +89,7 @@ class Report extends StatelessWidget {
                     Expanded(
                       child: LinearProgressIndicator(
                         value: 0.3,
-                        backgroundColor: primaryText.withOpacity(0.2),
+                        backgroundColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.2),
                         valueColor:
                             const AlwaysStoppedAnimation<Color>(brandGreen),
                       ),
@@ -98,7 +97,7 @@ class Report extends StatelessWidget {
                     const SizedBox(width: 10),
                     Text(
                       '\$20,000.00',
-                      style: kTextTheme.bodyMedium,
+                      style: Theme.of(context).textTheme.bodyMedium,
                     ),
                   ],
                 ),
@@ -106,17 +105,17 @@ class Report extends StatelessWidget {
               const SizedBox(height: 10),
               Text(
                 '30% Of Your Expenses, Looks Good.',
-                style: kTextTheme.bodyMedium,
+                style: Theme.of(context).textTheme.bodyMedium,
               ),
               const SizedBox(height: 40),
               Expanded(
                 child: Container(
-                  decoration: const BoxDecoration(
-                    borderRadius: BorderRadius.only(
+                  decoration: BoxDecoration(
+                    borderRadius: const BorderRadius.only(
                       topLeft: Radius.circular(50),
                       topRight: Radius.circular(50),
                     ),
-                    color: primaryText,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                   child: const Column(
                     children: [
