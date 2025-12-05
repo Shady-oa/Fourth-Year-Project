@@ -1,8 +1,8 @@
 import 'package:final_project/Components/Custom_header.dart';
 import 'package:final_project/Constants/colors.dart';
 import 'package:final_project/Constants/spacing.dart';
+import 'package:final_project/SecondaryScreens/quick_analysis.dart';
 import 'package:final_project/SecondaryScreens/single_saving.dart';
-import 'package:final_project/single_budget.dart';
 import 'package:flutter/material.dart';
 
 class SavingsPage extends StatefulWidget {
@@ -145,7 +145,7 @@ class _SavingsPageState extends State<SavingsPage> {
                     onPressed: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (_) => SingleBudget()),
+                        MaterialPageRoute(builder: (_) => Analysis()),
                       );
                     },
                     style: ElevatedButton.styleFrom(
