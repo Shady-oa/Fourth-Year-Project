@@ -55,7 +55,7 @@ class _SplashScreenState extends State<SplashScreen> {
 
             Text(
               "Wise Choices For Financial Freedom",
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                 color: Theme.of(context).colorScheme.onSurface,
               ),
             ),

@@ -3,8 +3,6 @@ import 'package:final_project/Constants/spacing.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 
-
-
 final formLogo = Builder(
   builder: (context) {
     return Column(
@@ -18,12 +16,15 @@ final formLogo = Builder(
             colorFilter: const ColorFilter.mode(brandGreen, BlendMode.srcIn),
           ),
         ),
-    
+
         Text('Penny Wise', style: Theme.of(context).textTheme.displayMedium),
         sizedBoxHeightTiny,
-        Text("Wise Choices For Financial Freedom", style: Theme.of(context).textTheme.titleMedium),
+        Text(
+          "Wise Choices For Financial Freedom",
+          style: Theme.of(context).textTheme.bodyLarge,
+        ),
         sizedBoxHeightLarge,
       ],
     );
-  }
+  },
 );
