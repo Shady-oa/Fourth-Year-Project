@@ -1,7 +1,5 @@
 // ignore_for_file: prefer_const_constructors
 
-import 'dart:convert';
-
 import 'package:final_project/Components/bottom_nav.dart';
 import 'package:final_project/Components/form_logo.dart';
 import 'package:final_project/Components/toast.dart';
@@ -11,8 +9,6 @@ import 'package:final_project/Firebase/auth_services.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 //import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
-import 'package:toasty_box/toast_enums.dart';
-import 'package:toasty_box/toast_service.dart';
 
 class ForgotPassword extends StatefulWidget {
   const ForgotPassword({super.key});
@@ -39,7 +35,7 @@ class _ForgotPasswordState extends State<ForgotPassword> {
         context: context,
         message: ' Reset link has been sent. Check your inbox.',
         backgroundColor: accentColor,
-        icon: Icons.check_circle_outline,
+        icon: Icons.check_circle_outline_rounded,
       );
 
       Navigator.pop(context);
@@ -49,9 +45,9 @@ class _ForgotPasswordState extends State<ForgotPassword> {
       if (e.code == 'user-not-found') {
         showCustomToast(
           context: context,
-          message: 'Please create an account',
+          message: 'Account not found. Please create an account',
           backgroundColor: errorColor,
-          icon: Icons.error,
+          icon: Icons.error_outline_rounded,
         );
 
         Navigator.pop(context);
@@ -60,14 +56,14 @@ class _ForgotPasswordState extends State<ForgotPassword> {
           context: context,
           message: 'invalid-email',
           backgroundColor: errorColor,
-          icon: Icons.error,
+          icon: Icons.error_outline_rounded,
         );
       } else {
         showCustomToast(
           context: context,
           message: 'An error occurred. Please try again.',
           backgroundColor: errorColor,
-          icon: Icons.error,
+          icon: Icons.error_outline_rounded,
         );
         //clientMessage = 'An error occurred. Please try again.';
         print(
@@ -81,7 +77,7 @@ class _ForgotPasswordState extends State<ForgotPassword> {
         message:
             'A network error occurred. Check your connection and try again.',
         backgroundColor: errorColor,
-        icon: Icons.wifi_off,
+        icon: Icons.wifi_off_rounded,
       );
     }
   }
@@ -181,10 +177,9 @@ class _ForgotPasswordState extends State<ForgotPassword> {
                                 context: context,
                                 message: 'Enter email address',
                                 backgroundColor: errorColor,
-                                icon: Icons.error_outline,
+                                icon: Icons.error_outline_rounded,
                               );
                             }
-                            
                           },
                           child: Text(
                             'Send Reset Link',
@@ -206,22 +201,19 @@ class _ForgotPasswordState extends State<ForgotPassword> {
                             return;
                           } catch (e) {
                             if (!context.mounted) return;
-                            showDialog(
+                            showCustomToast(
                               context: context,
-                              builder: (context) {
-                                return AlertDialog(
-                                  backgroundColor: errorColor,
-                                  content: Text(
-                                    'Unknown error occurred',
-                                    style: Theme.of(
-                                      context,
-                                    ).textTheme.bodyMedium,
-                                  ),
-                                );
-                              },
+                              message: "Unexpected error occurred,try again!",
+                              backgroundColor: errorColor,
+                              icon: Icons.error_outline_rounded,
                             );
                           }
-
+                          showCustomToast(
+                            context: context,
+                            message: "Logged in successfully! ",
+                            backgroundColor: accentColor,
+                            icon: Icons.check_circle_outline_rounded,
+                          );
                           Navigator.pushReplacement(
                             context,
                             MaterialPageRoute(

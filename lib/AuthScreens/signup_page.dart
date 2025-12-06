@@ -3,15 +3,15 @@
 import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:final_project/AuthScreens/login.dart';
 import 'package:final_project/Components/bottom_nav.dart';
 import 'package:final_project/Components/form_logo.dart';
+import 'package:final_project/Components/toast.dart';
 import 'package:final_project/Constants/colors.dart';
 import 'package:final_project/Constants/spacing.dart';
 import 'package:final_project/Firebase/auth_services.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:toasty_box/toast_enums.dart';
-import 'package:toasty_box/toasty_box.dart';
 
 class SignUp extends StatefulWidget {
   final VoidCallback showLoginpage;
@@ -47,40 +47,18 @@ class _SignUpState extends State<SignUp> {
       await signup();
     } else if (_usernamecontroller.text.isEmpty ||
         _emailcontroller.text.isEmpty) {
-      ToastService.showToast(
-        context,
+      showCustomToast(
+        context: context,
+        message: "Fill in all fields!",
         backgroundColor: errorColor,
-        dismissDirection: DismissDirection.endToStart,
-        expandedHeight: 80,
-        isClosable: true,
-        leading: Icon(Icons.error_outline),
-        message: 'Fill in all details',
-        length: ToastLength.medium,
-        positionCurve: Curves.bounceInOut,
-        messageStyle: Theme.of(context).textTheme.bodyLarge?.copyWith(
-          color: Theme.of(context).colorScheme.surface,
-        ),
-        slideCurve: Curves.easeInOut,
-        shadowColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+        icon: Icons.error_outline_rounded,
       );
     } else {
-      ToastService.showToast(
-        context,
-        backgroundColor: Theme.of(
-          context,
-        ).colorScheme.onSurface.withOpacity(0.5),
-        dismissDirection: DismissDirection.endToStart,
-        expandedHeight: 80,
-        isClosable: true,
-        leading: Icon(Icons.error_outline, color: Colors.red),
-        message: 'Password not the same!!',
-        length: ToastLength.medium,
-        positionCurve: Curves.bounceInOut,
-        messageStyle: Theme.of(context).textTheme.bodyLarge?.copyWith(
-          color: Theme.of(context).colorScheme.surface,
-        ),
-        slideCurve: Curves.easeInOut,
-        shadowColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+      showCustomToast(
+        context: context,
+        message: "Passwords do not match!",
+        backgroundColor: errorColor,
+        icon: Icons.error_outline_rounded,
       );
     }
   }
@@ -99,55 +77,37 @@ class _SignUpState extends State<SignUp> {
           _usernamecontroller.text.trim(),
           _emailcontroller.text.trim(),
         );
-        ToastService.showToast(
-          context,
+        showCustomToast(
+          context: context,
+          message: "Account created successfully! Please login.",
           backgroundColor: accentColor,
-          message: 'Account Created login',
-          length: ToastLength.medium,
+          icon: Icons.check_circle_outline_rounded,
         );
         _usernamecontroller.clear();
         _emailcontroller.clear();
         _confirmpasswordcontroller.clear();
         _passwordcontroller.clear();
-        // Navigator.pushReplacement(context, MaterialPageRoute(builder: (context)=>Login(showSignupPage: showSignupPage) ));
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => Login(showSignupPage: widget.showLoginpage),
+          ),
+        );
       } on FirebaseAuthException catch (e) {
         // Handle specific Firebase errors (e.g., weak password, email already in use)
-        ToastService.showToast(
-          context,
+        showCustomToast(
+          context: context,
+          message: "Unexpected error occurred,try again!",
           backgroundColor: errorColor,
-          message: e.message ?? 'An error occurred during sign up.',
-          length: ToastLength.medium,
+          icon: Icons.error_outline_rounded,
         );
       }
     } else {
-      showDialog(
+      showCustomToast(
         context: context,
-        builder: (BuildContext context) {
-          return AlertDialog(
-            backgroundColor: Theme.of(context).colorScheme.surface,
-            title: Text(
-              'Alert Title',
-              style: Theme.of(context).textTheme.headlineSmall,
-            ),
-            content: Text(
-              'password is not the same',
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
-            actions: <Widget>[
-              TextButton(
-                child: Text(
-                  'OK',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodyMedium?.copyWith(color: brandGreen),
-                ),
-                onPressed: () {
-                  Navigator.of(context).pop();
-                },
-              ),
-            ],
-          );
-        },
+        message: "Passwords do not match!",
+        backgroundColor: errorColor,
+        icon: Icons.error_outline_rounded,
       );
     }
   }
@@ -324,19 +284,12 @@ class _SignUpState extends State<SignUp> {
                           } on NoGoogleAccountChoosenException {
                             return;
                           } catch (e) {
-                            showDialog(
+                            if (!context.mounted) return;
+                            showCustomToast(
                               context: context,
-                              builder: (context) {
-                                return AlertDialog(
-                                  backgroundColor: errorColor,
-                                  content: Text(
-                                    'Error: ${e.toString()}',
-                                    style: Theme.of(
-                                      context,
-                                    ).textTheme.bodyMedium,
-                                  ),
-                                );
-                              },
+                              message: "Unexpected error occurred,try again!",
+                              backgroundColor: errorColor,
+                              icon: Icons.error_outline_rounded,
                             );
                           }
                         },
@@ -376,7 +329,15 @@ class _SignUpState extends State<SignUp> {
                             ),
                             sizedBoxWidthSmall,
                             GestureDetector(
-                              onTap: widget.showLoginpage,
+                              onTap: () {
+                                Navigator.pushReplacement(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        Login(showSignupPage: () {}),
+                                  ),
+                                );
+                              },
                               child: Text(
                                 'Sign In',
                                 style: Theme.of(context).textTheme.bodyLarge

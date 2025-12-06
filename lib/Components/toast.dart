@@ -18,12 +18,13 @@ void showCustomToast({
     dismissDirection: DismissDirection.horizontal,
     expandedHeight: 80,
     isClosable: false,
-    leading: Icon(icon),
-    length: ToastLength.medium,
+    leading: Icon(icon, color: Theme.of(context).colorScheme.onSurface),
+    length: ToastLength.long,
     positionCurve: Curves.bounceInOut,
     slideCurve: Curves.easeInOut,
+    shadowColor: backgroundColor,
     messageStyle: Theme.of(context).textTheme.bodyMedium!.copyWith(
-      color: Theme.of(context).colorScheme.surface,
+      color: Theme.of(context).colorScheme.onSurface,
     ),
   );
 }

@@ -1,6 +1,7 @@
 import 'package:final_project/AuthScreens/change_pwd.dart';
 import 'package:final_project/AuthScreens/login.dart';
 import 'package:final_project/Components/Custom_header.dart';
+import 'package:final_project/Components/toast.dart';
 import 'package:final_project/Constants/colors.dart';
 import 'package:final_project/Constants/spacing.dart';
 import 'package:flutter/material.dart';
@@ -24,7 +25,6 @@ class _ProfileContent extends StatefulWidget {
 
 class _ProfileContentState extends State<_ProfileContent> {
   // State for switches
-  bool _isDarkMode = false;
 
   Widget _buildSettingsItem({
     required IconData icon,
@@ -33,24 +33,35 @@ class _ProfileContentState extends State<_ProfileContent> {
     Widget? trailing,
     VoidCallback? onTap,
   }) {
-    return ListTile(
-      leading: Icon(icon, color: Theme.of(context).colorScheme.onSurface),
-      title: Text(title, style: Theme.of(context).textTheme.bodyLarge),
-      subtitle: subtitle != null
-          ? Text(subtitle, style: Theme.of(context).textTheme.bodySmall)
-          : null,
-      trailing:
-          trailing ??
-          Icon(
-            Icons.chevron_right,
-            color: Theme.of(context).colorScheme.onSurface,
-          ),
-      onTap: onTap,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 2),
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 4),
+      decoration: BoxDecoration(
+        border: Border.all(
+          color: Theme.of(
+            context,
+          ).colorScheme.onSurface, // change to your preferred color
+          width: 1.5, // border thickness
+        ),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: ListTile(
+        leading: Icon(icon, color: Theme.of(context).colorScheme.onSurface),
+        title: Text(title, style: Theme.of(context).textTheme.bodyLarge),
+        subtitle: subtitle != null
+            ? Text(subtitle, style: Theme.of(context).textTheme.bodySmall)
+            : null,
+        trailing:
+            trailing ??
+            Icon(
+              Icons.chevron_right,
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
+        onTap: onTap,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 2),
+      ),
     );
   }
 
-  
   Widget _buildDarkModeToggle() {
     final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
 
@@ -142,16 +153,12 @@ class _ProfileContentState extends State<_ProfileContent> {
                     icon: Icons.help_rounded,
                     title: 'About Penny Wise',
                     onTap: () {
-                      showAboutDialog(
+                      showCustomToast(
                         context: context,
-                        applicationName: 'Penny Wise',
-                        applicationVersion: '1.0.0',
-                        children: [
-                          Text(
-                            'Penny Wise is a personal finance management app designed to help you track your expenses, manage budgets, and achieve your financial goals.',
-                            style: Theme.of(context).textTheme.bodyMedium,
-                          ),
-                        ],
+                        message:
+                            "Penny Wise is a personal finance management app designed to help you track your expenses, manage budgets, and achieve your financial goals.",
+                        backgroundColor: brandGreen,
+                        icon: Icons.info_outline_rounded,
                       );
                     },
                   ),
@@ -161,6 +168,12 @@ class _ProfileContentState extends State<_ProfileContent> {
                     icon: Icons.logout_rounded,
                     title: 'Logout',
                     onTap: () {
+                      showCustomToast(
+                        context: context,
+                        message: "Logged out successfully!",
+                        backgroundColor: accentColor,
+                        icon: Icons.check_circle_outline_rounded,
+                      );
                       Navigator.pushReplacement(
                         context,
                         MaterialPageRoute(

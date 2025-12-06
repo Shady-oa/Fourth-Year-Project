@@ -6,8 +6,6 @@ import 'package:final_project/Constants/colors.dart';
 import 'package:final_project/Constants/spacing.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:toasty_box/toast_enums.dart';
-import 'package:toasty_box/toasty_box.dart';
 // Note: Assuming AuthService handles the password change logic
 
 class ChangePasswordPage extends StatefulWidget {
@@ -59,7 +57,12 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
     if (currentPassword.isEmpty ||
         newPassword.isEmpty ||
         confirmPassword.isEmpty) {
-      _showToast('Please fill in all password fields.', errorColor);
+      showCustomToast(
+        context: context,
+        message: "Please fill in all fields!",
+        backgroundColor: errorColor,
+        icon: Icons.error_outline_rounded,
+      );
       return;
     }
 
@@ -67,16 +70,26 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
       _confirmNewPasswordController.clear();
       _newPasswordController.clear();
       _currentPasswordController.clear();
-      _showToast('New passwords do not match.', errorColor);
+      showCustomToast(
+        context: context,
+        message: "New passwords do not match!",
+        backgroundColor: errorColor,
+        icon: Icons.error_outline_rounded,
+      );
 
       return;
     }
 
-    /*if (newPassword.length < 6) {
+    if (newPassword.length < 6) {
       // Firebase minimum password length
-      _showToast('New password must be at least 6 characters.', errorColor);
+      showCustomToast(
+        context: context,
+        message: "New password must be at least 6 characters.",
+        backgroundColor: errorColor,
+        icon: Icons.error_outline_rounded,
+      );
       return;
-    }*/
+    }
 
     try {
       await user.reauthenticateWithCredential(
@@ -86,34 +99,23 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
       await user.updatePassword(newPassword);
       showCustomToast(
         context: context,
-        message: 'Password Changed',
+        message: 'Password Changed Successfully!',
         backgroundColor: accentColor,
-        icon: Icons.check_circle_outline,
+        icon: Icons.check_circle_outline_rounded,
       );
 
       Navigator.pop(context);
     } catch (e) {
-      _showToast(
-        'Failed to change password: Check your current password.',
-        errorColor,
+      showCustomToast(
+        context: context,
+        message: "Current password is incorrect!",
+        backgroundColor: errorColor,
+        icon: Icons.error_outline_rounded,
       );
       _confirmNewPasswordController.clear();
       _newPasswordController.clear();
       _currentPasswordController.clear();
     }
-  }
-
-  // Helper to display a toast message
-  void _showToast(String message, Color backgroundColor) {
-    ToastService.showToast(
-      context,
-      backgroundColor: backgroundColor,
-      message: message,
-      length: ToastLength.medium,
-      messageStyle: Theme.of(context).textTheme.bodyLarge?.copyWith(
-        color: Theme.of(context).colorScheme.surface,
-      ),
-    );
   }
 
   @override

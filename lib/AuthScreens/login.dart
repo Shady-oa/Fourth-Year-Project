@@ -1,13 +1,13 @@
 import 'package:final_project/AuthScreens/forgot_pwd_page.dart';
+import 'package:final_project/AuthScreens/signup_page.dart';
 import 'package:final_project/Components/bottom_nav.dart';
 import 'package:final_project/Components/form_logo.dart';
+import 'package:final_project/Components/toast.dart';
 import 'package:final_project/Constants/colors.dart';
 import 'package:final_project/Constants/spacing.dart';
 import 'package:final_project/Firebase/auth_services.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:toasty_box/toast_enums.dart';
-import 'package:toasty_box/toast_service.dart';
 
 class Login extends StatefulWidget {
   final VoidCallback showSignupPage;
@@ -31,19 +31,11 @@ class _LoginState extends State<Login> {
 
   Future signin() async {
     if (_emailcontroller.text.isEmpty || _passwordcontroller.text.isEmpty) {
-      ToastService.showToast(
-        context,
+      showCustomToast(
+        context: context,
+        message: "Please enter both email and password!",
         backgroundColor: errorColor,
-        dismissDirection: DismissDirection.endToStart,
-        expandedHeight: 80,
-        isClosable: true,
-        leading: const Icon(Icons.error_outline),
-        message: 'Please enter both email and password!',
-        length: ToastLength.medium,
-        positionCurve: Curves.bounceInOut,
-        messageStyle: Theme.of(context).textTheme.bodyLarge?.copyWith(color: Theme.of(context).colorScheme.surface),
-        slideCurve: Curves.easeInOut,
-        shadowColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+        icon: Icons.error_outline_rounded,
       );
       return;
     }
@@ -53,27 +45,25 @@ class _LoginState extends State<Login> {
         email: _emailcontroller.text.trim(),
         password: _passwordcontroller.text.trim(),
       );
+      showCustomToast(
+        context: context,
+        message: "Logged in successfully! ",
+        backgroundColor: accentColor,
+        icon: Icons.check_circle_outline_rounded,
+      );
+      _emailcontroller.clear();
+      _passwordcontroller.clear();
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => const BottomNav()),
       );
     } catch (e) {
-      ToastService.showToast(
-        context,
+      showCustomToast(
+        context: context,
+        message: "Wrong email or password!",
         backgroundColor: errorColor,
-        dismissDirection: DismissDirection.endToStart,
-        expandedHeight: 80,
-        isClosable: true,
-        leading: const Icon(Icons.error_outline),
-        message: 'Wrong email or password!',
-        length: ToastLength.medium,
-        positionCurve: Curves.bounceInOut,
-        messageStyle: Theme.of(context).textTheme.bodyLarge?.copyWith(color: Theme.of(context).colorScheme.surface),
-        slideCurve: Curves.easeInOut,
-        shadowColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+        icon: Icons.error_outline_rounded,
       );
-      print('this is the error');
-      print(e.toString());
 
       _emailcontroller.clear();
       _passwordcontroller.clear();
@@ -93,7 +83,10 @@ class _LoginState extends State<Login> {
             Container(
               alignment: Alignment.center,
               height: 100,
-              child: Text("Welcome Back", style: Theme.of(context).textTheme.displaySmall),
+              child: Text(
+                "Welcome Back",
+                style: Theme.of(context).textTheme.displaySmall,
+              ),
             ),
 
             Expanded(
@@ -117,7 +110,9 @@ class _LoginState extends State<Login> {
                           border: const OutlineInputBorder(
                             borderRadius: radiusMedium,
                           ),
-                          fillColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
+                          fillColor: Theme.of(
+                            context,
+                          ).colorScheme.onSurface.withOpacity(0.1),
                           filled: true,
                         ),
                       ),
@@ -133,7 +128,9 @@ class _LoginState extends State<Login> {
                           border: const OutlineInputBorder(
                             borderRadius: radiusMedium,
                           ),
-                          fillColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
+                          fillColor: Theme.of(
+                            context,
+                          ).colorScheme.onSurface.withOpacity(0.1),
                           filled: true,
                         ),
                       ),
@@ -152,9 +149,8 @@ class _LoginState extends State<Login> {
                           },
                           child: Text(
                             'Forgot password?',
-                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: accentColor,
-                            ),
+                            style: Theme.of(context).textTheme.bodyMedium
+                                ?.copyWith(color: accentColor),
                           ),
                         ),
                       ),
@@ -177,9 +173,12 @@ class _LoginState extends State<Login> {
                           },
                           child: Text(
                             'Sign in',
-                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                              color: Theme.of(context).colorScheme.onSurface,
-                            ),
+                            style: Theme.of(context).textTheme.titleLarge
+                                ?.copyWith(
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurface,
+                                ),
                           ),
                         ),
                       ),
@@ -200,24 +199,12 @@ class _LoginState extends State<Login> {
                           } on NoGoogleAccountChoosenException {
                             return;
                           } catch (e) {
-                            ToastService.showToast(
-                              context,
+                            showCustomToast(
+                              context: context,
+                              message: "Unexpected error occurred,try again!",
                               backgroundColor: errorColor,
-                              dismissDirection: DismissDirection.endToStart,
-                              expandedHeight: 80,
-                              isClosable: true,
-                              leading: const Icon(Icons.error_outline),
-                              message: 'Unexpected error occurred,try again!',
-                              length: ToastLength.medium,
-                              positionCurve: Curves.bounceInOut,
-                              messageStyle: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                                color: Theme.of(context).colorScheme.surface,
-                              ),
-                              slideCurve: Curves.easeInOut,
-                              shadowColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+                              icon: Icons.error_outline_rounded,
                             );
-                            print('This is the signin by google error!!!😂');
-                            print(e.toString());
                           }
                         },
                         child: Container(
@@ -226,7 +213,9 @@ class _LoginState extends State<Login> {
                           decoration: BoxDecoration(
                             color: Theme.of(context).colorScheme.surface,
                             borderRadius: radiusMedium,
-                            border: Border.all(color: Theme.of(context).colorScheme.onSurface),
+                            border: Border.all(
+                              color: Theme.of(context).colorScheme.onSurface,
+                            ),
                           ),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
@@ -256,12 +245,19 @@ class _LoginState extends State<Login> {
                           ),
                           sizedBoxWidthSmall,
                           GestureDetector(
-                            onTap: widget.showSignupPage,
+                            onTap: () {
+                              Navigator.pushReplacement(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      SignUp(showLoginpage: () {}),
+                                ),
+                              );
+                            },
                             child: Text(
                               'Register now',
-                              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                                color: accentColor,
-                              ),
+                              style: Theme.of(context).textTheme.bodyLarge
+                                  ?.copyWith(color: accentColor),
                             ),
                           ),
                         ],
