@@ -22,71 +22,152 @@ class HomePage extends StatelessWidget {
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Good Morning', style: Theme.of(context).textTheme.headlineSmall),
+            Text(
+              'Good Morning',
+              style: Theme.of(context).textTheme.headlineSmall,
+            ),
             Text('Alex', style: Theme.of(context).textTheme.bodyLarge),
           ],
         ),
         actions: [Padding(padding: paddingAllTiny, child: NotificationIcon())],
       ),
       backgroundColor: Theme.of(context).colorScheme.surface,
-      body: Column(
-        children: [
-          // Header Section
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Balance and Expense Section
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: paddingAllMedium,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Balance Section
+              Container(
+                width: double.infinity,
+                padding: paddingAllLarge,
+                decoration: BoxDecoration(
+                  color: brandGreen,
+                  borderRadius: radiusMedium,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Total Balance', style: Theme.of(context).textTheme.bodyMedium),
-                        Text('\$7,783.00', style: Theme.of(context).textTheme.headlineMedium),
-                      ],
+                    Text(
+                      'Total Balance',
+                      style: Theme.of(
+                        context,
+                      ).textTheme.titleLarge?.copyWith(color: Colors.white),
                     ),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Text('Total Expense', style: Theme.of(context).textTheme.bodyMedium),
-                        Text(
-                          '-\$1,187.40',
-                          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                            color: accentColor,
-                          ),
-                        ),
-                      ],
+                    Text(
+                      '\$7,783.00',
+                      style: Theme.of(
+                        context,
+                      ).textTheme.displayMedium?.copyWith(color: Colors.white),
                     ),
                   ],
                 ),
-                const SizedBox(height: 10),
-                Row(
-                  children: [
-                    Expanded(
-                      child: LinearProgressIndicator(
-                        value: 0.3,
-                        backgroundColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.2),
-                        valueColor: const AlwaysStoppedAnimation<Color>(
-                          brandGreen,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Text('\$20,000.00', style: Theme.of(context).textTheme.bodyMedium),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  '30% Of Your Expenses, Looks Good.',
-                  style: Theme.of(context).textTheme.bodyMedium,
-                ),
-              ],
+              ),
+              sizedBoxHeightLarge,
+              // Quick Actions Section
+              Text(
+                'Quick Actions',
+                style: Theme.of(context).textTheme.headlineSmall,
+              ),
+              sizedBoxHeightSmall,
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  _buildQuickActionCard(context, Icons.add, 'Add Expense'),
+                  _buildQuickActionCard(context, Icons.savings, 'Savings'),
+                  _buildQuickActionCard(
+                    context,
+                    Icons.receipt_long,
+                    'Transactions',
+                  ),
+                  _buildQuickActionCard(context, Icons.chat, 'AI Assistant'),
+                ],
+              ),
+              sizedBoxHeightLarge,
+              // Recent Transactions Section
+              Text(
+                'Recent Transactions',
+                style: Theme.of(context).textTheme.headlineSmall,
+              ),
+              sizedBoxHeightSmall,
+              _buildTransactionItem(
+                context,
+                Icons.fastfood,
+                'KFC',
+                'June 5, 2024',
+                '-\$15.00',
+                Colors.red,
+              ),
+              _buildTransactionItem(
+                context,
+                Icons.shopping_bag,
+                'Zara',
+                'June 4, 2024',
+                '-\$120.00',
+                Colors.red,
+              ),
+              _buildTransactionItem(
+                context,
+                Icons.attach_money,
+                'Salary',
+                'June 1, 2024',
+                '+\$3000.00',
+                Colors.green,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildQuickActionCard(
+    BuildContext context,
+    IconData icon,
+    String label,
+  ) {
+    return Column(
+      children: [
+        Container(
+          padding: paddingAllMedium,
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface.withOpacity(0.8),
+            borderRadius: radiusMedium,
+            border: Border.all(
+              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
             ),
           ),
-        ],
+          child: Icon(icon, size: 30, color: brandGreen),
+        ),
+        sizedBoxHeightSmall,
+        Text(label, style: Theme.of(context).textTheme.bodyMedium),
+      ],
+    );
+  }
+
+  Widget _buildTransactionItem(
+    BuildContext context,
+    IconData icon,
+    String title,
+    String subtitle,
+    String amount,
+    Color amountColor,
+  ) {
+    return Card(
+      elevation: 0,
+      color: Theme.of(context).colorScheme.surface.withOpacity(0.8),
+      shape: RoundedRectangleBorder(borderRadius: radiusMedium),
+      child: ListTile(
+        leading: Icon(icon, size: 30, color: brandGreen),
+        title: Text(title, style: Theme.of(context).textTheme.titleLarge),
+        subtitle: Text(subtitle, style: Theme.of(context).textTheme.bodyMedium),
+        trailing: Text(
+          amount,
+          style: Theme.of(
+            context,
+          ).textTheme.titleLarge?.copyWith(color: amountColor),
+        ),
       ),
     );
   }
