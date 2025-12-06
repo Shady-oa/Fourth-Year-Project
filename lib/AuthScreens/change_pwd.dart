@@ -48,7 +48,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
     );
   }
 
-  // --- Password Change Logic Placeholder ---
+  //confirm
   Future<void> _handleChangePassword() async {
     User user = FirebaseAuth.instance.currentUser!;
     String email = user.email!;
