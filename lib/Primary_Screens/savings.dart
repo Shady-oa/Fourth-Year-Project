@@ -1,8 +1,8 @@
 import 'package:final_project/Components/Custom_header.dart';
 import 'package:final_project/Constants/colors.dart';
 import 'package:final_project/Constants/spacing.dart';
+import 'package:final_project/SecondaryScreens/quick_analysis.dart';
 import 'package:final_project/SecondaryScreens/single_saving.dart';
-import 'package:final_project/single_budget.dart';
 import 'package:flutter/material.dart';
 
 class SavingsPage extends StatefulWidget {
@@ -13,23 +13,6 @@ class SavingsPage extends StatefulWidget {
 }
 
 class _SavingsPageState extends State<SavingsPage> {
-  // List of categories
-  final List<Map<String, dynamic>> _categories = [
-    {'icon': Icons.directions_car, 'label': 'Transport'},
-    {'icon': Icons.medical_services, 'label': 'Medicine'},
-    {'icon': Icons.local_grocery_store, 'label': 'Groceries'},
-    {'icon': Icons.flight, 'label': 'Travel'},
-    {'icon': Icons.school, 'label': 'Education'},
-    {'icon': Icons.home, 'label': 'Rent'},
-  ];
-
-  // Function to add a new category
-  void _addCategory(String label) {
-    setState(() {
-      _categories.add({'icon': Icons.category, 'label': label});
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -145,7 +128,7 @@ class _SavingsPageState extends State<SavingsPage> {
                     onPressed: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (_) => SingleBudget()),
+                        MaterialPageRoute(builder: (_) => Analysis()),
                       );
                     },
                     style: ElevatedButton.styleFrom(

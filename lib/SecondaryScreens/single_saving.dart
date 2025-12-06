@@ -20,7 +20,6 @@ class SingleSaving extends StatefulWidget {
           // Determine the color for the text/icon on the surface (background)
           final onSurfaceColor = Theme.of(context).colorScheme.onSurface;
           // Determine the main background color
-          final surfaceColor = Theme.of(context).colorScheme.surface;
 
           return Row(
             children: [

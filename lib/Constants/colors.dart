@@ -9,6 +9,7 @@ const Color textLightMode = Color(0xFF052224);
 const Color textDarkMode = Color(0xFFF1FFF3);
 const Color accentColor = Color(0xFF2196F3);
 const Color errorColor = Color(0xFFFF4C4C);
+const Color warning = Color(0xFFFFA500);
 
 // --- Text Style Generator Function ---
 // This function creates a base text style for a given color.

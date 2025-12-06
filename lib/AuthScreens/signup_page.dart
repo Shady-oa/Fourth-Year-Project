@@ -57,14 +57,18 @@ class _SignUpState extends State<SignUp> {
         message: 'Fill in all details',
         length: ToastLength.medium,
         positionCurve: Curves.bounceInOut,
-        messageStyle: Theme.of(context).textTheme.bodyLarge?.copyWith(color: Theme.of(context).colorScheme.surface),
+        messageStyle: Theme.of(context).textTheme.bodyLarge?.copyWith(
+          color: Theme.of(context).colorScheme.surface,
+        ),
         slideCurve: Curves.easeInOut,
         shadowColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
       );
     } else {
       ToastService.showToast(
         context,
-        backgroundColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+        backgroundColor: Theme.of(
+          context,
+        ).colorScheme.onSurface.withOpacity(0.5),
         dismissDirection: DismissDirection.endToStart,
         expandedHeight: 80,
         isClosable: true,
@@ -72,7 +76,9 @@ class _SignUpState extends State<SignUp> {
         message: 'Password not the same!!',
         length: ToastLength.medium,
         positionCurve: Curves.bounceInOut,
-        messageStyle: Theme.of(context).textTheme.bodyLarge?.copyWith(color: Theme.of(context).colorScheme.surface),
+        messageStyle: Theme.of(context).textTheme.bodyLarge?.copyWith(
+          color: Theme.of(context).colorScheme.surface,
+        ),
         slideCurve: Curves.easeInOut,
         shadowColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
       );
@@ -119,7 +125,10 @@ class _SignUpState extends State<SignUp> {
         builder: (BuildContext context) {
           return AlertDialog(
             backgroundColor: Theme.of(context).colorScheme.surface,
-            title: Text('Alert Title', style: Theme.of(context).textTheme.headlineSmall),
+            title: Text(
+              'Alert Title',
+              style: Theme.of(context).textTheme.headlineSmall,
+            ),
             content: Text(
               'password is not the same',
               style: Theme.of(context).textTheme.bodyMedium,
@@ -128,7 +137,9 @@ class _SignUpState extends State<SignUp> {
               TextButton(
                 child: Text(
                   'OK',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: brandGreen),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.copyWith(color: brandGreen),
                 ),
                 onPressed: () {
                   Navigator.of(context).pop();
@@ -182,7 +193,10 @@ class _SignUpState extends State<SignUp> {
             Container(
               alignment: Alignment.center,
               height: 100,
-              child: Text("Create Account", style: Theme.of(context).textTheme.displaySmall),
+              child: Text(
+                "Create Account",
+                style: Theme.of(context).textTheme.displaySmall,
+              ),
             ),
             Expanded(
               child: Container(
@@ -205,7 +219,9 @@ class _SignUpState extends State<SignUp> {
                           border: OutlineInputBorder(
                             borderRadius: radiusMedium,
                           ),
-                          fillColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
+                          fillColor: Theme.of(
+                            context,
+                          ).colorScheme.onSurface.withOpacity(0.1),
                           filled: true,
                         ),
                       ),
@@ -219,7 +235,9 @@ class _SignUpState extends State<SignUp> {
                           border: OutlineInputBorder(
                             borderRadius: radiusMedium,
                           ),
-                          fillColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
+                          fillColor: Theme.of(
+                            context,
+                          ).colorScheme.onSurface.withOpacity(0.1),
                           filled: true,
                         ),
                       ),
@@ -233,7 +251,9 @@ class _SignUpState extends State<SignUp> {
                           border: OutlineInputBorder(
                             borderRadius: radiusMedium,
                           ),
-                          fillColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
+                          fillColor: Theme.of(
+                            context,
+                          ).colorScheme.onSurface.withOpacity(0.1),
                           filled: true,
                         ),
                       ),
@@ -247,7 +267,9 @@ class _SignUpState extends State<SignUp> {
                           border: OutlineInputBorder(
                             borderRadius: radiusMedium,
                           ),
-                          fillColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
+                          fillColor: Theme.of(
+                            context,
+                          ).colorScheme.onSurface.withOpacity(0.1),
                           filled: true,
                         ),
                       ),
@@ -268,9 +290,12 @@ class _SignUpState extends State<SignUp> {
                           },
                           child: Text(
                             'Sign Up',
-                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                              color: Theme.of(context).colorScheme.onSurface,
-                            ),
+                            style: Theme.of(context).textTheme.titleLarge
+                                ?.copyWith(
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurface,
+                                ),
                           ),
                         ),
                       ),
@@ -306,7 +331,9 @@ class _SignUpState extends State<SignUp> {
                                   backgroundColor: errorColor,
                                   content: Text(
                                     'Error: ${e.toString()}',
-                                    style: Theme.of(context).textTheme.bodyMedium,
+                                    style: Theme.of(
+                                      context,
+                                    ).textTheme.bodyMedium,
                                   ),
                                 );
                               },
@@ -319,15 +346,14 @@ class _SignUpState extends State<SignUp> {
                           decoration: BoxDecoration(
                             color: Theme.of(context).colorScheme.surface,
                             borderRadius: radiusMedium,
-                            border: Border.all(color: Theme.of(context).colorScheme.onSurface),
+                            border: Border.all(
+                              color: Theme.of(context).colorScheme.onSurface,
+                            ),
                           ),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Image.asset(
-                                'assets/image/google.png',
-                                height: 24,
-                              ),
+                              Image.asset('assets/image/google.png'),
                               sizedBoxWidthSmall,
                               Text(
                                 'Or Sign Up with Google',
@@ -353,9 +379,8 @@ class _SignUpState extends State<SignUp> {
                               onTap: widget.showLoginpage,
                               child: Text(
                                 'Sign In',
-                                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                                  color: Colors.blue,
-                                ),
+                                style: Theme.of(context).textTheme.bodyLarge
+                                    ?.copyWith(color: Colors.blue),
                               ),
                             ),
                           ],

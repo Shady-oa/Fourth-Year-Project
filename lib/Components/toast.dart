@@ -7,20 +7,23 @@ void showCustomToast({
   required String message,
   required Color backgroundColor,
   required IconData icon,
+  // error use Icons.error_outline_rounded
+  // warning use Icons.warning_amber_rounded
+  // success use Icons.check_circle_outline_rounded
 }) {
   ToastService.showToast(
     context,
     message: message,
     backgroundColor: backgroundColor,
-    dismissDirection: DismissDirection.endToStart,
+    dismissDirection: DismissDirection.horizontal,
     expandedHeight: 80,
-    isClosable: true,
+    isClosable: false,
     leading: Icon(icon),
     length: ToastLength.medium,
     positionCurve: Curves.bounceInOut,
-    messageStyle: Theme.of(context).textTheme.bodyLarge!.copyWith(color: Theme.of(context).colorScheme.surface),
     slideCurve: Curves.easeInOut,
-    shadowColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+    messageStyle: Theme.of(context).textTheme.bodyMedium!.copyWith(
+      color: Theme.of(context).colorScheme.surface,
+    ),
   );
 }
-
