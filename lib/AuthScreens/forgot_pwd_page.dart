@@ -1,10 +1,4 @@
-// ignore_for_file: prefer_const_constructors
 
-<<<<<<< HEAD
-=======
-import 'dart:convert';
-//confirm
->>>>>>> eaa2a3cd61a7f0fcd163ee8e8e4dbec0e44f8a4c
 import 'package:final_project/Components/bottom_nav.dart';
 import 'package:final_project/Components/form_logo.dart';
 import 'package:final_project/Components/toast.dart';
