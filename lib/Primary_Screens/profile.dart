@@ -62,7 +62,7 @@ class _ProfileContentState extends State<_ProfileContent> {
         onChanged: (bool value) {
           themeProvider.toggleTheme();
         },
-        activeColor: accentColor,
+        activeThumbColor: accentColor,
       ),
       onTap: () {
         themeProvider.toggleTheme();
