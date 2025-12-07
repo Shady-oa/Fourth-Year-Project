@@ -7,11 +7,11 @@ class Statistics {
   static final NumberFormat formatter = NumberFormat('#,##0.00');
 
   // Default values
-  static const double income = 15000;
-  static const double expense = 5000;
-  static const double saving = 2000;
-  static const double budget = 3000;
-  static const double transaction = 1200;
+  static const double income = 0;
+  static const double expense = 0;
+  static const double saving = 0;
+  static const double budget = 0;
+  static const double transaction = 0;
 
   // Format helper with currency prefix
   static String formatAmount(num amount) => 'Ksh ${formatter.format(amount)}';
@@ -35,7 +35,8 @@ class Statistics {
       formatAmount(calculateTotal(incomeList));
 
   // ---- Expense ----
-  static String singleExpense([double amount = expense]) => formatAmount(amount);
+  static String singleExpense([double amount = expense]) =>
+      formatAmount(amount);
   static String totalExpense([List<dynamic> expenseList = const [expense]]) =>
       formatAmount(calculateTotal(expenseList));
 
@@ -52,8 +53,9 @@ class Statistics {
   // ---- Transaction ----
   static String singleTransaction([double amount = transaction]) =>
       formatAmount(amount);
-  static String totalTransaction([List<dynamic> transactionList = const [transaction]]) =>
-      formatAmount(calculateTotal(transactionList));
+  static String totalTransaction([
+    List<dynamic> transactionList = const [transaction],
+  ]) => formatAmount(calculateTotal(transactionList));
 
   // ---- Total Balance ----
   static String totalBalance({
@@ -68,7 +70,10 @@ class Statistics {
     final totalBudgetAmount = calculateTotal(budgets);
 
     final balance =
-        totalIncomeAmount + totalSavingAmount + totalBudgetAmount - totalExpenseAmount;
+        totalIncomeAmount +
+        totalSavingAmount +
+        totalBudgetAmount -
+        totalExpenseAmount;
 
     return formatAmount(balance);
   }
