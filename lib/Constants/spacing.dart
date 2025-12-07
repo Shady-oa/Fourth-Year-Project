@@ -11,6 +11,11 @@ const EdgeInsets paddingAllSmall = EdgeInsets.all(spacerSmall);
 const EdgeInsets paddingAllMedium = EdgeInsets.all(spacerMedium);
 const EdgeInsets paddingAllLarge = EdgeInsets.all(spacerLarge);
 
+const EdgeInsets marginAllTiny = EdgeInsets.all(spacerTiny);
+const EdgeInsets marginAllSmall = EdgeInsets.all(spacerSmall);
+const EdgeInsets marginAllMedium = EdgeInsets.all(spacerMedium);
+const EdgeInsets marginAllLarge = EdgeInsets.all(spacerLarge);
+
 //- - - - - - - - - - - - - - - - - - - - BORDER RADIUS - - - - - - - - - - - - - - - - - - - -
 
 const BorderRadius radiusSmall = BorderRadius.all(Radius.circular(8.0));
