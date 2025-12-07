@@ -1,4 +1,5 @@
 import 'package:final_project/Components/notification_icon.dart';
+import 'package:final_project/Components/them_toggle.dart';
 import 'package:final_project/Constants/spacing.dart';
 import 'package:final_project/Statistics/statistics.dart';
 import 'package:flutter/material.dart';
@@ -29,7 +30,12 @@ class HomePage extends StatelessWidget {
             Text('Alex', style: Theme.of(context).textTheme.bodyLarge),
           ],
         ),
-        actions: [Padding(padding: paddingAllTiny, child: NotificationIcon())],
+        actions: [
+          Padding(
+            padding: paddingAllTiny,
+            child: Row(children: [ThemeToggleIcon(), NotificationIcon()]),
+          ),
+        ],
       ),
       backgroundColor: Theme.of(context).colorScheme.surface,
       body: SingleChildScrollView(
@@ -49,7 +55,7 @@ class HomePage extends StatelessWidget {
                     BoxShadow(
                       color: Theme.of(
                         context,
-                      ).colorScheme.onSurface.withOpacity(.7),
+                      ).colorScheme.onSurface.withOpacity(.4),
                       spreadRadius: 2,
                       blurRadius: 8,
                       offset: const Offset(0, 6),
@@ -157,7 +163,7 @@ class HomePage extends StatelessWidget {
               // Quick Actions Section
               Text(
                 'Quick Actions',
-                style: Theme.of(context).textTheme.headlineSmall,
+                style: Theme.of(context).textTheme.titleLarge,
               ),
               sizedBoxHeightSmall,
               Row(
@@ -202,7 +208,7 @@ class HomePage extends StatelessWidget {
               // Recent Transactions Section
               Text(
                 'Recent Transactions',
-                style: Theme.of(context).textTheme.headlineSmall,
+                style: Theme.of(context).textTheme.titleLarge,
               ),
             ],
           ),

@@ -48,6 +48,7 @@ dependencies:
   flutter_launcher_icons: ^0.14.4
   provider: ^6.1.5+1
   http: ^1.6.0
+  delightful_toast: ^1.1.0
 
 dev_dependencies:
   flutter_test:
