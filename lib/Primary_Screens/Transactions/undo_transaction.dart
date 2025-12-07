@@ -29,12 +29,14 @@ void deleteTransaction({
     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
     content: Text(
       '${deletedTransaction.type} of ${Statistics.formatAmount(deletedTransaction.amount)} deleted. Swipe to dismiss or undo to restore.',
-      style: Theme.of(context).textTheme.bodyMedium,
+      style: Theme.of(
+        context,
+      ).textTheme.bodyMedium!.copyWith(color: textLightMode),
     ),
     duration: const Duration(seconds: 5),
     action: SnackBarAction(
       label: 'UNDO',
-      textColor: Theme.of(context).colorScheme.onSurface,
+      textColor: textLightMode,
       onPressed: () {
         restoreCallback(originalIndex, deletedTransaction);
         recalculateTotals();

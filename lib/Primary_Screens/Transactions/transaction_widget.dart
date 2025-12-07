@@ -1,11 +1,10 @@
 import 'package:final_project/Constants/colors.dart';
 import 'package:final_project/Constants/spacing.dart';
+import 'package:final_project/Primary_Screens/Transactions/undo_transaction.dart';
 import 'package:final_project/Primary_Screens/home.dart';
 import 'package:final_project/Statistics/statistics.dart';
-import 'package:final_project/Primary_Screens/Transactions/undo_transaction.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-
 
 Widget buildEmptyTransactions(BuildContext context) {
   return Center(
@@ -21,18 +20,13 @@ Widget buildEmptyTransactions(BuildContext context) {
         Text(
           'No recent transactions found.',
           style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                color: Theme.of(context)
-                    .colorScheme
-                    .onSurface
-                    .withOpacity(0.6),
-              ),
+            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+          ),
         ),
       ],
     ),
   );
 }
-
-
 
 Widget buildRecentTransactions({
   required BuildContext context,
@@ -95,11 +89,11 @@ Widget buildRecentTransactions({
 
         // DELETE BACKGROUND UI
         background: Container(
-          margin: const EdgeInsets.symmetric(vertical: 6),
-          padding: const EdgeInsets.only(right: 20),
+          margin: marginAllTiny,
+          padding: paddingAllMedium,
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.error,
-            borderRadius: BorderRadius.circular(16),
+            color: errorColor,
+            borderRadius: radiusMedium,
           ),
           alignment: Alignment.centerRight,
           child: const Icon(
@@ -111,15 +105,15 @@ Widget buildRecentTransactions({
 
         // TRANSACTION CARD
         child: Container(
-          margin: const EdgeInsets.symmetric(vertical: 6),
-          padding: const EdgeInsets.all(12),
+          margin: marginAllTiny,
+          padding: paddingAllMedium,
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surfaceVariant,
-            borderRadius: BorderRadius.circular(16),
+            color: Theme.of(context).colorScheme.surface,
+            borderRadius: radiusMedium,
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.05),
-                blurRadius: 6,
+                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2),
+                blurRadius: 2,
                 offset: const Offset(0, 3),
               ),
             ],
@@ -134,18 +128,16 @@ Widget buildRecentTransactions({
                   Text(
                     tx.type,
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: typeColor,
-                        ),
+                      fontWeight: FontWeight.bold,
+                      color: typeColor,
+                    ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     tx.source,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context)
-                              .colorScheme
-                              .onSurfaceVariant,
-                        ),
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
                   ),
                 ],
               ),
@@ -157,18 +149,16 @@ Widget buildRecentTransactions({
                   Text(
                     Statistics.formatAmount(tx.amount),
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: typeColor,
-                        ),
+                      fontWeight: FontWeight.bold,
+                      color: typeColor,
+                    ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     formattedDate,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context)
-                              .colorScheme
-                              .onSurfaceVariant,
-                        ),
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
                   ),
                 ],
               ),
