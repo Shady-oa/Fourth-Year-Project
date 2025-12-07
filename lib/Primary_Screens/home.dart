@@ -1,30 +1,13 @@
 import 'package:final_project/Components/notification_icon.dart';
-import 'package:final_project/Constants/colors.dart';
 import 'package:final_project/Constants/spacing.dart';
+import 'package:final_project/Statistics/statistics.dart';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart'; // 1. IMPORT the intl package
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
-  final double income = 15000.0;
-  final double expenses = 4780.0;
-
-  // 2. Define a NumberFormat instance for comma separation and 2 decimal places
-  String _formatCurrency(double amount) {
-    final formatter = NumberFormat('#,##0.00', 'en_US');
-    return formatter.format(amount);
-  }
 
   @override
   Widget build(BuildContext context) {
-    // Calculate the balance
-    final double balance = income - expenses;
-
-    // Format the values
-    final String formattedBalance = _formatCurrency(balance);
-    final String formattedIncome = _formatCurrency(income);
-    final String formattedExpenses = _formatCurrency(expenses);
-
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.surface,
@@ -84,7 +67,7 @@ class HomePage extends StatelessWidget {
                     ),
                     // 3. Display formatted balance
                     Text(
-                      'Ksh $formattedBalance',
+                      Statistics.totalBalance(),
                       style: Theme.of(context).textTheme.headlineMedium
                           ?.copyWith(
                             color: Theme.of(context).colorScheme.surface,
@@ -97,7 +80,7 @@ class HomePage extends StatelessWidget {
                         Row(
                           children: [
                             Icon(
-                              Icons.arrow_circle_up_rounded,
+                              Icons.arrow_circle_down_rounded,
                               color: Theme.of(
                                 context,
                               ).colorScheme.surface.withOpacity(.6),
@@ -117,7 +100,7 @@ class HomePage extends StatelessWidget {
                                 ),
                                 // 4. Display formatted income
                                 Text(
-                                  'Ksh $formattedIncome',
+                                  Statistics.totalIncome(),
                                   style: Theme.of(context).textTheme.bodyMedium
                                       ?.copyWith(
                                         color: Theme.of(
@@ -133,7 +116,7 @@ class HomePage extends StatelessWidget {
                         Row(
                           children: [
                             Icon(
-                              Icons.arrow_circle_down_rounded,
+                              Icons.arrow_circle_up_rounded,
                               color: Theme.of(
                                 context,
                               ).colorScheme.surface.withOpacity(.6),
@@ -153,7 +136,7 @@ class HomePage extends StatelessWidget {
                                 ),
                                 // 5. Display formatted expenses
                                 Text(
-                                  'Ksh $formattedExpenses',
+                                  Statistics.totalExpense(),
                                   style: Theme.of(context).textTheme.bodyMedium
                                       ?.copyWith(
                                         color: Theme.of(
@@ -180,14 +163,39 @@ class HomePage extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  _buildQuickActionCard(context, Icons.add, 'Add Expense'),
-                  _buildQuickActionCard(context, Icons.savings, 'Savings'),
                   _buildQuickActionCard(
                     context,
-                    Icons.receipt_long,
-                    'Transactions',
+                    Icons.account_balance_wallet_outlined,
+                    'Add Income',
+                    () {
+                      // Handle Add Income action
+                    },
                   ),
-                  _buildQuickActionCard(context, Icons.chat, 'AI Assistant'),
+                  _buildQuickActionCard(
+                    context,
+                    Icons.add_card_outlined,
+                    'Add Expense',
+                    () {
+                      // Handle Add Expense action
+                    },
+                  ),
+
+                  _buildQuickActionCard(
+                    context,
+                    Icons.calculate_outlined,
+                    'Set Budget',
+                    () {
+                      // Handle Set Budget action
+                    },
+                  ),
+                  _buildQuickActionCard(
+                    context,
+                    Icons.analytics_outlined,
+                    'Report',
+                    () {
+                      // Handle Add Saving action
+                    },
+                  ),
                 ],
               ),
               sizedBoxHeightLarge,
@@ -196,71 +204,8 @@ class HomePage extends StatelessWidget {
                 'Recent Transactions',
                 style: Theme.of(context).textTheme.headlineSmall,
               ),
-              sizedBoxHeightSmall,
-              // NOTE: The transaction items below now use the formatting function as well
-              _buildTransactionItem(
-                context,
-                Icons.fastfood,
-                'KFC',
-                'June 5, 2024',
-                -15.00, // Pass as number
-                Colors.red,
-                currencySymbol: '\$',
-              ),
-              _buildTransactionItem(
-                context,
-                Icons.shopping_bag,
-                'Zara',
-                'June 4, 2024',
-                -120.00, // Pass as number
-                Colors.red,
-                currencySymbol: '\$',
-              ),
-              _buildTransactionItem(
-                context,
-                Icons.attach_money,
-                'Salary',
-                'June 1, 2024',
-                3000.00, // Pass as number
-                Colors.green,
-                currencySymbol: '\$',
-              ),
             ],
           ),
-        ),
-      ),
-    );
-  }
-
-  // Utility function updated to format the number
-  Widget _buildTransactionItem(
-    BuildContext context,
-    IconData icon,
-    String title,
-    String subtitle,
-    double amount, // Changed to double
-    Color amountColor, {
-    String currencySymbol = 'Ksh ', // Added currency symbol parameter
-  }) {
-    // Determine sign and format the number with commas
-    final String sign = amount < 0 ? '-' : '+';
-    final String formattedAmount = _formatCurrency(
-      amount.abs(),
-    ); // Format the absolute value
-
-    return Card(
-      elevation: 0,
-      color: Theme.of(context).colorScheme.surface.withOpacity(0.8),
-      shape: RoundedRectangleBorder(borderRadius: radiusMedium),
-      child: ListTile(
-        leading: Icon(icon, size: 30, color: brandGreen),
-        title: Text(title, style: Theme.of(context).textTheme.titleLarge),
-        subtitle: Text(subtitle, style: Theme.of(context).textTheme.bodyMedium),
-        trailing: Text(
-          '$sign$currencySymbol$formattedAmount', // Combine sign, symbol, and formatted amount
-          style: Theme.of(
-            context,
-          ).textTheme.titleLarge?.copyWith(color: amountColor),
         ),
       ),
     );
@@ -271,23 +216,31 @@ class HomePage extends StatelessWidget {
     BuildContext context,
     IconData icon,
     String label,
+    VoidCallback? onTap,
   ) {
-    return Column(
-      children: [
-        Container(
-          padding: paddingAllMedium,
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surface.withOpacity(0.8),
-            borderRadius: radiusMedium,
-            border: Border.all(
-              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        children: [
+          Container(
+            padding: paddingAllMedium,
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surface,
+              borderRadius: radiusMedium,
+              border: Border.all(
+                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+              ),
+            ),
+            child: Icon(
+              icon,
+              size: 30,
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
-          child: Icon(icon, size: 30, color: brandGreen),
-        ),
-        sizedBoxHeightSmall,
-        Text(label, style: Theme.of(context).textTheme.bodyMedium),
-      ],
+          sizedBoxHeightSmall,
+          Text(label, style: Theme.of(context).textTheme.bodySmall),
+        ],
+      ),
     );
   }
 }

@@ -52,11 +52,7 @@ class _BottomNavState extends State<BottomNav> {
               text: 'Transactions',
               iconSize: 30,
             ),
-            GButton(
-              icon: Icons.analytics_rounded,
-              text: 'Savings',
-              iconSize: 30,
-            ),
+            GButton(icon: Icons.savings_rounded, text: 'Savings', iconSize: 30),
             GButton(
               icon: Icons.auto_awesome_rounded,
               text: 'Penny AI',

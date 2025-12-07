@@ -93,7 +93,7 @@ class _SignUpState extends State<SignUp> {
             builder: (context) => Login(showSignupPage: widget.showLoginpage),
           ),
         );
-      } on FirebaseAuthException catch (e) {
+      } on FirebaseAuthException {
         // Handle specific Firebase errors (e.g., weak password, email already in use)
         showCustomToast(
           context: context,
