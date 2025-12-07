@@ -1,5 +1,7 @@
 import 'package:final_project/Components/notification_icon.dart';
 import 'package:final_project/Components/them_toggle.dart';
+import 'package:final_project/Components/toast.dart';
+import 'package:final_project/Constants/colors.dart';
 import 'package:final_project/Constants/spacing.dart';
 import 'package:final_project/Primary_Screens/Transactions/alert_dialog.dart';
 import 'package:final_project/Primary_Screens/transactions/transaction_widget.dart';
@@ -34,11 +36,6 @@ class _HomePageState extends State<HomePage> {
   List<Transaction> transactions = [];
 
   @override
-  void initState() {
-    super.initState();
-    _recalculateTotals();
-  }
-
   void _recalculateTotals() {
     if (!mounted) return;
     setState(() {
@@ -50,6 +47,35 @@ class _HomePageState extends State<HomePage> {
         if (tx.type == "Expense") expenseList.add(tx.amount);
         if (tx.type == "Saving") savingList.add(tx.amount);
       }
+
+      // Calculate total balance
+      double total =
+          Statistics.calculateTotal(incomeList) -
+          (Statistics.calculateTotal(expenseList) +
+              Statistics.calculateTotal(savingList));
+
+      // Delay showing the toast by 8 seconds
+      Future.delayed(const Duration(seconds: 8), () {
+        if (!mounted) return; // ensure the widget is still active
+
+        if (total < 0) {
+          showCustomToast(
+            context: context,
+            message:
+                "Warning! You are overspending by ${Statistics.formatAmount(total.abs())}",
+            backgroundColor: errorColor,
+            icon: Icons.warning_amber_rounded,
+          );
+        } else if (total < 1000) {
+          showCustomToast(
+            context: context,
+            message:
+                "Caution! Your total balance is low: ${Statistics.formatAmount(total)}",
+            backgroundColor: warning,
+            icon: Icons.warning_amber_rounded,
+          );
+        }
+      });
     });
   }
 
@@ -331,6 +357,4 @@ class _HomePageState extends State<HomePage> {
       ),
     );
   }
-
-  
 }
