@@ -111,8 +111,8 @@ Widget buildRecentTransactions({
             borderRadius: radiusMedium,
             boxShadow: [
               BoxShadow(
-                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2),
-                blurRadius: 2,
+                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
+                blurRadius: 1,
                 offset: const Offset(0, 3),
               ),
             ],
