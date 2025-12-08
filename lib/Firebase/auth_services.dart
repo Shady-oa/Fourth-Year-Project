@@ -49,22 +49,6 @@ class AuthService {
           .doc(month)
           .set({}, SetOptions(merge: true));
 
-      // Initialize the budgets, savings, and incomes sub-collections
-      final budgetsCollection = userDoc.collection('budgets');
-      final savingsCollection = userDoc.collection('savings');
-      final incomesCollection = userDoc.collection('incomes');
-
-      // Add placeholder documents or initialize with empty data
-      await budgetsCollection.doc('placeholder').set({
-        'message': 'Start adding budgets!',
-      });
-      await savingsCollection.doc('placeholder').set({
-        'message': 'Start adding savings!',
-      });
-      await incomesCollection.doc('placeholder').set({
-        'message': 'Start adding incomes!',
-      });
-
       // Send email verification
       if (!user.emailVerified) {
         await user.sendEmailVerification();
@@ -146,7 +130,22 @@ class AuthService {
         );
         return;
       }
+      await FirebaseFirestore.instance
+          .collection(collection)
+          .doc(user!.uid)
+          .set({
+            'fullName': '',
+            'username': '',
+            'email': '',
+            'profileUrl': '',
+          }, SetOptions(merge: true));
 
+      await FirebaseFirestore.instance
+          .collection('statistics')
+          .doc(user.uid)
+          .collection(year)
+          .doc(month)
+          .set({}, SetOptions(merge: true));
       Fluttertoast.showToast(
         msg: "Login successful!",
         toastLength: Toast.LENGTH_SHORT,
