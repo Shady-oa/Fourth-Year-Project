@@ -12,7 +12,6 @@ import 'package:final_project/Statistics/statistics.dart';
 import 'package:flutter/material.dart';
 // Import the reusable calculations
 
-
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
@@ -31,7 +30,7 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     // Initialize with some dummy data for demonstration
-    
+
     _recalculateTotals();
   }
 
@@ -99,6 +98,17 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     final recentTransactions = transactions.take(5).toList();
 
+    String greetings() {
+      final int hour = DateTime.now().hour;
+      if (hour < 12) {
+        return 'Good Morning';
+      } else if (hour < 17) {
+        return 'Good Afternoon';
+      } else {
+        return 'Good Evening';
+      }
+    }
+
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.surface,
@@ -113,10 +123,7 @@ class _HomePageState extends State<HomePage> {
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Good Morning',
-              style: Theme.of(context).textTheme.headlineSmall,
-            ),
+            Text(greetings(), style: Theme.of(context).textTheme.headlineSmall),
             Text('Alex', style: Theme.of(context).textTheme.bodyLarge),
           ],
         ),
@@ -193,8 +200,8 @@ class _HomePageState extends State<HomePage> {
           Text(
             'Total Balance',
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: Theme.of(context).colorScheme.surface,
-                ),
+              color: Theme.of(context).colorScheme.surface,
+            ),
           ),
           Text(
             CalculationUtils.totalBalance(
@@ -203,8 +210,8 @@ class _HomePageState extends State<HomePage> {
               savings: savingList,
             ),
             style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.surface,
-                ),
+              color: Theme.of(context).colorScheme.surface,
+            ),
           ),
           sizedBoxHeightLarge,
           Row(
@@ -290,14 +297,14 @@ class _HomePageState extends State<HomePage> {
             Text(
               label,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.surface,
-                  ),
+                color: Theme.of(context).colorScheme.surface,
+              ),
             ),
             Text(
               CalculationUtils.formatAmount(total),
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.surface,
-                  ),
+                color: Theme.of(context).colorScheme.surface,
+              ),
             ),
           ],
         ),
