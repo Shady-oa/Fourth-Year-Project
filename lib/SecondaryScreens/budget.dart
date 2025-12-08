@@ -1,8 +1,6 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:final_project/Components/Custom_header.dart';
 import 'package:final_project/Constants/colors.dart';
 import 'package:final_project/Constants/spacing.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -14,198 +12,55 @@ class Budget extends StatefulWidget {
 }
 
 class _BudgetState extends State<Budget> {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final FirebaseAuth _auth = FirebaseAuth.instance;
-  User? currentUser;
-  List<Map<String, dynamic>> budgets = [];
-  double totalBudget = 0.0;
-  double totalExpenses = 0.0;
+  // UI-only placeholder data
+  List<Map<String, dynamic>> budgets = [
+    {"id": "1", "category": "Food", "amount": 2000, "endDate": "2025-01-10"},
+    {
+      "id": "2",
+      "category": "Transport",
+      "amount": 800,
+      "endDate": "2025-01-20",
+    },
+  ];
 
-  @override
-  void initState() {
-    super.initState();
-    loadCurrentUser();
-  }
+  double totalBudget = 2800; // static placeholder
 
-  // Load the currently signed-in user
-  void loadCurrentUser() {
-    currentUser = _auth.currentUser;
-    if (currentUser != null) {
-      fetchBudgets();
-      calculateTotals();
-    } else {
-      debugPrint("No user is signed in.");
-    }
-  }
-
-  // Fetch budgets from Firestore
-  void fetchBudgets() async {
-    final budgetsSnapshot = await _firestore
-        .collection('users')
-        .doc(currentUser!.uid)
-        .collection('Budgets')
-        .get();
-
-    setState(() {
-      budgets = budgetsSnapshot.docs
-          .map(
-            (doc) => {
-              "id": doc.id,
-              "category": doc['Category'],
-              "amount": doc['Total amount'],
-              "endDate": doc['end date'],
-            },
-          )
-          .toList();
-    });
-
-    // Recalculate totals after fetching budgets
-    calculateTotals();
-  }
-
-  // Calculate the totals for budgets and expenses
-  Future<void> calculateTotals() async {
-    if (currentUser == null) return;
-
-    double budgetSum = 0.0;
-    double expensesSum = 0.0;
-
-    // Fetch all budgets
-    final budgetsSnapshot = await _firestore
-        .collection('users')
-        .doc(currentUser!.uid)
-        .collection('Budgets')
-        .get();
-
-    for (var budgetDoc in budgetsSnapshot.docs) {
-      budgetSum += budgetDoc['Total amount'];
-
-      // Fetch expenses for each budget
-      final expensesSnapshot = await _firestore
-          .collection('users')
-          .doc(currentUser!.uid)
-          .collection('Budgets')
-          .doc(budgetDoc.id)
-          .collection('Expenses')
-          .get();
-
-      for (var expenseDoc in expensesSnapshot.docs) {
-        expensesSum += expenseDoc['amount'];
-      }
-    }
-
-    // Update the state with calculated totals
-    setState(() {
-      totalBudget = budgetSum;
-      totalExpenses = expensesSum;
-    });
-  }
-
-  // Add a new budget
-  void addBudget() async {
-    final categoryController = TextEditingController();
-    final amountController = TextEditingController();
-    DateTime? selectedDate;
-
-    await showDialog(
+  void addBudgetUIOnly() {
+    // Shows UI only (no saving)
+    showDialog(
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: Theme.of(context).colorScheme.surface,
-        title: Text(
-          "Add New Budget",
-          style: Theme.of(context).textTheme.headlineSmall,
-        ),
+        title: Text("Add New Budget"),
         content: Column(
           mainAxisSize: MainAxisSize.min,
-          children: [
+          children: const [
+            TextField(decoration: InputDecoration(labelText: "Category")),
             TextField(
-              controller: categoryController,
-              decoration: const InputDecoration(labelText: "Category"),
-              style: Theme.of(context).textTheme.bodyMedium,
+              decoration: InputDecoration(labelText: "Budgeted Amount"),
             ),
-            TextField(
-              controller: amountController,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(labelText: "Budgeted Amount"),
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
-            const SizedBox(height: spacerMedium),
-            TextButton(
-              onPressed: () async {
-                final DateTime? pickedDate = await showDatePicker(
-                  context: context,
-                  initialDate: DateTime.now(),
-                  firstDate: DateTime(2000),
-                  lastDate: DateTime(2100),
-                );
-                if (pickedDate != null) {
-                  setState(() {
-                    selectedDate = pickedDate;
-                  });
-                }
-              },
-              child: Text(
-                selectedDate == null
-                    ? "Select End Date"
-                    : "Selected: ${selectedDate?.toLocal()}".split(' ')[0],
-                style: Theme.of(
-                  context,
-                ).textTheme.bodyMedium?.copyWith(color: brandGreen),
-              ),
-            ),
+            SizedBox(height: spacerMedium),
+            Text("Select End Date (UI only)"),
           ],
         ),
         actions: [
           TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-            },
-            child: Text(
-              "Cancel",
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Cancel"),
           ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: brandGreen),
-            onPressed: () async {
-              if (categoryController.text.isNotEmpty &&
-                  amountController.text.isNotEmpty &&
-                  selectedDate != null) {
-                final newBudget = {
-                  "Category": categoryController.text,
-                  "Total amount": double.parse(amountController.text),
-                  "end date": selectedDate!.toIso8601String(),
-                };
-
-                await _firestore
-                    .collection('users')
-                    .doc(currentUser!.uid)
-                    .collection('Budgets')
-                    .add(newBudget);
-
-                fetchBudgets(); // Refresh the budgets
-                Navigator.pop(context);
-              }
-            },
-            child: Text(
-              "Add",
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Theme.of(context).colorScheme.onSurface,
-              ),
-            ),
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Add (UI Only)"),
           ),
         ],
       ),
     );
   }
 
-  // Navigate to daily expenses page
-  void navigateToExpenses(String budgetId) {
+  void openBudgetDetailsUIOnly() {
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (context) => BudgetDetailsPage(budgetId: budgetId),
-      ),
+      MaterialPageRoute(builder: (context) => const BudgetDetailsPage()),
     );
   }
 
@@ -227,16 +82,15 @@ class _BudgetState extends State<Budget> {
                   "Total Budget",
                   style: Theme.of(context).textTheme.bodyLarge,
                 ),
-                const SizedBox(height: spacerTiny),
                 Text(
-                  "\$${totalBudget.toStringAsFixed(2)}",
+                  "\$$totalBudget",
                   style: Theme.of(context).textTheme.headlineMedium,
                 ),
               ],
             ),
 
             const SizedBox(height: spacerSmall),
-            // Budgets Section
+
             Expanded(
               child: Container(
                 width: double.infinity,
@@ -254,7 +108,7 @@ class _BudgetState extends State<Budget> {
                     itemBuilder: (context, index) {
                       final budget = budgets[index];
                       return GestureDetector(
-                        onTap: () => navigateToExpenses(budget['id']),
+                        onTap: openBudgetDetailsUIOnly,
                         child: Container(
                           margin: const EdgeInsets.only(bottom: spacerMedium),
                           padding: paddingAllMedium,
@@ -304,7 +158,7 @@ class _BudgetState extends State<Budget> {
                 ),
               ),
             ),
-            // Add More Button
+
             Padding(
               padding: const EdgeInsets.only(top: 10, bottom: 19),
               child: Center(
@@ -319,7 +173,7 @@ class _BudgetState extends State<Budget> {
                       vertical: spacerMedium,
                     ),
                   ),
-                  onPressed: addBudget,
+                  onPressed: addBudgetUIOnly,
                   child: Text(
                     "Add Budget",
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -336,180 +190,40 @@ class _BudgetState extends State<Budget> {
   }
 }
 
-class BudgetDetailsPage extends StatefulWidget {
-  final String budgetId;
+// -------------------------
+//   Details Page (UI Only)
+// -------------------------
 
-  const BudgetDetailsPage({required this.budgetId, super.key});
-
-  @override
-  _BudgetDetailsPageState createState() => _BudgetDetailsPageState();
-}
-
-class _BudgetDetailsPageState extends State<BudgetDetailsPage> {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  late String budgetId;
-  Map<String, dynamic> budgetDetails = {};
-  List<Map<String, dynamic>> expenses = [];
-  double totalExpenses = 0;
-
-  @override
-  void initState() {
-    super.initState();
-    budgetId = widget.budgetId;
-    fetchBudgetDetails();
-  }
-
-  // Fetch budget details and expenses
-  void fetchBudgetDetails() async {
-    final budgetSnapshot = await _firestore
-        .collection('users')
-        .doc(FirebaseAuth.instance.currentUser!.uid)
-        .collection('Budgets')
-        .doc(budgetId)
-        .get();
-
-    final expensesSnapshot = await _firestore
-        .collection('users')
-        .doc(FirebaseAuth.instance.currentUser!.uid)
-        .collection('Budgets')
-        .doc(budgetId)
-        .collection('Expenses')
-        .get();
-
-    double expensesTotal = 0;
-    for (var doc in expensesSnapshot.docs) {
-      expensesTotal += doc['amount'];
-    }
-
-    setState(() {
-      budgetDetails = {
-        "Category": budgetSnapshot['Category'],
-        "Total amount": budgetSnapshot['Total amount'],
-        "end date": budgetSnapshot['end date'],
-      };
-      expenses = expensesSnapshot.docs
-          .map(
-            (doc) => {
-              "id": doc.id,
-              "description": doc['description'],
-              "amount": doc['amount'],
-              "date": doc['date'],
-            },
-          )
-          .toList();
-      totalExpenses = expensesTotal;
-    });
-  }
-
-  // Add a new expense
-  void addExpense() async {
-    final descriptionController = TextEditingController();
-    final amountController = TextEditingController();
-
-    await showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: Theme.of(context).colorScheme.surface,
-        title: Text(
-          "Add Expense",
-          style: Theme.of(context).textTheme.headlineSmall,
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: descriptionController,
-              decoration: const InputDecoration(labelText: "Description"),
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
-            TextField(
-              controller: amountController,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(labelText: "Amount"),
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-            },
-            child: Text(
-              "Cancel",
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: brandGreen),
-            onPressed: () async {
-              if (descriptionController.text.isNotEmpty &&
-                  amountController.text.isNotEmpty) {
-                final newExpense = {
-                  "description": descriptionController.text,
-                  "amount": double.parse(amountController.text),
-                  "date": DateTime.now().toIso8601String(),
-                };
-
-                await _firestore
-                    .collection('users')
-                    .doc(FirebaseAuth.instance.currentUser!.uid)
-                    .collection('Budgets')
-                    .doc(budgetId)
-                    .collection('Expenses')
-                    .add(newExpense);
-
-                fetchBudgetDetails(); // Refresh expenses and total
-                Navigator.pop(context);
-              }
-            },
-            child: Text(
-              "Add",
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Theme.of(context).colorScheme.onSurface,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+class BudgetDetailsPage extends StatelessWidget {
+  const BudgetDetailsPage({super.key});
 
   @override
   Widget build(BuildContext context) {
+    List<Map<String, dynamic>> expenses = [
+      {"description": "Lunch", "amount": 300, "date": "2025-01-01T12:30:00"},
+      {"description": "Taxi", "amount": 150, "date": "2025-01-02T08:40:00"},
+    ];
+
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surface,
       body: SafeArea(
         child: Column(
           children: [
-            // Header Section
             Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: spacerMedium,
-                vertical: spacerMedium,
-              ),
+              padding: const EdgeInsets.all(spacerMedium),
               child: Row(
                 children: [
                   Text(
-                    "${budgetDetails['Category']} Budget",
+                    "Budget Details",
                     style: Theme.of(context).textTheme.headlineSmall,
                   ),
                   const Spacer(),
-                  Container(
-                    height: 30,
-                    width: 30,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Theme.of(context).colorScheme.onSurface,
-                    ),
-                    child: Icon(
-                      Icons.notifications_none,
-                      color: Theme.of(context).colorScheme.surface,
-                    ),
-                  ),
+                  const Icon(Icons.notifications_none),
                 ],
               ),
             ),
+
+            // Top area
             Padding(
               padding: const EdgeInsets.symmetric(
                 horizontal: spacerMedium,
@@ -519,34 +233,19 @@ class _BudgetDetailsPageState extends State<BudgetDetailsPage> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      Text("Total Budget"),
                       Text(
-                        "Total Budget",
-                        style: Theme.of(context).textTheme.bodyLarge,
-                      ),
-                      const SizedBox(height: spacerTiny),
-                      Text(
-                        "\$${budgetDetails['Total amount']}",
+                        "\$2000",
                         style: Theme.of(context).textTheme.headlineMedium,
                       ),
                     ],
                   ),
-                  Container(
-                    height: 50,
-                    width: 1,
-                    color: Theme.of(context).colorScheme.onSurface,
-                  ),
                   Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      Text("Total Expense"),
                       Text(
-                        "Total Expense",
-                        style: Theme.of(context).textTheme.bodyLarge,
-                      ),
-                      const SizedBox(height: spacerTiny),
-                      Text(
-                        " \$${totalExpenses.toStringAsFixed(2)}",
+                        "\$450",
                         style: Theme.of(context).textTheme.headlineMedium
                             ?.copyWith(color: Colors.blue),
                       ),
@@ -555,8 +254,7 @@ class _BudgetDetailsPageState extends State<BudgetDetailsPage> {
                 ],
               ),
             ),
-            const SizedBox(height: spacerSmall),
-            // Budget Details Section
+
             Expanded(
               child: Container(
                 width: double.infinity,
@@ -567,153 +265,88 @@ class _BudgetDetailsPageState extends State<BudgetDetailsPage> {
                   ),
                   color: Theme.of(context).colorScheme.onSurface,
                 ),
-                child: Padding(
+                child: ListView.builder(
                   padding: paddingAllMedium,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: ListView.builder(
-                          itemCount: expenses.length,
-                          itemBuilder: (context, index) {
-                            final expense = expenses[index];
+                  itemCount: expenses.length,
+                  itemBuilder: (context, index) {
+                    final expense = expenses[index];
+                    final date = DateTime.parse(expense['date']);
+                    final formattedDate = DateFormat.yMMMd().format(date);
+                    final formattedTime = DateFormat.Hm().format(date);
 
-                            // Parse the string to DateTime before formatting
-                            final date = DateTime.parse(expense['date']);
-                            final formattedDate = DateFormat.yMMMd().format(
-                              date,
-                            ); // Format the Date
-                            final formattedTime = DateFormat.Hm().format(
-                              date,
-                            ); // Format the Time
-
-                            return Container(
-                              margin: const EdgeInsets.symmetric(
-                                vertical: spacerSmall,
-                              ),
-                              padding: paddingAllMedium,
-                              decoration: BoxDecoration(
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.onSurface.withOpacity(0.8),
-                                borderRadius: radiusSmall,
-                              ),
-                              child: Row(
-                                children: [
-                                  // Column for description, date, and time
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          expense['description'],
-                                          style: Theme.of(context)
-                                              .textTheme
-                                              .titleLarge
-                                              ?.copyWith(
-                                                color: Theme.of(
-                                                  context,
-                                                ).colorScheme.surface,
-                                              ),
-                                        ),
-                                        const SizedBox(height: spacerSmall),
-                                        Row(
-                                          children: [
-                                            Column(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
-                                              children: [
-                                                Text(
-                                                  formattedDate,
-                                                  style: Theme.of(context)
-                                                      .textTheme
-                                                      .bodySmall
-                                                      ?.copyWith(
-                                                        color: Theme.of(context)
-                                                            .colorScheme
-                                                            .surface
-                                                            .withOpacity(0.7),
-                                                      ),
-                                                ),
-                                                const SizedBox(
-                                                  height: spacerTiny,
-                                                ),
-                                                Text(
-                                                  formattedTime,
-                                                  style: Theme.of(context)
-                                                      .textTheme
-                                                      .bodySmall
-                                                      ?.copyWith(
-                                                        color: Theme.of(context)
-                                                            .colorScheme
-                                                            .surface
-                                                            .withOpacity(0.7),
-                                                      ),
-                                                ),
-                                              ],
-                                            ),
-                                          ],
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  // Amount aligned to the far right
-                                  Padding(
-                                    padding: const EdgeInsets.only(
-                                      left: spacerSmall,
-                                    ),
-                                    child: Text(
-                                      "\$${expense['amount']}",
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .bodyMedium
-                                          ?.copyWith(
-                                            color: Theme.of(context)
-                                                .colorScheme
-                                                .surface
-                                                .withOpacity(0.7),
-                                          ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            );
-                          },
-                        ),
+                    return Container(
+                      margin: const EdgeInsets.symmetric(vertical: spacerSmall),
+                      padding: paddingAllMedium,
+                      decoration: BoxDecoration(
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withOpacity(0.8),
+                        borderRadius: radiusSmall,
                       ),
-                      Padding(
-                        padding: const EdgeInsets.only(
-                          top: spacerSmall,
-                          bottom: 19.0,
-                        ),
-                        child: Center(
-                          child: ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: brandGreen,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(30.0),
-                              ),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 50,
-                                vertical: 12,
-                              ),
-                            ),
-                            onPressed: addExpense,
-                            child: Text(
-                              "Add Expense",
-                              style: Theme.of(context).textTheme.bodyMedium
-                                  ?.copyWith(
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.onSurface,
-                                  ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  expense['description'],
+                                  style: Theme.of(context).textTheme.titleLarge
+                                      ?.copyWith(
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.surface,
+                                      ),
+                                ),
+                                const SizedBox(height: spacerSmall),
+                                Text(
+                                  "$formattedDate  •  $formattedTime",
+                                  style: Theme.of(context).textTheme.bodySmall
+                                      ?.copyWith(
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.surface.withOpacity(0.7),
+                                      ),
+                                ),
+                              ],
                             ),
                           ),
-                        ),
+                          Text(
+                            "\$${expense['amount']}",
+                            style: Theme.of(context).textTheme.bodyMedium
+                                ?.copyWith(
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.surface.withOpacity(0.7),
+                                ),
+                          ),
+                        ],
                       ),
-                    ],
+                    );
+                  },
+                ),
+              ),
+            ),
+
+            Padding(
+              padding: const EdgeInsets.only(top: spacerSmall, bottom: 20),
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: brandGreen,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(30),
                   ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 50,
+                    vertical: 12,
+                  ),
+                ),
+                onPressed: () {},
+                child: Text(
+                  "Add Expense (UI Only)",
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.copyWith(color: Colors.black),
                 ),
               ),
             ),
