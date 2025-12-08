@@ -1,5 +1,3 @@
-// lib/Primary_Screens/home_page.dart
-
 import 'package:final_project/Components/notification_icon.dart';
 import 'package:final_project/Components/quick_actions.dart';
 import 'package:final_project/Components/them_toggle.dart';
@@ -7,10 +5,12 @@ import 'package:final_project/Components/toast.dart';
 import 'package:final_project/Constants/colors.dart';
 import 'package:final_project/Constants/spacing.dart';
 import 'package:final_project/Primary_Screens/Transactions/alert_dialog.dart';
+import 'package:final_project/Primary_Screens/Transactions/transactions.dart';
 import 'package:final_project/Primary_Screens/transactions/transaction_widget.dart';
 import 'package:final_project/Statistics/statistics.dart';
 import 'package:flutter/material.dart';
 // Import the reusable calculations
+
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -153,9 +153,32 @@ class _HomePageState extends State<HomePage> {
               _buildQuickActions(),
               sizedBoxHeightLarge,
               // Recent Transactions Section
-              Text(
-                'Recent Transactions',
-                style: Theme.of(context).textTheme.titleLarge,
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Recent Transactions',
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
+                  TextButton(
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => AllTransactionsPage(),
+                        ),
+                      );
+                    },
+                    child: Text(
+                      'See all Transactions',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: accentColor,
+                        decoration: TextDecoration.underline,
+                        decorationColor: accentColor,
+                        decorationThickness: 2,
+                      ),
+                    ),
+                  ),
+                ],
               ),
               sizedBoxHeightSmall,
               recentTransactions.isEmpty

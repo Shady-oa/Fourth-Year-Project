@@ -1,8 +1,9 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:final_project/Components/Custom_header.dart';
 import 'package:final_project/Constants/colors.dart';
 import 'package:final_project/Constants/spacing.dart';
-import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 class Budget extends StatefulWidget {
@@ -47,12 +48,14 @@ class _BudgetState extends State<Budget> {
 
     setState(() {
       budgets = budgetsSnapshot.docs
-          .map((doc) => {
-                "id": doc.id,
-                "category": doc['Category'],
-                "amount": doc['Total amount'],
-                "endDate": doc['end date']
-              })
+          .map(
+            (doc) => {
+              "id": doc.id,
+              "category": doc['Category'],
+              "amount": doc['Total amount'],
+              "endDate": doc['end date'],
+            },
+          )
           .toList();
     });
 
@@ -108,7 +111,10 @@ class _BudgetState extends State<Budget> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: Theme.of(context).colorScheme.surface,
-        title: Text("Add New Budget", style: Theme.of(context).textTheme.headlineSmall),
+        title: Text(
+          "Add New Budget",
+          style: Theme.of(context).textTheme.headlineSmall,
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -142,7 +148,9 @@ class _BudgetState extends State<Budget> {
                 selectedDate == null
                     ? "Select End Date"
                     : "Selected: ${selectedDate?.toLocal()}".split(' ')[0],
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: brandGreen),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyMedium?.copyWith(color: brandGreen),
               ),
             ),
           ],
@@ -152,7 +160,10 @@ class _BudgetState extends State<Budget> {
             onPressed: () {
               Navigator.pop(context);
             },
-            child: Text("Cancel", style: Theme.of(context).textTheme.bodyMedium),
+            child: Text(
+              "Cancel",
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: brandGreen),
@@ -176,8 +187,12 @@ class _BudgetState extends State<Budget> {
                 Navigator.pop(context);
               }
             },
-            child: Text("Add",
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.onSurface)),
+            child: Text(
+              "Add",
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
+            ),
           ),
         ],
       ),
@@ -197,79 +212,30 @@ class _BudgetState extends State<Budget> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        title: const CustomHeader(headerName: "Budgets"),
+      ),
       backgroundColor: Theme.of(context).colorScheme.surface,
       body: SafeArea(
         child: Column(
           children: [
-            // Header Section
-            Padding(
-              padding: const EdgeInsets.only(top: spacerMedium, left: spacerMedium, right: spacerMedium),
-              child: Column(
-                children: [
-                  Row(
-                    children: [
-                      Center(
-                        child: Text(
-                          "Budgets",
-                          style: Theme.of(context).textTheme.headlineSmall,
-                        ),
-                      ),
-                      const Spacer(),
-                      Container(
-                        height: 30,
-                        width: 30,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Theme.of(context).colorScheme.onSurface,
-                        ),
-                        child: Icon(
-                          Icons.notifications_none,
-                          color: Theme.of(context).colorScheme.surface,
-                        ),
-                      )
-                    ],
-                  ),
-                                    const SizedBox(height: spacerSmall),
-                ],
-              ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  "Total Budget",
+                  style: Theme.of(context).textTheme.bodyLarge,
+                ),
+                const SizedBox(height: spacerTiny),
+                Text(
+                  "\$${totalBudget.toStringAsFixed(2)}",
+                  style: Theme.of(context).textTheme.headlineMedium,
+                ),
+              ],
             ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: spacerMedium, vertical: spacerSmall),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text("Total Budget", style: Theme.of(context).textTheme.bodyLarge),
-                      const SizedBox(height: spacerTiny),
-                      Text(
-                        "\$${totalBudget.toStringAsFixed(2)}",
-                        style: Theme.of(context).textTheme.headlineMedium,
-                      ),
-                    ],
-                  ),
-                  Container(
-                    height: 50,
-                    width: 1,
-                    color: Theme.of(context).colorScheme.onSurface,
-                  ),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text("Total Expense", style: Theme.of(context).textTheme.bodyLarge),
-                      const SizedBox(height: spacerTiny),
-                      Text(
-                        "\$${totalExpenses.toStringAsFixed(2)}",
-                        style: Theme.of(context).textTheme.headlineMedium
-                            ?.copyWith(color: Colors.blue),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-                              const SizedBox(height: spacerSmall),
+
+            const SizedBox(height: spacerSmall),
             // Budgets Section
             Expanded(
               child: Container(
@@ -293,7 +259,9 @@ class _BudgetState extends State<Budget> {
                           margin: const EdgeInsets.only(bottom: spacerMedium),
                           padding: paddingAllMedium,
                           decoration: BoxDecoration(
-                            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.8),
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurface.withOpacity(0.8),
                             borderRadius: radiusMedium,
                           ),
                           child: Column(
@@ -302,18 +270,30 @@ class _BudgetState extends State<Budget> {
                               Text(
                                 budget['category'],
                                 style: Theme.of(context).textTheme.titleLarge
-                                    ?.copyWith(color: Theme.of(context).colorScheme.surface),
+                                    ?.copyWith(
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.surface,
+                                    ),
                               ),
                               const SizedBox(height: 8),
                               Text(
                                 "Amount: \$${budget['amount']}",
                                 style: Theme.of(context).textTheme.bodyMedium
-                                    ?.copyWith(color: Theme.of(context).colorScheme.surface),
+                                    ?.copyWith(
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.surface,
+                                    ),
                               ),
                               Text(
                                 "End Date: ${budget['endDate']}",
                                 style: Theme.of(context).textTheme.bodyMedium
-                                    ?.copyWith(color: Theme.of(context).colorScheme.surface.withOpacity(0.7)),
+                                    ?.copyWith(
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.surface.withOpacity(0.7),
+                                    ),
                               ),
                             ],
                           ),
@@ -342,7 +322,9 @@ class _BudgetState extends State<Budget> {
                   onPressed: addBudget,
                   child: Text(
                     "Add Budget",
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.onSurface),
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
                   ),
                 ),
               ),
@@ -406,12 +388,14 @@ class _BudgetDetailsPageState extends State<BudgetDetailsPage> {
         "end date": budgetSnapshot['end date'],
       };
       expenses = expensesSnapshot.docs
-          .map((doc) => {
-                "id": doc.id,
-                "description": doc['description'],
-                "amount": doc['amount'],
-                "date": doc['date'],
-              })
+          .map(
+            (doc) => {
+              "id": doc.id,
+              "description": doc['description'],
+              "amount": doc['amount'],
+              "date": doc['date'],
+            },
+          )
           .toList();
       totalExpenses = expensesTotal;
     });
@@ -426,7 +410,10 @@ class _BudgetDetailsPageState extends State<BudgetDetailsPage> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: Theme.of(context).colorScheme.surface,
-        title: Text("Add Expense", style: Theme.of(context).textTheme.headlineSmall),
+        title: Text(
+          "Add Expense",
+          style: Theme.of(context).textTheme.headlineSmall,
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -448,7 +435,10 @@ class _BudgetDetailsPageState extends State<BudgetDetailsPage> {
             onPressed: () {
               Navigator.pop(context);
             },
-            child: Text("Cancel", style: Theme.of(context).textTheme.bodyMedium),
+            child: Text(
+              "Cancel",
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: brandGreen),
@@ -473,8 +463,12 @@ class _BudgetDetailsPageState extends State<BudgetDetailsPage> {
                 Navigator.pop(context);
               }
             },
-            child: Text("Add",
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.onSurface)),
+            child: Text(
+              "Add",
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
+            ),
           ),
         ],
       ),
@@ -490,7 +484,10 @@ class _BudgetDetailsPageState extends State<BudgetDetailsPage> {
           children: [
             // Header Section
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: spacerMedium, vertical: spacerMedium),
+              padding: const EdgeInsets.symmetric(
+                horizontal: spacerMedium,
+                vertical: spacerMedium,
+              ),
               child: Row(
                 children: [
                   Text(
@@ -509,19 +506,25 @@ class _BudgetDetailsPageState extends State<BudgetDetailsPage> {
                       Icons.notifications_none,
                       color: Theme.of(context).colorScheme.surface,
                     ),
-                  )
+                  ),
                 ],
               ),
             ),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: spacerMedium, vertical: spacerSmall),
+              padding: const EdgeInsets.symmetric(
+                horizontal: spacerMedium,
+                vertical: spacerSmall,
+              ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text("Total Budget", style: Theme.of(context).textTheme.bodyLarge),
+                      Text(
+                        "Total Budget",
+                        style: Theme.of(context).textTheme.bodyLarge,
+                      ),
                       const SizedBox(height: spacerTiny),
                       Text(
                         "\$${budgetDetails['Total amount']}",
@@ -537,7 +540,10 @@ class _BudgetDetailsPageState extends State<BudgetDetailsPage> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text("Total Expense", style: Theme.of(context).textTheme.bodyLarge),
+                      Text(
+                        "Total Expense",
+                        style: Theme.of(context).textTheme.bodyLarge,
+                      ),
                       const SizedBox(height: spacerTiny),
                       Text(
                         " \$${totalExpenses.toStringAsFixed(2)}",
@@ -549,7 +555,7 @@ class _BudgetDetailsPageState extends State<BudgetDetailsPage> {
                 ],
               ),
             ),
-                              const SizedBox(height: spacerSmall),
+            const SizedBox(height: spacerSmall),
             // Budget Details Section
             Expanded(
               child: Container(
@@ -574,16 +580,22 @@ class _BudgetDetailsPageState extends State<BudgetDetailsPage> {
 
                             // Parse the string to DateTime before formatting
                             final date = DateTime.parse(expense['date']);
-                            final formattedDate =
-                                DateFormat.yMMMd().format(date); // Format the Date
-                            final formattedTime =
-                                DateFormat.Hm().format(date); // Format the Time
+                            final formattedDate = DateFormat.yMMMd().format(
+                              date,
+                            ); // Format the Date
+                            final formattedTime = DateFormat.Hm().format(
+                              date,
+                            ); // Format the Time
 
                             return Container(
-                              margin: const EdgeInsets.symmetric(vertical: spacerSmall),
+                              margin: const EdgeInsets.symmetric(
+                                vertical: spacerSmall,
+                              ),
                               padding: paddingAllMedium,
                               decoration: BoxDecoration(
-                                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.8),
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurface.withOpacity(0.8),
                                 borderRadius: radiusSmall,
                               ),
                               child: Row(
@@ -596,8 +608,14 @@ class _BudgetDetailsPageState extends State<BudgetDetailsPage> {
                                       children: [
                                         Text(
                                           expense['description'],
-                                          style: Theme.of(context).textTheme.titleLarge
-                                              ?.copyWith(color: Theme.of(context).colorScheme.surface),
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .titleLarge
+                                              ?.copyWith(
+                                                color: Theme.of(
+                                                  context,
+                                                ).colorScheme.surface,
+                                              ),
                                         ),
                                         const SizedBox(height: spacerSmall),
                                         Row(
@@ -608,18 +626,30 @@ class _BudgetDetailsPageState extends State<BudgetDetailsPage> {
                                               children: [
                                                 Text(
                                                   formattedDate,
-                                                  style: Theme.of(context).textTheme.bodySmall
+                                                  style: Theme.of(context)
+                                                      .textTheme
+                                                      .bodySmall
                                                       ?.copyWith(
-                                                          color: Theme.of(context).colorScheme.surface
-                                                              .withOpacity(0.7)),
+                                                        color: Theme.of(context)
+                                                            .colorScheme
+                                                            .surface
+                                                            .withOpacity(0.7),
+                                                      ),
                                                 ),
-                                                const SizedBox(height: spacerTiny),
+                                                const SizedBox(
+                                                  height: spacerTiny,
+                                                ),
                                                 Text(
                                                   formattedTime,
-                                                  style: Theme.of(context).textTheme.bodySmall
+                                                  style: Theme.of(context)
+                                                      .textTheme
+                                                      .bodySmall
                                                       ?.copyWith(
-                                                          color: Theme.of(context).colorScheme.surface
-                                                              .withOpacity(0.7)),
+                                                        color: Theme.of(context)
+                                                            .colorScheme
+                                                            .surface
+                                                            .withOpacity(0.7),
+                                                      ),
                                                 ),
                                               ],
                                             ),
@@ -630,11 +660,20 @@ class _BudgetDetailsPageState extends State<BudgetDetailsPage> {
                                   ),
                                   // Amount aligned to the far right
                                   Padding(
-                                    padding: const EdgeInsets.only(left: spacerSmall),
+                                    padding: const EdgeInsets.only(
+                                      left: spacerSmall,
+                                    ),
                                     child: Text(
                                       "\$${expense['amount']}",
-                                      style: Theme.of(context).textTheme.bodyMedium
-                                          ?.copyWith(color: Theme.of(context).colorScheme.surface.withOpacity(0.7)),
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodyMedium
+                                          ?.copyWith(
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .surface
+                                                .withOpacity(0.7),
+                                          ),
                                     ),
                                   ),
                                 ],
@@ -644,7 +683,10 @@ class _BudgetDetailsPageState extends State<BudgetDetailsPage> {
                         ),
                       ),
                       Padding(
-                        padding: const EdgeInsets.only(top: spacerSmall, bottom: 19.0),
+                        padding: const EdgeInsets.only(
+                          top: spacerSmall,
+                          bottom: 19.0,
+                        ),
                         child: Center(
                           child: ElevatedButton(
                             style: ElevatedButton.styleFrom(
@@ -661,7 +703,11 @@ class _BudgetDetailsPageState extends State<BudgetDetailsPage> {
                             child: Text(
                               "Add Expense",
                               style: Theme.of(context).textTheme.bodyMedium
-                                  ?.copyWith(color: Theme.of(context).colorScheme.onSurface),
+                                  ?.copyWith(
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onSurface,
+                                  ),
                             ),
                           ),
                         ),

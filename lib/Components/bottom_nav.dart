@@ -1,9 +1,9 @@
 import 'package:final_project/Constants/spacing.dart';
-import 'package:final_project/Primary_Screens/Transactions/transactions.dart';
 import 'package:final_project/Primary_Screens/ai.dart';
 import 'package:final_project/Primary_Screens/home.dart';
 import 'package:final_project/Primary_Screens/profile.dart';
 import 'package:final_project/Primary_Screens/savings.dart';
+import 'package:final_project/SecondaryScreens/budget.dart';
 import 'package:flutter/material.dart';
 import 'package:google_nav_bar/google_nav_bar.dart';
 
@@ -18,7 +18,7 @@ class _BottomNavState extends State<BottomNav> {
   int current_index = 0;
   List pages = [
     const HomePage(),
-    const AllTransactionsPage(),
+    const Budget(),
     const SavingsPage(),
     const AiPage(),
     const Profile(),
@@ -49,7 +49,7 @@ class _BottomNavState extends State<BottomNav> {
             GButton(icon: Icons.home_rounded, text: 'Home'),
             GButton(
               icon: Icons.swap_horizontal_circle_rounded,
-              text: 'Transactions',
+              text: 'Budgets',
               iconSize: 30,
             ),
             GButton(icon: Icons.savings_rounded, text: 'Savings', iconSize: 30),
