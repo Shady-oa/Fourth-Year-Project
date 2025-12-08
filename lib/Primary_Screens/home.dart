@@ -11,7 +11,6 @@ import 'package:final_project/Statistics/statistics.dart';
 import 'package:flutter/material.dart';
 // Import the reusable calculations
 
-
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
@@ -113,13 +112,16 @@ class _HomePageState extends State<HomePage> {
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.surface,
         elevation: 0,
-        leading: Padding(
-          padding: paddingAllTiny,
-          child: const CircleAvatar(
-            radius: 24,
-            backgroundImage: AssetImage("assets/image/icon 2.png"),
-          ),
+        leading: Row(
+          children: [
+            SizedBox(width: 8),
+            CircleAvatar(
+              radius: 24,
+              backgroundImage: AssetImage("assets/image/icon 2.png"),
+            ),
+          ],
         ),
+
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
