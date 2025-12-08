@@ -163,8 +163,18 @@ class _AllTransactionsPageState extends State<AllTransactionsPage> {
         onPressed: () => setState(() => showQuickActions = !showQuickActions),
         shape: const CircleBorder(),
         child: showQuickActions
-            ? Text("Close", style: Theme.of(context).textTheme.bodySmall)
-            : Text("Add", style: Theme.of(context).textTheme.bodySmall),
+            ? Text(
+                "Close",
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyMedium?.copyWith(color: textLightMode),
+              )
+            : Text(
+                "Add",
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyMedium?.copyWith(color: textLightMode),
+              ),
       ),
     );
   }
