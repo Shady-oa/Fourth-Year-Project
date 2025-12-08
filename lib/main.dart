@@ -2,12 +2,19 @@ import 'package:final_project/Constants/colors.dart';
 import 'package:final_project/SecondaryScreens/splash.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:onesignal_flutter/onesignal_flutter.dart';
 import 'package:provider/provider.dart';
 
 void main() async {
   // Initialize Firebase
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
+
+  //Onesignal notifications initialization
+  OneSignal.Debug.setLogLevel(OSLogLevel.verbose);
+  OneSignal.initialize("97af8b8e-00e6-432a-82e4-8cc88566277c");
+  OneSignal.Notifications.requestPermission(true);
+
   // Run your app
   runApp(
     ChangeNotifierProvider(
