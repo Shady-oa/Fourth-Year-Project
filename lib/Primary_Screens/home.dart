@@ -8,7 +8,7 @@ import 'package:final_project/Constants/colors.dart';
 import 'package:final_project/Constants/spacing.dart';
 import 'package:final_project/Primary_Screens/Transactions/alert_dialog.dart';
 import 'package:final_project/Primary_Screens/transactions/transaction_widget.dart';
-import 'package:final_project/Statistics/calculations.dart';
+import 'package:final_project/Statistics/statistics.dart';
 import 'package:flutter/material.dart';
 // Import the reusable calculations
 
