@@ -1,5 +1,3 @@
-// lib/Primary_Screens/home_page.dart
-
 import 'package:final_project/Components/notification_icon.dart';
 import 'package:final_project/Components/quick_actions.dart';
 import 'package:final_project/Components/them_toggle.dart';
@@ -7,11 +5,10 @@ import 'package:final_project/Components/toast.dart';
 import 'package:final_project/Constants/colors.dart';
 import 'package:final_project/Constants/spacing.dart';
 import 'package:final_project/Primary_Screens/Transactions/alert_dialog.dart';
+import 'package:final_project/Primary_Screens/Transactions/transactions.dart';
 import 'package:final_project/Primary_Screens/transactions/transaction_widget.dart';
 import 'package:final_project/Statistics/statistics.dart';
 import 'package:flutter/material.dart';
-// Import the reusable calculations
-
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -31,7 +28,7 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     // Initialize with some dummy data for demonstration
-    
+
     _recalculateTotals();
   }
 
@@ -146,9 +143,32 @@ class _HomePageState extends State<HomePage> {
               _buildQuickActions(),
               sizedBoxHeightLarge,
               // Recent Transactions Section
-              Text(
-                'Recent Transactions',
-                style: Theme.of(context).textTheme.titleLarge,
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Recent Transactions',
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
+                  TextButton(
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => AllTransactionsPage(),
+                        ),
+                      );
+                    },
+                    child: Text(
+                      'See all Transactions',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: accentColor,
+                        decoration: TextDecoration.underline,
+                        decorationColor: accentColor,
+                        decorationThickness: 2,
+                      ),
+                    ),
+                  ),
+                ],
               ),
               sizedBoxHeightSmall,
               recentTransactions.isEmpty
@@ -193,8 +213,8 @@ class _HomePageState extends State<HomePage> {
           Text(
             'Total Balance',
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: Theme.of(context).colorScheme.surface,
-                ),
+              color: Theme.of(context).colorScheme.surface,
+            ),
           ),
           Text(
             CalculationUtils.totalBalance(
@@ -203,8 +223,8 @@ class _HomePageState extends State<HomePage> {
               savings: savingList,
             ),
             style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.surface,
-                ),
+              color: Theme.of(context).colorScheme.surface,
+            ),
           ),
           sizedBoxHeightLarge,
           Row(
@@ -290,14 +310,14 @@ class _HomePageState extends State<HomePage> {
             Text(
               label,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.surface,
-                  ),
+                color: Theme.of(context).colorScheme.surface,
+              ),
             ),
             Text(
               CalculationUtils.formatAmount(total),
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.surface,
-                  ),
+                color: Theme.of(context).colorScheme.surface,
+              ),
             ),
           ],
         ),

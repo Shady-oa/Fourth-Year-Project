@@ -23,9 +23,9 @@ void showCustomToast({
     length: ToastLength.long,
     positionCurve: Curves.bounceInOut,
     slideCurve: Curves.easeInOut,
-    shadowColor: backgroundColor,
-    messageStyle: Theme.of(context).textTheme.bodyMedium!.copyWith(
-      color: textLightMode,
-    ),
+
+    messageStyle: Theme.of(
+      context,
+    ).textTheme.bodyMedium!.copyWith(color: textLightMode),
   );
 }
