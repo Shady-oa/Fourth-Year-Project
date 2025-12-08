@@ -1,26 +1,17 @@
+// lib/Primary_Screens/home_page.dart
+
 import 'package:final_project/Components/notification_icon.dart';
+import 'package:final_project/Components/quick_actions.dart';
 import 'package:final_project/Components/them_toggle.dart';
 import 'package:final_project/Components/toast.dart';
 import 'package:final_project/Constants/colors.dart';
 import 'package:final_project/Constants/spacing.dart';
 import 'package:final_project/Primary_Screens/Transactions/alert_dialog.dart';
 import 'package:final_project/Primary_Screens/transactions/transaction_widget.dart';
-import 'package:final_project/Statistics/statistics.dart';
+import 'package:final_project/Statistics/calculations.dart';
 import 'package:flutter/material.dart';
+// Import the reusable calculations
 
-class Transaction {
-  final String type; // Income, Expense, Saving
-  final double amount;
-  final String source;
-  final DateTime dateTime;
-
-  Transaction({
-    required this.type,
-    required this.amount,
-    required this.source,
-    required this.dateTime,
-  });
-}
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -30,12 +21,20 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  // Use lists of Transaction objects directly to simplify
+  List<Transaction> transactions = [];
   List<double> incomeList = [];
   List<double> expenseList = [];
   List<double> savingList = [];
-  List<Transaction> transactions = [];
 
   @override
+  void initState() {
+    super.initState();
+    // Initialize with some dummy data for demonstration
+    
+    _recalculateTotals();
+  }
+
   void _recalculateTotals() {
     if (!mounted) return;
     setState(() {
@@ -48,21 +47,22 @@ class _HomePageState extends State<HomePage> {
         if (tx.type == "Saving") savingList.add(tx.amount);
       }
 
-      // Calculate total balance
-      double total =
-          Statistics.calculateTotal(incomeList) -
-          (Statistics.calculateTotal(expenseList) +
-              Statistics.calculateTotal(savingList));
+      // Calculate total balance using the reusable utility
+      double total = CalculationUtils.calculateTotalBalance(
+        incomes: incomeList,
+        expenses: expenseList,
+        savings: savingList,
+      );
 
       // Delay showing the toast by 8 seconds
       Future.delayed(const Duration(seconds: 8), () {
-        if (!mounted) return; // ensure the widget is still active
+        if (!mounted) return;
 
         if (total < 0) {
           showCustomToast(
             context: context,
             message:
-                "Warning! You are overspending by ${Statistics.formatAmount(total.abs())}",
+                "Warning! You are overspending by ${CalculationUtils.formatAmount(total.abs())}",
             backgroundColor: errorColor,
             icon: Icons.warning_amber_rounded,
           );
@@ -70,12 +70,28 @@ class _HomePageState extends State<HomePage> {
           showCustomToast(
             context: context,
             message:
-                "Caution! Your total balance is low: ${Statistics.formatAmount(total)}",
+                "Caution! Your total balance is low: ${CalculationUtils.formatAmount(total)}",
             backgroundColor: warning,
             icon: Icons.warning_amber_rounded,
           );
         }
       });
+    });
+  }
+
+  // Function to handle adding a new transaction
+  void _addTransaction(String type, double value, String source) {
+    setState(() {
+      transactions.insert(
+        0,
+        Transaction(
+          type: type,
+          amount: value,
+          source: source,
+          dateTime: DateTime.now(),
+        ),
+      );
+      _recalculateTotals();
     });
   }
 
@@ -177,18 +193,18 @@ class _HomePageState extends State<HomePage> {
           Text(
             'Total Balance',
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-              color: Theme.of(context).colorScheme.surface,
-            ),
+                  color: Theme.of(context).colorScheme.surface,
+                ),
           ),
           Text(
-            Statistics.totalBalance(
+            CalculationUtils.totalBalance(
               incomes: incomeList,
               expenses: expenseList,
               savings: savingList,
             ),
             style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-              color: Theme.of(context).colorScheme.surface,
-            ),
+                  color: Theme.of(context).colorScheme.surface,
+                ),
           ),
           sizedBoxHeightLarge,
           Row(
@@ -218,74 +234,37 @@ class _HomePageState extends State<HomePage> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        _buildQuickActionCard(
-          context,
-          Icons.account_balance_wallet_outlined,
-          'Add Income',
-          () {
+        QuickActionCard(
+          icon: Icons.account_balance_wallet_outlined,
+          label: 'Add Income',
+          onTap: () {
             showAddAmountDialog(context, 'Income', (value, source) {
-              setState(() {
-                transactions.insert(
-                  0,
-                  Transaction(
-                    type: "Income",
-                    amount: value,
-                    source: source,
-                    dateTime: DateTime.now(),
-                  ),
-                );
-                _recalculateTotals();
-              });
+              _addTransaction('Income', value, source);
             });
           },
         ),
-        _buildQuickActionCard(
-          context,
-          Icons.add_card_outlined,
-          'Add Expense',
-          () {
+        QuickActionCard(
+          icon: Icons.add_card_outlined,
+          label: 'Add Expense',
+          onTap: () {
             showAddAmountDialog(context, 'Expense', (value, source) {
-              setState(() {
-                transactions.insert(
-                  0,
-                  Transaction(
-                    type: "Expense",
-                    amount: value,
-                    source: source,
-                    dateTime: DateTime.now(),
-                  ),
-                );
-                _recalculateTotals();
-              });
+              _addTransaction('Expense', value, source);
             });
           },
         ),
-        _buildQuickActionCard(
-          context,
-          Icons.savings_outlined,
-          'Add Saving',
-          () {
+        QuickActionCard(
+          icon: Icons.savings_outlined,
+          label: 'Add Saving',
+          onTap: () {
             showAddAmountDialog(context, 'Saving', (value, source) {
-              setState(() {
-                transactions.insert(
-                  0,
-                  Transaction(
-                    type: "Saving",
-                    amount: value,
-                    source: source,
-                    dateTime: DateTime.now(),
-                  ),
-                );
-                _recalculateTotals();
-              });
+              _addTransaction('Saving', value, source);
             });
           },
         ),
-        _buildQuickActionCard(
-          context,
-          Icons.analytics_outlined,
-          'Report',
-          () {},
+        QuickActionCard(
+          icon: Icons.analytics_outlined,
+          label: 'Report',
+          onTap: () {},
         ),
       ],
     );
@@ -297,7 +276,7 @@ class _HomePageState extends State<HomePage> {
     List<double> list,
     IconData icon,
   ) {
-    final total = list.isEmpty ? 0.0 : Statistics.calculateTotal(list);
+    final total = list.isEmpty ? 0.0 : CalculationUtils.calculateTotal(list);
     return Row(
       children: [
         Icon(
@@ -311,50 +290,18 @@ class _HomePageState extends State<HomePage> {
             Text(
               label,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.surface,
-              ),
+                    color: Theme.of(context).colorScheme.surface,
+                  ),
             ),
             Text(
-              Statistics.formatAmount(total),
+              CalculationUtils.formatAmount(total),
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Theme.of(context).colorScheme.surface,
-              ),
+                    color: Theme.of(context).colorScheme.surface,
+                  ),
             ),
           ],
         ),
       ],
-    );
-  }
-
-  Widget _buildQuickActionCard(
-    BuildContext context,
-    IconData icon,
-    String label,
-    VoidCallback? onTap,
-  ) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Column(
-        children: [
-          Container(
-            padding: paddingAllMedium,
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surface,
-              borderRadius: radiusMedium,
-              border: Border.all(
-                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-              ),
-            ),
-            child: Icon(
-              icon,
-              size: 30,
-              color: Theme.of(context).colorScheme.onSurface,
-            ),
-          ),
-          sizedBoxHeightSmall,
-          Text(label, style: Theme.of(context).textTheme.bodySmall),
-        ],
-      ),
     );
   }
 }
