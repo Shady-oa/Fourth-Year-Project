@@ -51,6 +51,7 @@ dependencies:
   delightful_toast: ^1.1.0
   onesignal_flutter: ^5.3.4
   hive_ce: ^2.15.1
+  rxdart: ^0.28.0
 
 dev_dependencies:
   flutter_test:

@@ -1,6 +1,5 @@
 import 'package:intl/intl.dart';
 
-
 // --------------------------------------------------------------------------
 // GLOBAL VARIABLES FOR BACKEND SYNC
 // --------------------------------------------------------------------------
@@ -9,10 +8,8 @@ double totalIncomeValue = 0.0;
 double totalExpenseValue = 0.0;
 double totalSavingValue = 0.0;
 double totalBudgetValue = 0.0;
-double totalTransactionValue = 0.0;     // Income + Expense + Saving
-double totalBalanceValue = 0.0;         // Income + Saving + Budget - Expense
-
-
+double totalTransactionValue = 0.0; // Income + Expense + Saving
+double totalBalanceValue = 0.0; // Income + Saving + Budget - Expense
 
 // --------------------------------------------------------------------------
 // Transaction Object
@@ -32,8 +29,6 @@ class Transaction {
   });
 }
 
-
-
 // --------------------------------------------------------------------------
 // CalculationUtils Class
 // --------------------------------------------------------------------------
@@ -48,13 +43,11 @@ class CalculationUtils {
   static double calculateTotalBalance({
     required List<double> incomes,
     required List<double> expenses,
-    required List<double> savings,
   }) {
     double totalIncome = calculateTotal(incomes);
     double totalExpense = calculateTotal(expenses);
-    double totalSaving = calculateTotal(savings);
 
-    return totalIncome - (totalExpense + totalSaving);
+    return totalIncome - totalExpense;
   }
 
   // Format amount with currency
@@ -71,18 +64,16 @@ class CalculationUtils {
   static String totalBalance({
     required List<double> incomes,
     required List<double> expenses,
-    required List<double> savings,
+    
   }) {
     double total = calculateTotalBalance(
       incomes: incomes,
       expenses: expenses,
-      savings: savings,
+      
     );
     return formatAmount(total);
   }
 }
-
-
 
 // --------------------------------------------------------------------------
 // Statistics Class
@@ -108,55 +99,46 @@ class Statistics {
     }
     if (item is Transaction) return item.amount;
     throw Exception(
-        "Item must be a number, a Map with 'amount', or a Transaction object.");
+      "Item must be a number, a Map with 'amount', or a Transaction object.",
+    );
   }
 
   // Calculate total from a list
   static double calculateTotal(List<dynamic> list) =>
       list.fold(0.0, (total, item) => total + getAmount(item));
 
-
-
   // ---- Income ----
   static String singleIncome([double amount = income]) => formatAmount(amount);
 
   static String totalIncome([List<dynamic> incomeList = const [income]]) {
-    totalIncomeValue = calculateTotal(incomeList);   // 🔥 Update global value
+    totalIncomeValue = calculateTotal(incomeList); // 🔥 Update global value
     return formatAmount(totalIncomeValue);
   }
-
-
 
   // ---- Expense ----
   static String singleExpense([double amount = expense]) =>
       formatAmount(amount);
 
   static String totalExpense([List<dynamic> expenseList = const [expense]]) {
-    totalExpenseValue = calculateTotal(expenseList);  // 🔥 Update global value
+    totalExpenseValue = calculateTotal(expenseList); // 🔥 Update global value
     return formatAmount(totalExpenseValue);
   }
-
-
 
   // ---- Saving ----
   static String singleSaving([double amount = saving]) => formatAmount(amount);
 
   static String totalSaving([List<dynamic> savingList = const [saving]]) {
-    totalSavingValue = calculateTotal(savingList);    // 🔥 Update global
+    totalSavingValue = calculateTotal(savingList); // 🔥 Update global
     return formatAmount(totalSavingValue);
   }
-
-
 
   // ---- Budget ----
   static String singleBudget([double amount = budget]) => formatAmount(amount);
 
   static String totalBudget([List<dynamic> budgetList = const [budget]]) {
-    totalBudgetValue = calculateTotal(budgetList);    // 🔥 Update global
+    totalBudgetValue = calculateTotal(budgetList); // 🔥 Update global
     return formatAmount(totalBudgetValue);
   }
-
-
 
   // ---- Total Transactions (Income + Expense + Saving) ----
   static String totalTransaction({
@@ -169,12 +151,12 @@ class Statistics {
     final totalSavingAmount = calculateTotal(savings);
 
     totalTransactionValue =
-        totalIncomeAmount + totalExpenseAmount + totalSavingAmount;   // 🔥 Update global
+        totalIncomeAmount +
+        totalExpenseAmount +
+        totalSavingAmount; // 🔥 Update global
 
     return formatAmount(totalTransactionValue);
   }
-
-
 
   // ---- Total Balance ----
   static String totalBalance({
@@ -189,7 +171,10 @@ class Statistics {
     final totalBudgetAmount = calculateTotal(budgets);
 
     totalBalanceValue =
-        totalIncomeAmount + totalSavingAmount + totalBudgetAmount - totalExpenseAmount;  // 🔥 Update global
+        totalIncomeAmount +
+        totalSavingAmount +
+        totalBudgetAmount -
+        totalExpenseAmount; // 🔥 Update global
 
     return formatAmount(totalBalanceValue);
   }

@@ -18,7 +18,7 @@ class _AllTransactionsPageState extends State<AllTransactionsPage> {
   List<Transaction> transactions = [];
   List<double> incomeList = [];
   List<double> expenseList = [];
-  List<double> savingList = [];
+  //List<double> savingList = [];
 
   bool showQuickActions = false;
 
@@ -33,17 +33,17 @@ class _AllTransactionsPageState extends State<AllTransactionsPage> {
     setState(() {
       incomeList.clear();
       expenseList.clear();
-      savingList.clear();
+      //savingList.clear();
       for (var tx in transactions) {
         if (tx.type == "Income") incomeList.add(tx.amount);
         if (tx.type == "Expense") expenseList.add(tx.amount);
-        if (tx.type == "Saving") savingList.add(tx.amount);
+        //if (tx.type == "Saving") savingList.add(tx.amount);
       }
 
       double total = CalculationUtils.calculateTotalBalance(
         incomes: incomeList,
         expenses: expenseList,
-        savings: savingList,
+        //savings: savingList,
       );
 
       Future.delayed(const Duration(seconds: 8), () {
@@ -252,7 +252,7 @@ class _AllTransactionsPageState extends State<AllTransactionsPage> {
             Statistics.totalTransaction(
               incomes: incomeList,
               expenses: expenseList,
-              savings: savingList,
+              // savings: savingList,
             ),
             style: Theme.of(context).textTheme.headlineMedium?.copyWith(
               color: Theme.of(context).colorScheme.surface,
