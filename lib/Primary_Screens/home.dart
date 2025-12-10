@@ -43,8 +43,8 @@ class _HomePageState extends State<HomePage> {
     userSubscription = usersDB.doc(userUid).snapshots().listen((snapshots) {
       if (snapshots.exists) {
         final userData = snapshots.data() as Map<String, dynamic>;
-        print('this is the userdata');
-        print(userData);
+        // print('this is the userdata');
+        //  print(userData);
         setState(() {
           username = userData['username'] ?? '';
           profileImage = userData['profileUrl'] ?? '';
@@ -59,6 +59,7 @@ class _HomePageState extends State<HomePage> {
         .collection(year)
         .doc(month)
         .collection('transactions')
+        .orderBy('createdAt', descending: true)
         .snapshots();
 
     final budgetsStream = statsDB
@@ -84,6 +85,11 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
+  String capitalize(String s) {
+    if (s.isEmpty) return s;
+    return s[0].toUpperCase() + s.substring(1);
+  }
+
   @override
   void initState() {
     super.initState();
@@ -96,66 +102,6 @@ class _HomePageState extends State<HomePage> {
     userSubscription?.cancel();
     super.dispose();
   }
-
-  /* void _recalculateTotals() {
-    if (!mounted) return;
-    setState(() {
-      incomeList.clear();
-      expenseList.clear();
-      savingList.clear();
-      for (var tx in transactions) {
-        if (tx.type == "Income") incomeList.add(tx.amount);
-        if (tx.type == "Expense") expenseList.add(tx.amount);
-        if (tx.type == "Saving") savingList.add(tx.amount);
-      }
-
-      // Calculate total balance using the reusable utility
-      double total = CalculationUtils.calculateTotalBalance(
-        incomes: incomeList,
-        expenses: expenseList,
-        savings: savingList,
-      );
-
-      // Delay showing the toast by 8 seconds
-      Future.delayed(const Duration(seconds: 8), () {
-        if (!mounted) return;
-
-        if (total < 0) {
-          showCustomToast(
-            context: context,
-            message:
-                "Warning! You are overspending by ${CalculationUtils.formatAmount(total.abs())}",
-            backgroundColor: errorColor,
-            icon: Icons.warning_amber_rounded,
-          );
-        } else if (total < 1000) {
-          showCustomToast(
-            context: context,
-            message:
-                "Caution! Your total balance is low: ${CalculationUtils.formatAmount(total)}",
-            backgroundColor: warning,
-            icon: Icons.warning_amber_rounded,
-          );
-        }
-      });
-    });
-  }*/
-
-  // Function to handle adding a new transaction
-  /*void _addTransaction(String type, double value, String source) {
-    setState(() {
-      transactions.insert(
-        0,
-        Transaction(
-          type: type,
-          amount: value,
-          source: source,
-          dateTime: DateTime.now(),
-        ),
-      );
-      _recalculateTotals();
-    });
-  }*/
 
   @override
   Widget build(BuildContext context) {
@@ -215,7 +161,7 @@ class _HomePageState extends State<HomePage> {
           final expenses = data['expense'] as List<QueryDocumentSnapshot>;
           int totalIncome = 0;
           int totalExpenses = 0;
-          int totalBalance = 0;
+          //int totalBalance = ;
           List<Map<String, dynamic>> transactionsData = [];
 
           for (var tx in expenses) {
@@ -224,104 +170,98 @@ class _HomePageState extends State<HomePage> {
             if (map['type'] == 'income') {
               String amount = map['amount'] ?? '0';
               totalIncome += int.parse(amount);
-            } else if (map['type'] == 'expense') {
+            } else if (map['type'] == 'expense' || map['type'] == 'saving') {
               String amount = map['amount'] ?? '0';
               totalExpenses += int.parse(amount);
             }
           }
 
-          print('this is the list of the transactions✅✅✅✅');
-          print(transactionsData);
+          //  print('this is the list of the transactions✅✅✅✅');
+          //print(transactionsData);
 
-          return SingleChildScrollView(
-            child: Padding(
-              padding: paddingAllMedium,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Balance Section
-                  _buildBalanceCard(
-                    totalExpense: totalExpenses ?? 0,
-                    totalIncome: totalIncome ?? 0,
-                  ),
-                  sizedBoxHeightLarge,
-                  // Quick Actions Section
-                  Text(
-                    'Quick Actions',
-                    style: Theme.of(context).textTheme.titleLarge,
-                  ),
-                  sizedBoxHeightSmall,
-                  _buildQuickActions(),
-                  sizedBoxHeightLarge,
-                  // Recent Transactions Section
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Recent Transactions',
-                        style: Theme.of(context).textTheme.titleLarge,
-                      ),
-                      TextButton(
-                        onPressed: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (context) => AllTransactionsPage(),
+          return Padding(
+            padding: paddingAllMedium,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Balance Section
+                _buildBalanceCard(
+                  totalExpense: totalExpenses ?? 0,
+                  totalIncome: totalIncome ?? 0,
+                ),
+                sizedBoxHeightLarge,
+                // Quick Actions Section
+                Text(
+                  'Quick Actions',
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+                sizedBoxHeightSmall,
+                _buildQuickActions(),
+                sizedBoxHeightLarge,
+                // Recent Transactions Section
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Recent Transactions',
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => AllTransactionsPage(
+                              expenses: expenses,
+                              totalTransaction: (totalIncome - totalExpenses),
                             ),
-                          );
-                        },
-                        child: Text(
-                          'See all Transactions',
-                          style: Theme.of(context).textTheme.bodyMedium
-                              ?.copyWith(
-                                color: accentColor,
-                                decoration: TextDecoration.underline,
-                                decorationColor: accentColor,
-                                decorationThickness: 2,
-                              ),
+                          ),
+                        );
+                      },
+                      child: Text(
+                        'See all Transactions',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: accentColor,
+                          decoration: TextDecoration.underline,
+                          decorationColor: accentColor,
+                          decorationThickness: 2,
                         ),
                       ),
-                    ],
-                  ),
-                  sizedBoxHeightSmall,
+                    ),
+                  ],
+                ),
+                sizedBoxHeightSmall,
 
-                  /* recentTransactions.isEmpty
-                      ? buildEmptyTransactions(context)
-                      : buildRecentTransactions(
-                          context: context,
-                          recentTransactions: recentTransactions,
-                          transactions: transactions,
-                          recalculateTotals: _recalculateTotals,
-                          updateTransactions: (newList) {
-                            setState(() {
-                              transactions = newList;
-                            });
+                transactionsData.isEmpty
+                    ? buildEmptyTransactions(context)
+                    : Expanded(
+                        child: ListView.builder(
+                          //shrinkWrap: true,
+                          itemCount: (transactionsData.length > 5)
+                              ? 5
+                              : transactionsData.length,
+                          itemBuilder: (contex, index) {
+                            String name = transactionsData[index]['name'] ?? '';
+                            String description =
+                                transactionsData[index]['description'] ?? '';
+                            String amount =
+                                transactionsData[index]['amount'] ?? '';
+                            String type = transactionsData[index]['type'] ?? '';
+                            Timestamp createdAt =
+                                transactionsData[index]['createdAt'] ??
+                                Timestamp.now();
+
+                            return transactionCell(
+                              name: capitalize(name),
+                              context: context,
+                              description: capitalize(description),
+                              type: type,
+                              amount: amount,
+                              createdAt: createdAt,
+                            );
                           },
-                        ),*/
-                  ListView.builder(
-                    shrinkWrap: true,
-                    itemCount: transactionsData.length,
-                    itemBuilder: (contex, index) {
-                      String name = transactionsData[index]['name'] ?? '';
-                      String description =
-                          transactionsData[index]['description'] ?? '';
-                      String amount = transactionsData[index]['amount'] ?? '';
-                      String type = transactionsData[index]['type'] ?? '';
-                      Timestamp createdAt =
-                          transactionsData[index]['createdAt'] ??
-                          Timestamp.now();
-
-                      return transactionCell(
-                        name: name,
-                        context: context,
-                        description: description,
-                        type: type,
-                        amount: amount,
-                        createdAt: createdAt,
-                      );
-                    },
-                  ),
-                ],
-              ),
+                        ),
+                      ),
+              ],
             ),
           );
         },
@@ -399,16 +339,18 @@ class _HomePageState extends State<HomePage> {
           icon: Icons.account_balance_wallet_outlined,
           label: 'Add Income',
           onTap: () {
-            /* showAddAmountDialog(context, 'Income', (value, source) {
+            showAddAmountDialog(
+              context,
+              'Income',
               //_addTransaction('Income', value, source);
-            });*/
+            );
           },
         ),
         QuickActionCard(
           icon: Icons.add_card_outlined,
           label: 'Add Expense',
           onTap: () {
-            /*showAddAmountDialog(context, 'Expense', (value, source) {
+            /* showAddAmountDialog(context, 'Expense', (value, source) {
               //_addTransaction('Expense', value, source);
             });*/
           },

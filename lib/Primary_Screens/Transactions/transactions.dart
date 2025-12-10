@@ -1,34 +1,54 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:final_project/Components/Custom_header.dart';
 import 'package:final_project/Components/toast.dart';
 import 'package:final_project/Constants/colors.dart';
 import 'package:final_project/Constants/spacing.dart';
 import 'package:final_project/Primary_Screens/Transactions/alert_dialog.dart';
+import 'package:final_project/Primary_Screens/Transactions/transaction_widget1.dart';
 import 'package:final_project/Primary_Screens/transactions/transaction_widget.dart';
 import 'package:final_project/Statistics/statistics.dart';
 import 'package:flutter/material.dart';
 
 class AllTransactionsPage extends StatefulWidget {
-  const AllTransactionsPage({super.key});
+  List<QueryDocumentSnapshot> expenses;
+  int totalTransaction;
+
+  AllTransactionsPage({
+    super.key,
+    required this.expenses,
+    required this.totalTransaction,
+  });
 
   @override
   State<AllTransactionsPage> createState() => _AllTransactionsPageState();
 }
 
 class _AllTransactionsPageState extends State<AllTransactionsPage> {
-  List<Transaction> transactions = [];
-  List<double> incomeList = [];
-  List<double> expenseList = [];
+  //List<Transaction> transactions = [];
+  //List<double> incomeList = [];
+  // List<double> expenseList = [];
   //List<double> savingList = [];
-
+  List<Map<String, dynamic>> transactions = [];
   bool showQuickActions = false;
 
   @override
   void initState() {
     super.initState();
-    _recalculateTotals();
+    addData(widget.expenses);
+    // _recalculateTotals();
   }
 
-  void _recalculateTotals() {
+  String capitalize(String s) {
+    if (s.isEmpty) return s;
+    return s[0].toUpperCase() + s.substring(1);
+  }
+
+  void addData(List<QueryDocumentSnapshot> exp) {
+    for (var tx in exp) {
+      transactions.add(tx.data() as Map<String, dynamic>);
+    }
+  }
+  /*void _recalculateTotals() {
     if (!mounted) return;
     setState(() {
       incomeList.clear();
@@ -83,11 +103,11 @@ class _AllTransactionsPageState extends State<AllTransactionsPage> {
       );
       _recalculateTotals();
     });
-  }
+  }*/
 
   @override
   Widget build(BuildContext context) {
-    final allTransactions = transactions;
+    //final allTransactions = transactions;
 
     return Scaffold(
       appBar: AppBar(
@@ -97,35 +117,48 @@ class _AllTransactionsPageState extends State<AllTransactionsPage> {
       backgroundColor: Theme.of(context).colorScheme.surface,
       body: Stack(
         children: [
-          SingleChildScrollView(
-            child: Padding(
-              padding: paddingAllMedium,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildBalanceCard(),
-                  sizedBoxHeightLarge,
-                  Text(
-                    'Transaction History (${allTransactions.length})',
-                    style: Theme.of(context).textTheme.titleLarge,
-                  ),
-                  sizedBoxHeightSmall,
-                  allTransactions.isEmpty
-                      ? buildEmptyTransactions(context)
-                      : buildRecentTransactions(
-                          context: context,
-                          recentTransactions: allTransactions,
-                          transactions: transactions,
-                          recalculateTotals: _recalculateTotals,
-                          updateTransactions: (newList) {
-                            setState(() {
-                              transactions = newList;
-                            });
+          Padding(
+            padding: paddingAllMedium,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildBalanceCard(),
+                sizedBoxHeightLarge,
+                Text(
+                  'Transaction History (${transactions.length})',
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+                sizedBoxHeightSmall,
+                transactions.isEmpty
+                    ? buildEmptyTransactions(context)
+                    : Expanded(
+                        child: ListView.builder(
+                          scrollDirection: Axis.vertical,
+                          //shrinkWrap: true,
+                          itemCount: transactions.length,
+                          itemBuilder: (contex, index) {
+                            String name = transactions[index]['name'] ?? '';
+                            String description =
+                                transactions[index]['description'] ?? '';
+                            String amount = transactions[index]['amount'] ?? '';
+                            String type = transactions[index]['type'] ?? '';
+                            Timestamp createdAt =
+                                transactions[index]['createdAt'] ??
+                                Timestamp.now();
+
+                            return transactionCell(
+                              name: capitalize(name),
+                              context: context,
+                              description: capitalize(description),
+                              type: type,
+                              amount: amount,
+                              createdAt: createdAt,
+                            );
                           },
                         ),
-                  const SizedBox(height: 120), // Space for FAB and menu
-                ],
-              ),
+                      ),
+                // Space for FAB and menu
+              ],
             ),
           ),
 
@@ -154,6 +187,7 @@ class _AllTransactionsPageState extends State<AllTransactionsPage> {
                     label: 'Saving',
                     type: 'Saving',
                   ),
+                  SizedBox(height: 120),
                 ],
               ),
             ),
@@ -186,10 +220,10 @@ class _AllTransactionsPageState extends State<AllTransactionsPage> {
   }) {
     return GestureDetector(
       onTap: () {
-        showAddAmountDialog(context, type, (value, source) {
+        /*showAddAmountDialog(context, type, (value, source) {
           _addTransaction(type, value, source);
           setState(() => showQuickActions = false);
-        });
+        });*/
       },
       child: Column(
         children: [
@@ -249,11 +283,7 @@ class _AllTransactionsPageState extends State<AllTransactionsPage> {
             ),
           ),
           Text(
-            Statistics.totalTransaction(
-              incomes: incomeList,
-              expenses: expenseList,
-              // savings: savingList,
-            ),
+            widget.totalTransaction.toString(),
             style: Theme.of(context).textTheme.headlineMedium?.copyWith(
               color: Theme.of(context).colorScheme.surface,
             ),
