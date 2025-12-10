@@ -1,17 +1,56 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:final_project/Components/toast.dart';
 import 'package:final_project/Constants/colors.dart';
 import 'package:final_project/Constants/spacing.dart';
 import 'package:final_project/Statistics/statistics.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
-void showAddAmountDialog(
-    BuildContext context,
-    String type,
-    Function(double, String) onSave,
-  ) {
-    final amountController = TextEditingController();
-    final sourceController = TextEditingController();
+void addIncome(String amount, String description, BuildContext context) async {
+  final User user = FirebaseAuth.instance.currentUser!;
+  final year = DateTime.now().year.toString();
+  final month = DateTime.now().month.toString();
 
+  try {
+    await FirebaseFirestore.instance
+        .collection('statistics')
+        .doc(user.uid)
+        .collection(year)
+        .doc(month)
+        .collection('transactions')
+        .add({
+          'type': 'income',
+          'amount': amount,
+          'name': 'income',
+          'description': description,
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+
+    showCustomToast(
+      context: context,
+      message: 'Income added successfully!',
+      backgroundColor: accentColor,
+      icon: Icons.check_circle_outline_rounded,
+    );
+  } catch (e) {
+    showCustomToast(
+      context: context,
+      message: 'An error Occurred!',
+      backgroundColor: errorColor,
+      icon: Icons.check_circle_outline_rounded,
+    );
+  }
+}
+
+void showAddAmountDialog(
+  BuildContext context,
+  String type,
+  // Function(double, String) onSave,
+) {
+  final amountController = TextEditingController();
+  final sourceController = TextEditingController();
+
+  if (type == 'Income') {
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -31,7 +70,7 @@ void showAddAmountDialog(
             TextField(
               controller: sourceController,
               decoration: InputDecoration(
-                hintText: (type == "Income" ? 'Source' : 'Source'),
+                hintText: 'Source',
                 border: OutlineInputBorder(borderRadius: radiusMedium),
               ),
             ),
@@ -69,23 +108,15 @@ void showAddAmountDialog(
                 Navigator.of(dialogContext).pop();
                 showCustomToast(
                   context: context,
-                  message:
-                      'The ${type == "Income" ? 'Source' : 'Description'} field is required.',
+                  message: 'The Income source field is required.',
                   backgroundColor: errorColor,
                   icon: Icons.error_outline_rounded,
                 );
                 return;
               }
 
-              onSave(value, sourceText);
-              Navigator.of(dialogContext).pop();
-              showCustomToast(
-                context: context,
-                message:
-                    '$type of ${Statistics.formatAmount(value)} added successfully!',
-                backgroundColor: accentColor,
-                icon: Icons.check_circle_outline_rounded,
-              );
+              addIncome(amountText, sourceText, context);
+              Navigator.pop(context);
             },
             child: Text(
               'Save',
@@ -97,4 +128,6 @@ void showAddAmountDialog(
         ],
       ),
     );
-  }
+  } else if (type == 'Expense') {
+  } else {}
+}

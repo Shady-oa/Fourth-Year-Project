@@ -190,7 +190,31 @@ class AuthService {
     final user = userCredential.user;
     final uid = user?.uid;
 
-    await FirebaseFirestore.instance.collection(collection).doc(uid).set({
+    final userDoc = FirebaseFirestore.instance.collection(collection).doc(uid);
+    final docSnapshot = await userDoc.get();
+
+    if (!docSnapshot.exists) {
+      // First-time login, set all info
+      await userDoc.set({
+        'fullName': userCredential.user!.displayName,
+        'username': userCredential.user!.displayName, // or some default
+        'email': userCredential.user!.email,
+        'profileUrl': userCredential.user!.photoURL,
+      });
+    } else {
+      // Update only missing fields, keep existing ones
+      final data = docSnapshot.data()!;
+      String? image = data['profileUrl'];
+
+      await userDoc.set({
+        'fullName': data['fullName'] ?? userCredential.user!.displayName,
+        'username': data['username'] ?? userCredential.user!.displayName,
+        'email': data['email'] ?? userCredential.user!.email,
+        'profileUrl': (image == null) ? userCredential.user!.photoURL : image,
+      }, SetOptions(merge: true));
+    }
+
+    /*await FirebaseFirestore.instance.collection(collection).doc(uid).set({
       'fullName': userCredential.user!.displayName,
       'username': '',
       'email': userCredential.user!.email,
@@ -202,7 +226,7 @@ class AuthService {
         .doc(uid)
         .collection(year)
         .doc(month)
-        .set({}, SetOptions(merge: true));
+        .set({}, SetOptions(merge: true));*/
 
     // Once signed in, return the UserCredential
     return userCredential;
