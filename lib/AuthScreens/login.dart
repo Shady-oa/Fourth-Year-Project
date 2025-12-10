@@ -41,13 +41,15 @@ class _LoginState extends State<Login> {
         message: 'Please enter both email and password!',
         length: ToastLength.medium,
         positionCurve: Curves.bounceInOut,
-        messageStyle: Theme.of(context).textTheme.bodyLarge?.copyWith(color: Theme.of(context).colorScheme.surface),
+        messageStyle: Theme.of(context).textTheme.bodyLarge?.copyWith(
+          color: Theme.of(context).colorScheme.surface,
+        ),
         slideCurve: Curves.easeInOut,
         shadowColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
       );
       return;
     }
-//confirm
+    //confirm
     try {
       await FirebaseAuth.instance.signInWithEmailAndPassword(
         email: _emailcontroller.text.trim(),
@@ -68,7 +70,9 @@ class _LoginState extends State<Login> {
         message: 'Wrong email or password!',
         length: ToastLength.medium,
         positionCurve: Curves.bounceInOut,
-        messageStyle: Theme.of(context).textTheme.bodyLarge?.copyWith(color: Theme.of(context).colorScheme.surface),
+        messageStyle: Theme.of(context).textTheme.bodyLarge?.copyWith(
+          color: Theme.of(context).colorScheme.surface,
+        ),
         slideCurve: Curves.easeInOut,
         shadowColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
       );
@@ -93,7 +97,10 @@ class _LoginState extends State<Login> {
             Container(
               alignment: Alignment.center,
               height: 100,
-              child: Text("Welcome Back", style: Theme.of(context).textTheme.displaySmall),
+              child: Text(
+                "Welcome Back",
+                style: Theme.of(context).textTheme.displaySmall,
+              ),
             ),
 
             Expanded(
@@ -117,7 +124,9 @@ class _LoginState extends State<Login> {
                           border: const OutlineInputBorder(
                             borderRadius: radiusMedium,
                           ),
-                          fillColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
+                          fillColor: Theme.of(
+                            context,
+                          ).colorScheme.onSurface.withOpacity(0.1),
                           filled: true,
                         ),
                       ),
@@ -133,7 +142,9 @@ class _LoginState extends State<Login> {
                           border: const OutlineInputBorder(
                             borderRadius: radiusMedium,
                           ),
-                          fillColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
+                          fillColor: Theme.of(
+                            context,
+                          ).colorScheme.onSurface.withOpacity(0.1),
                           filled: true,
                         ),
                       ),
@@ -152,9 +163,8 @@ class _LoginState extends State<Login> {
                           },
                           child: Text(
                             'Forgot password?',
-                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: accentColor,
-                            ),
+                            style: Theme.of(context).textTheme.bodyMedium
+                                ?.copyWith(color: accentColor),
                           ),
                         ),
                       ),
@@ -177,9 +187,12 @@ class _LoginState extends State<Login> {
                           },
                           child: Text(
                             'Sign in',
-                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                              color: Theme.of(context).colorScheme.onSurface,
-                            ),
+                            style: Theme.of(context).textTheme.titleLarge
+                                ?.copyWith(
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurface,
+                                ),
                           ),
                         ),
                       ),
@@ -210,11 +223,18 @@ class _LoginState extends State<Login> {
                               message: 'Unexpected error occurred,try again!',
                               length: ToastLength.medium,
                               positionCurve: Curves.bounceInOut,
-                              messageStyle: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                                color: Theme.of(context).colorScheme.surface,
-                              ),
+                              messageStyle: Theme.of(context)
+                                  .textTheme
+                                  .bodyLarge
+                                  ?.copyWith(
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.surface,
+                                  ),
                               slideCurve: Curves.easeInOut,
-                              shadowColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+                              shadowColor: Theme.of(
+                                context,
+                              ).colorScheme.onSurface.withOpacity(0.5),
                             );
                             print('This is the signin by google error!!!😂');
                             print(e.toString());
@@ -226,7 +246,9 @@ class _LoginState extends State<Login> {
                           decoration: BoxDecoration(
                             color: Theme.of(context).colorScheme.surface,
                             borderRadius: radiusMedium,
-                            border: Border.all(color: Theme.of(context).colorScheme.onSurface),
+                            border: Border.all(
+                              color: Theme.of(context).colorScheme.onSurface,
+                            ),
                           ),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
@@ -245,7 +267,6 @@ class _LoginState extends State<Login> {
                       ),
 
                       sizedBoxHeightXLarge,
-
                       //  SIGNUP REDIRECT
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -259,9 +280,8 @@ class _LoginState extends State<Login> {
                             onTap: widget.showSignupPage,
                             child: Text(
                               'Register now',
-                              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                                color: accentColor,
-                              ),
+                              style: Theme.of(context).textTheme.bodyLarge
+                                  ?.copyWith(color: accentColor),
                             ),
                           ),
                         ],
