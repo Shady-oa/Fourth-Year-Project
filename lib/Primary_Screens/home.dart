@@ -6,6 +6,8 @@ import 'package:final_project/Components/quick_actions.dart';
 import 'package:final_project/Components/them_toggle.dart';
 import 'package:final_project/Constants/colors.dart';
 import 'package:final_project/Constants/spacing.dart';
+import 'package:final_project/Primary_Screens/Transactions/alert_dialog.dart';
+import 'package:final_project/Primary_Screens/Transactions/transaction_widget.dart';
 import 'package:final_project/Primary_Screens/Transactions/transaction_widget1.dart';
 import 'package:final_project/Primary_Screens/Transactions/transactions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
