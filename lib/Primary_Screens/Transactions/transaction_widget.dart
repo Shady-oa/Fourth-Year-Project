@@ -1,6 +1,6 @@
 import 'package:final_project/Constants/colors.dart';
 import 'package:final_project/Constants/spacing.dart';
-import 'package:final_project/SecondaryScreens/Transactions/undo_transaction.dart';
+import 'package:final_project/Primary_Screens/Transactions/undo_transaction.dart';
 import 'package:final_project/Statistics/statistics.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -13,13 +13,13 @@ Widget buildEmptyTransactions(BuildContext context) {
         Icon(
           Icons.receipt_long_outlined,
           size: 80,
-          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.3),
+          color: Theme.of(context).colorScheme.onSurface.withAlpha((255 * 0.3).round()),
         ),
         sizedBoxHeightSmall,
         Text(
           'No recent transactions found.',
           style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+            color: Theme.of(context).colorScheme.onSurface.withAlpha((255 * 0.6).round()),
           ),
         ),
       ],
@@ -111,7 +111,7 @@ Widget buildRecentTransactions({
             borderRadius: radiusMedium,
             boxShadow: [
               BoxShadow(
-                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
+                color: Theme.of(context).colorScheme.onSurface.withAlpha((255 * 0.1).round()),
                 blurRadius: 1,
                 offset: const Offset(0, 3),
               ),

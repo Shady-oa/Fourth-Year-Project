@@ -41,7 +41,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
       decoration: InputDecoration(
         hintText: hintText,
         border: OutlineInputBorder(borderRadius: radiusMedium),
-        fillColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
+        fillColor: Theme.of(context).colorScheme.onSurface.withAlpha((255 * 0.1).round()),
         filled: true,
       ),
     );

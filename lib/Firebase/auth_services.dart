@@ -12,7 +12,7 @@ class AuthService {
   String month = DateFormat('MM').format(DateTime.now());
   final collection = 'users';
 
-  Future SignUp(
+  Future signUp(
     String fName,
     String lName,
     String age,
@@ -109,7 +109,7 @@ class AuthService {
     }
   }
 
-  Future SignIn(String email, String password) async {
+  Future signIn(String email, String password) async {
     try {
       UserCredential userCredential = await auth.signInWithEmailAndPassword(
         email: email,

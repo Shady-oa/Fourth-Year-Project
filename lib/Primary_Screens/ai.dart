@@ -114,8 +114,8 @@ class _AiPageState extends State<AiPage> {
               "${message.timestamp.hour}:${message.timestamp.minute.toString().padLeft(2, '0')}",
               style: Theme.of(context).textTheme.bodySmall!.copyWith(
                 color: isUser
-                    ? Theme.of(context).colorScheme.onSurface.withOpacity(0.6)
-                    : Theme.of(context).colorScheme.surface.withOpacity(0.6),
+                    ? Theme.of(context).colorScheme.onSurface.withAlpha((255 * 0.6).round())
+                    : Theme.of(context).colorScheme.surface.withAlpha((255 * 0.6).round()),
                 fontSize: 10,
               ),
             ),
@@ -140,7 +140,7 @@ class _AiPageState extends State<AiPage> {
                 border: const OutlineInputBorder(borderRadius: radiusLarge),
                 fillColor: Theme.of(
                   context,
-                ).colorScheme.onSurface.withOpacity(0.1),
+                ).colorScheme.onSurface.withAlpha((255 * 0.1).round()),
                 filled: true,
               ),
               onSubmitted: (_) => _handleSend(),

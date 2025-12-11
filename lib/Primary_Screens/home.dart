@@ -6,10 +6,10 @@ import 'package:final_project/Components/quick_actions.dart';
 import 'package:final_project/Components/them_toggle.dart';
 import 'package:final_project/Constants/colors.dart';
 import 'package:final_project/Constants/spacing.dart';
-import 'package:final_project/SecondaryScreens/Transactions/alert_dialog.dart';
-import 'package:final_project/SecondaryScreens/Transactions/transaction_widget.dart';
-import 'package:final_project/SecondaryScreens/Transactions/transaction_widget1.dart';
-import 'package:final_project/SecondaryScreens/Transactions/transactions.dart';
+import 'package:final_project/Primary_Screens/Transactions/alert_dialog.dart';
+import 'package:final_project/Primary_Screens/Transactions/transaction_widget.dart';
+import 'package:final_project/Primary_Screens/Transactions/transaction_widget1.dart';
+import 'package:final_project/Primary_Screens/Transactions/transactions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -184,8 +184,8 @@ class _HomePageState extends State<HomePage> {
               children: [
                 // Balance Section
                 _buildBalanceCard(
-                  totalExpense: totalExpenses ?? 0,
-                  totalIncome: totalIncome ?? 0,
+                  totalExpense: totalExpenses,
+                  totalIncome: totalIncome,
                 ),
                 sizedBoxHeightLarge,
                 // Quick Actions Section
@@ -279,7 +279,7 @@ class _HomePageState extends State<HomePage> {
         borderRadius: radiusMedium,
         boxShadow: [
           BoxShadow(
-            color: Theme.of(context).colorScheme.onSurface.withOpacity(.4),
+            color: Theme.of(context).colorScheme.onSurface.withAlpha((255 * 0.4).round()),
             spreadRadius: 2,
             blurRadius: 8,
             offset: const Offset(0, 6),
@@ -296,7 +296,7 @@ class _HomePageState extends State<HomePage> {
             ),
           ),
           Text(
-            ((totalIncome ?? 0) - (totalExpense ?? 0)).toString(),
+            (totalIncome - totalExpense).toString(),
             // CalculationUtils.totalBalance(
             //   incomes: incomeList,
             //   expenses: expenseList,
@@ -312,14 +312,14 @@ class _HomePageState extends State<HomePage> {
               _buildIncomeExpenseColumn(
                 context,
                 'Income',
-                (totalIncome ?? 0).toString(),
+                totalIncome.toString(),
                 Icons.arrow_circle_down_rounded,
               ),
               sizedBoxWidthLarge,
               _buildIncomeExpenseColumn(
                 context,
                 'Expenses',
-                (totalExpense ?? 0).toString(),
+                totalExpense.toString(),
                 Icons.arrow_circle_up_rounded,
               ),
             ],
@@ -383,7 +383,7 @@ class _HomePageState extends State<HomePage> {
       children: [
         Icon(
           icon,
-          color: Theme.of(context).colorScheme.surface.withOpacity(.6),
+          color: Theme.of(context).colorScheme.surface.withAlpha((255 * 0.6).round()),
           size: 40,
         ),
         Column(

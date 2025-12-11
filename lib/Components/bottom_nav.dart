@@ -13,7 +13,7 @@ class BottomNav extends StatefulWidget {
 }
 
 class _BottomNavState extends State<BottomNav> {
-  int current_index = 0;
+  int currentIndex = 0;
   List pages = [
     const HomePage(),
     const Budget(),
@@ -24,7 +24,7 @@ class _BottomNavState extends State<BottomNav> {
 
   void select(int index) {
     setState(() {
-      current_index = index;
+      currentIndex = index;
     });
   }
 
@@ -32,15 +32,15 @@ class _BottomNavState extends State<BottomNav> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surface,
-      body: pages[current_index],
+      body: pages[currentIndex],
       bottomNavigationBar: BottomNavigationBar(
-        currentIndex: current_index,
+        currentIndex: currentIndex,
         onTap: select,
         backgroundColor: Theme.of(context).colorScheme.surface,
         selectedItemColor: Theme.of(context).colorScheme.onSurface,
         unselectedItemColor: Theme.of(
           context,
-        ).colorScheme.onSurface.withOpacity(0.6),
+        ).colorScheme.onSurface.withAlpha((255 * 0.6).round()),
         type: BottomNavigationBarType.fixed, // Ensures all items are visible
         items: const [
           BottomNavigationBarItem(

@@ -37,7 +37,7 @@ class _ProfileContentState extends State<_ProfileContent> {
       margin: const EdgeInsets.symmetric(vertical: 4),
       decoration: BoxDecoration(
         border: Border.all(
-          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+          color: Theme.of(context).colorScheme.onSurface.withAlpha((255 * 0.6).round()),
         ),
         borderRadius: BorderRadius.circular(12),
       ),

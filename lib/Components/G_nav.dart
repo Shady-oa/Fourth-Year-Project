@@ -15,7 +15,7 @@ class GoogleBottomNav extends StatefulWidget {
 }
 
 class _GoogleBottomNavState extends State<GoogleBottomNav> {
-  int current_index = 0;
+  int currentIndex = 0;
   List pages = [
     const HomePage(),
     const Budget(),
@@ -26,7 +26,7 @@ class _GoogleBottomNavState extends State<GoogleBottomNav> {
 
   void select(int index) {
     setState(() {
-      current_index = index;
+      currentIndex = index;
     });
   }
 
@@ -34,7 +34,7 @@ class _GoogleBottomNavState extends State<GoogleBottomNav> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surface,
-      body: pages[current_index],
+      body: pages[currentIndex],
       bottomNavigationBar: Container(
         padding: paddingAllTiny,
         child: GNav(

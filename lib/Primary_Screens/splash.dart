@@ -3,50 +3,56 @@ import 'dart:async';
 import 'package:final_project/Components/bottom_nav.dart';
 import 'package:final_project/Constants/colors.dart';
 import 'package:final_project/Firebase/main_page.dart';
+import 'package:final_project/Primary_Screens/onboarding.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-// import 'package:firebase/main_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
   @override
-  _SplashScreenState createState() => _SplashScreenState();
+  SplashScreenState createState() => SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> {
-  void checkAuthAndNavigate() {
-    // FirebaseAuth.instance.currentUser returns the currently signed-in User
-    // or null if none is signed in. This is synchronous after initialization.
-    final user = FirebaseAuth.instance.currentUser;
-
-    // Use a small delay for the splash screen duration
-    Timer(const Duration(seconds: 3), () {
-      // Determine the destination based on the user's state
-      Widget destination;
-      if (user != null) {
-        // User is logged in (persistent session found)
-        destination =
-            const BottomNav(); 
-      } else {
-        // User is NOT logged in (no persistent session or logged out)
-        destination =
-            const MainPage(); 
-      }
-
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => destination),
-      );
-    });
-  }
-
+class SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
+    _checkOnboardingStatus();
+  }
 
-    checkAuthAndNavigate();
+  Future<void> _checkOnboardingStatus() async {
+    final prefs = await SharedPreferences.getInstance();
+    final hasSeenOnboarding = prefs.getBool('hasSeenOnboarding') ?? false;
+
+    Timer(const Duration(seconds: 3), () {
+      if (!hasSeenOnboarding) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const OnboardingScreen()),
+        );
+      } else {
+        checkAuthAndNavigate();
+      }
+    });
+  }
+
+  void checkAuthAndNavigate() {
+    final user = FirebaseAuth.instance.currentUser;
+
+    Widget destination;
+    if (user != null) {
+      destination = const BottomNav();
+    } else {
+      destination = const MainPage();
+    }
+
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => destination),
+    );
   }
 
   @override
@@ -74,7 +80,6 @@ class _SplashScreenState extends State<SplashScreen> {
               ),
             ),
             const SizedBox(height: 2),
-
             Text(
               "Wise Choices For Financial Freedom",
               style: Theme.of(context).textTheme.bodyLarge?.copyWith(

@@ -76,7 +76,7 @@ class TravelSavingsPage extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: Theme.of(
                           context,
-                        ).colorScheme.onSurface.withOpacity(0.2),
+                        ).colorScheme.onSurface.withAlpha((255 * 0.2).round()),
                         borderRadius: BorderRadius.circular(5),
                       ),
                       child: FractionallySizedBox(
@@ -104,7 +104,7 @@ class TravelSavingsPage extends StatelessWidget {
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: Theme.of(
                     context,
-                  ).colorScheme.onSurface.withOpacity(0.7),
+                  ).colorScheme.onSurface.withAlpha((255 * 0.7).round()),
                 ),
               ),
               const SizedBox(height: 20),
@@ -185,7 +185,7 @@ class TravelSavingsPage extends StatelessWidget {
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: Theme.of(
                             context,
-                          ).colorScheme.onSurface.withOpacity(0.7),
+                          ).colorScheme.onSurface.withAlpha((255 * 0.7).round()),
                         ),
                       ),
                     ],

@@ -27,7 +27,7 @@ class QuickActionCard extends StatelessWidget {
               color: Theme.of(context).colorScheme.surface,
               borderRadius: radiusMedium,
               border: Border.all(
-                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                color: Theme.of(context).colorScheme.onSurface.withAlpha((255 * 0.6).round()),
               ),
             ),
             child: Icon(

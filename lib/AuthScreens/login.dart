@@ -31,6 +31,7 @@ class _LoginState extends State<Login> {
 
   Future signin() async {
     if (_emailcontroller.text.isEmpty || _passwordcontroller.text.isEmpty) {
+      
       ToastService.showToast(
         context,
         backgroundColor: errorColor,
@@ -45,7 +46,7 @@ class _LoginState extends State<Login> {
           color: Theme.of(context).colorScheme.surface,
         ),
         slideCurve: Curves.easeInOut,
-        shadowColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+        shadowColor: Theme.of(context).colorScheme.onSurface.withAlpha((255 * 0.5).round()),
       );
       return;
     }
@@ -55,11 +56,13 @@ class _LoginState extends State<Login> {
         email: _emailcontroller.text.trim(),
         password: _passwordcontroller.text.trim(),
       );
+      if (!context.mounted) return;
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => const BottomNav()),
       );
     } catch (e) {
+      if (!context.mounted) return;
       ToastService.showToast(
         context,
         backgroundColor: errorColor,
@@ -74,10 +77,8 @@ class _LoginState extends State<Login> {
           color: Theme.of(context).colorScheme.surface,
         ),
         slideCurve: Curves.easeInOut,
-        shadowColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+        shadowColor: Theme.of(context).colorScheme.onSurface.withAlpha((255 * 0.5).round()),
       );
-      print('this is the error');
-      print(e.toString());
 
       _emailcontroller.clear();
       _passwordcontroller.clear();
@@ -126,7 +127,7 @@ class _LoginState extends State<Login> {
                           ),
                           fillColor: Theme.of(
                             context,
-                          ).colorScheme.onSurface.withOpacity(0.1),
+                          ).colorScheme.onSurface.withAlpha((255 * 0.1).round()),
                           filled: true,
                         ),
                       ),
@@ -144,7 +145,7 @@ class _LoginState extends State<Login> {
                           ),
                           fillColor: Theme.of(
                             context,
-                          ).colorScheme.onSurface.withOpacity(0.1),
+                          ).colorScheme.onSurface.withAlpha((255 * 0.1).round()),
                           filled: true,
                         ),
                       ),
@@ -204,6 +205,7 @@ class _LoginState extends State<Login> {
                         onTap: () async {
                           try {
                             await AuthService().signInWithGoogle();
+                            if (!context.mounted) return;
                             Navigator.pushReplacement(
                               context,
                               MaterialPageRoute(
@@ -213,6 +215,7 @@ class _LoginState extends State<Login> {
                           } on NoGoogleAccountChoosenException {
                             return;
                           } catch (e) {
+                            if (!context.mounted) return;
                             ToastService.showToast(
                               context,
                               backgroundColor: errorColor,
@@ -234,10 +237,8 @@ class _LoginState extends State<Login> {
                               slideCurve: Curves.easeInOut,
                               shadowColor: Theme.of(
                                 context,
-                              ).colorScheme.onSurface.withOpacity(0.5),
+                              ).colorScheme.onSurface.withAlpha((255 * 0.5).round()),
                             );
-                            print('This is the signin by google error!!!😂');
-                            print(e.toString());
                           }
                         },
                         child: Container(

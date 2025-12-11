@@ -41,12 +41,13 @@ class _SignUpState extends State<SignUp> {
   }
 
   // 3. UPDATED: Logic now checks for username and uses signup()
-  HandleSignup() async {
+  handleSignup() async {
     if (_passwordcontroller.text.trim() ==
         _confirmpasswordcontroller.text.trim()) {
       await signup();
     } else if (_usernamecontroller.text.isEmpty ||
         _emailcontroller.text.isEmpty) {
+      if (!context.mounted) return;
       showCustomToast(
         context: context,
         message: "Fill in all fields!",
@@ -54,6 +55,7 @@ class _SignUpState extends State<SignUp> {
         icon: Icons.error_outline_rounded,
       );
     } else {
+      if (!context.mounted) return;
       showCustomToast(
         context: context,
         message: "Passwords do not match!",
@@ -77,6 +79,7 @@ class _SignUpState extends State<SignUp> {
           _usernamecontroller.text.trim(),
           _emailcontroller.text.trim(),
         );
+        if (!context.mounted) return;
         showCustomToast(
           context: context,
           message: "Account created successfully! Please login.",
@@ -87,6 +90,7 @@ class _SignUpState extends State<SignUp> {
         _emailcontroller.clear();
         _confirmpasswordcontroller.clear();
         _passwordcontroller.clear();
+        if (!context.mounted) return;
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
@@ -95,6 +99,7 @@ class _SignUpState extends State<SignUp> {
         );
       } on FirebaseAuthException {
         // Handle specific Firebase errors (e.g., weak password, email already in use)
+        if (!context.mounted) return;
         showCustomToast(
           context: context,
           message: "Unexpected error occurred,try again!",
@@ -103,6 +108,7 @@ class _SignUpState extends State<SignUp> {
         );
       }
     } else {
+      if (!context.mounted) return;
       showCustomToast(
         context: context,
         message: "Passwords do not match!",
@@ -181,7 +187,7 @@ class _SignUpState extends State<SignUp> {
                           ),
                           fillColor: Theme.of(
                             context,
-                          ).colorScheme.onSurface.withOpacity(0.1),
+                          ).colorScheme.onSurface.withAlpha((255 * 0.1).round()),
                           filled: true,
                         ),
                       ),
@@ -197,7 +203,7 @@ class _SignUpState extends State<SignUp> {
                           ),
                           fillColor: Theme.of(
                             context,
-                          ).colorScheme.onSurface.withOpacity(0.1),
+                          ).colorScheme.onSurface.withAlpha((255 * 0.1).round()),
                           filled: true,
                         ),
                       ),
@@ -213,7 +219,7 @@ class _SignUpState extends State<SignUp> {
                           ),
                           fillColor: Theme.of(
                             context,
-                          ).colorScheme.onSurface.withOpacity(0.1),
+                          ).colorScheme.onSurface.withAlpha((255 * 0.1).round()),
                           filled: true,
                         ),
                       ),
@@ -229,7 +235,7 @@ class _SignUpState extends State<SignUp> {
                           ),
                           fillColor: Theme.of(
                             context,
-                          ).colorScheme.onSurface.withOpacity(0.1),
+                          ).colorScheme.onSurface.withAlpha((255 * 0.1).round()),
                           filled: true,
                         ),
                       ),
@@ -246,7 +252,7 @@ class _SignUpState extends State<SignUp> {
                             ),
                           ),
                           onPressed: () async {
-                            await HandleSignup();
+                            await handleSignup();
                           },
                           child: Text(
                             'Sign Up',
@@ -274,7 +280,7 @@ class _SignUpState extends State<SignUp> {
                               'email': userCredential.user!.email ?? '',
                               'created_at': Timestamp.now(),
                             }, SetOptions(merge: true));
-
+                            if (!context.mounted) return;
                             Navigator.pushReplacement(
                               context,
                               MaterialPageRoute(
@@ -316,7 +322,6 @@ class _SignUpState extends State<SignUp> {
                           ),
                         ),
                       ),
-
                       // Removed extra sizedBoxWidthSmall here
                       Padding(
                         padding: const EdgeInsets.symmetric(vertical: 20),
@@ -330,6 +335,7 @@ class _SignUpState extends State<SignUp> {
                             sizedBoxWidthSmall,
                             GestureDetector(
                               onTap: () {
+                                if (!context.mounted) return;
                                 Navigator.pushReplacement(
                                   context,
                                   MaterialPageRoute(

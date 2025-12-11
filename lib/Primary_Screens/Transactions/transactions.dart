@@ -2,15 +2,15 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:final_project/Components/Custom_header.dart';
 import 'package:final_project/Constants/colors.dart';
 import 'package:final_project/Constants/spacing.dart';
-import 'package:final_project/SecondaryScreens/Transactions/transaction_widget1.dart';
-import 'package:final_project/Primary_Screens/transactions/transaction_widget.dart';
+import 'package:final_project/Primary_Screens/Transactions/transaction_widget.dart';
+import 'package:final_project/Primary_Screens/Transactions/transaction_widget1.dart';
 import 'package:flutter/material.dart';
 
 class AllTransactionsPage extends StatefulWidget {
-  List<QueryDocumentSnapshot> expenses;
-  int totalTransaction;
+  final List<QueryDocumentSnapshot> expenses;
+  final int totalTransaction;
 
-  AllTransactionsPage({
+  const AllTransactionsPage({
     super.key,
     required this.expenses,
     required this.totalTransaction,
@@ -231,11 +231,11 @@ class _AllTransactionsPageState extends State<AllTransactionsPage> {
               color: Theme.of(context).colorScheme.surface,
               shape: BoxShape.circle,
               border: Border.all(
-                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                color: Theme.of(context).colorScheme.onSurface.withAlpha((255 * 0.6).round()),
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.2),
+                  color: Colors.black.withAlpha((255 * 0.2).round()),
                   blurRadius: 6,
                   offset: const Offset(0, 3),
                 ),
@@ -263,7 +263,7 @@ class _AllTransactionsPageState extends State<AllTransactionsPage> {
         borderRadius: radiusMedium,
         boxShadow: [
           BoxShadow(
-            color: Theme.of(context).colorScheme.onSurface.withOpacity(.4),
+            color: Theme.of(context).colorScheme.onSurface.withAlpha((255 * 0.4).round()),
             spreadRadius: 2,
             blurRadius: 8,
             offset: const Offset(0, 6),

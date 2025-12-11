@@ -81,7 +81,7 @@ class _SingleBudgetState extends State<SingleBudget> {
                         child: Container(
                           height: 10,
                           decoration: BoxDecoration(
-                            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2),
+                            color: Theme.of(context).colorScheme.onSurface.withAlpha((255 * 0.2).round()),
                             borderRadius: const BorderRadius.all(
                               Radius.circular(5),
                             ),
@@ -216,7 +216,7 @@ class _SingleBudgetState extends State<SingleBudget> {
               Text(
                 description,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.surface.withOpacity(0.8),
+                  color: Theme.of(context).colorScheme.surface.withAlpha((255 * 0.8).round()),
                 ),
               ),
               Text(

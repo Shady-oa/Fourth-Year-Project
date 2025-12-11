@@ -29,7 +29,7 @@ class _ForgotPasswordState extends State<ForgotPassword> {
     try {
       // 1. Core Firebase Action: Sends the email using your configured Firebase project
       await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
-
+      if (!context.mounted) return;
       showCustomToast(
         context: context,
         message: ' Reset link has been sent. Check your inbox.',
@@ -40,7 +40,7 @@ class _ForgotPasswordState extends State<ForgotPassword> {
       Navigator.pop(context);
     } on FirebaseAuthException catch (e) {
       // 3. Handle Firebase Errors
-
+      if (!context.mounted) return;
       if (e.code == 'user-not-found') {
         showCustomToast(
           context: context,
@@ -48,7 +48,7 @@ class _ForgotPasswordState extends State<ForgotPassword> {
           backgroundColor: errorColor,
           icon: Icons.error_outline_rounded,
         );
-
+        if (!context.mounted) return;
         Navigator.pop(context);
       } else if (e.code == 'invalid-email') {
         showCustomToast(
@@ -64,12 +64,9 @@ class _ForgotPasswordState extends State<ForgotPassword> {
           backgroundColor: errorColor,
           icon: Icons.error_outline_rounded,
         );
-        //clientMessage = 'An error occurred. Please try again.';
-        print(
-          "Firebase Error Code: ${e.code}",
-        ); // Log the code for developer debugging
       }
     } catch (e) {
+      if (!context.mounted) return;
       // General network/unknown error
       showCustomToast(
         context: context,
@@ -142,7 +139,7 @@ class _ForgotPasswordState extends State<ForgotPassword> {
                           ),
                           fillColor: Theme.of(
                             context,
-                          ).colorScheme.surface.withOpacity(0.8),
+                          ).colorScheme.surface.withAlpha((255 * 0.8).round()),
                           filled: true,
                         ),
                       ),
@@ -164,6 +161,7 @@ class _ForgotPasswordState extends State<ForgotPassword> {
                                 email: _emailController.text.trim(),
                               );
                             } else {
+                              
                               showCustomToast(
                                 context: context,
                                 message: 'Enter email address',
@@ -199,12 +197,14 @@ class _ForgotPasswordState extends State<ForgotPassword> {
                               icon: Icons.error_outline_rounded,
                             );
                           }
+                          if (!context.mounted) return;
                           showCustomToast(
                             context: context,
                             message: "Logged in successfully! ",
                             backgroundColor: accentColor,
                             icon: Icons.check_circle_outline_rounded,
                           );
+                          if (!context.mounted) return;
                           Navigator.pushReplacement(
                             context,
                             MaterialPageRoute(

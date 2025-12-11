@@ -89,7 +89,7 @@ class Report extends StatelessWidget {
                     Expanded(
                       child: LinearProgressIndicator(
                         value: 0.3,
-                        backgroundColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.2),
+                        backgroundColor: Theme.of(context).colorScheme.onSurface.withAlpha((255 * 0.2).round()),
                         valueColor:
                             const AlwaysStoppedAnimation<Color>(brandGreen),
                       ),

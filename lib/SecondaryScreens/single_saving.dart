@@ -260,7 +260,7 @@ class _SingleSavingState extends State<SingleSaving> {
                               decoration: BoxDecoration(
                                 color: Theme.of(
                                   context,
-                                ).colorScheme.surface.withOpacity(0.2),
+                                ).colorScheme.surface.withAlpha((255 * 0.2).round()),
                                 borderRadius: const BorderRadius.all(
                                   Radius.circular(5),
                                 ),
@@ -394,7 +394,7 @@ class _SingleSavingState extends State<SingleSaving> {
                     // Use dialogContext for theme access
                     fillColor: Theme.of(
                       dialogContext,
-                    ).colorScheme.onSurface.withOpacity(0.1),
+                    ).colorScheme.onSurface.withAlpha((255 * 0.1).round()),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
                       borderSide: BorderSide.none,
@@ -403,7 +403,7 @@ class _SingleSavingState extends State<SingleSaving> {
                         ?.copyWith(
                           color: Theme.of(
                             dialogContext,
-                          ).colorScheme.onSurface.withOpacity(0.5),
+                          ).colorScheme.onSurface.withAlpha((255 * 0.5).round()),
                         ),
                   ),
                   style: Theme.of(dialogContext).textTheme.bodyMedium?.copyWith(
@@ -439,7 +439,7 @@ class _SingleSavingState extends State<SingleSaving> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Theme.of(
                       dialogContext,
-                    ).colorScheme.onSurface.withOpacity(0.1),
+                    ).colorScheme.onSurface.withAlpha((255 * 0.1).round()),
                     minimumSize: const Size(double.infinity, 40),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),

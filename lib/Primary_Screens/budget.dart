@@ -8,10 +8,10 @@ class Budget extends StatefulWidget {
   const Budget({super.key});
 
   @override
-  _BudgetState createState() => _BudgetState();
+  BudgetState createState() => BudgetState();
 }
 
-class _BudgetState extends State<Budget> {
+class BudgetState extends State<Budget> {
   // UI-only placeholder data
   List<Map<String, dynamic>> budgets = [
     {"id": "1", "category": "Food", "amount": 2000, "endDate": "2025-01-10"},
@@ -115,7 +115,7 @@ class _BudgetState extends State<Budget> {
                           decoration: BoxDecoration(
                             color: Theme.of(
                               context,
-                            ).colorScheme.onSurface.withOpacity(0.8),
+                            ).colorScheme.onSurface.withAlpha((255 * 0.8).round()),
                             borderRadius: radiusMedium,
                           ),
                           child: Column(
@@ -146,7 +146,7 @@ class _BudgetState extends State<Budget> {
                                     ?.copyWith(
                                       color: Theme.of(
                                         context,
-                                      ).colorScheme.surface.withOpacity(0.7),
+                                      ).colorScheme.surface.withAlpha((255 * 0.7).round()),
                                     ),
                               ),
                             ],
@@ -280,7 +280,7 @@ class BudgetDetailsPage extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: Theme.of(
                           context,
-                        ).colorScheme.onSurface.withOpacity(0.8),
+                        ).colorScheme.onSurface.withAlpha((255 * 0.8).round()),
                         borderRadius: radiusSmall,
                       ),
                       child: Row(
@@ -305,7 +305,7 @@ class BudgetDetailsPage extends StatelessWidget {
                                       ?.copyWith(
                                         color: Theme.of(
                                           context,
-                                        ).colorScheme.surface.withOpacity(0.7),
+                                        ).colorScheme.surface.withAlpha((255 * 0.7).round()),
                                       ),
                                 ),
                               ],
@@ -317,7 +317,7 @@ class BudgetDetailsPage extends StatelessWidget {
                                 ?.copyWith(
                                   color: Theme.of(
                                     context,
-                                  ).colorScheme.surface.withOpacity(0.7),
+                                  ).colorScheme.surface.withAlpha((255 * 0.7).round()),
                                 ),
                           ),
                         ],

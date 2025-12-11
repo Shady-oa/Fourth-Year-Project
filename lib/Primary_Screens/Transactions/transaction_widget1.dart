@@ -38,7 +38,7 @@ Widget transactionCell({
       borderRadius: radiusMedium,
       boxShadow: [
         BoxShadow(
-          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
+          color: Theme.of(context).colorScheme.onSurface.withAlpha((255 * 0.1).round()),
           blurRadius: 1,
           offset: const Offset(0, 3),
         ),

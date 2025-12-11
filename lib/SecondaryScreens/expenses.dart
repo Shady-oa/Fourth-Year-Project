@@ -124,7 +124,7 @@ class _ExpensesState extends State<Expenses> {
   Widget savingsGoalItem(String title, IconData icon) {
     return Container(
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
+        color: Theme.of(context).colorScheme.onSurface.withAlpha((255 * 0.1).round()),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(

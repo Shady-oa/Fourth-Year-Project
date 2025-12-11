@@ -24,7 +24,7 @@ void addIncome(String amount, String description, BuildContext context) async {
           'description': description,
           'createdAt': FieldValue.serverTimestamp(),
         });
-
+    if (!context.mounted) return;
     showCustomToast(
       context: context,
       message: 'Income added successfully!',
@@ -32,6 +32,7 @@ void addIncome(String amount, String description, BuildContext context) async {
       icon: Icons.check_circle_outline_rounded,
     );
   } catch (e) {
+    if (!context.mounted) return;
     showCustomToast(
       context: context,
       message: 'An error Occurred!',

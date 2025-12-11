@@ -203,7 +203,7 @@ class TransactionItem extends StatelessWidget {
               ),
               Text(date,
                   style: Theme.of(context).textTheme.bodySmall
-                      ?.copyWith(color: Theme.of(context).colorScheme.surface.withOpacity(0.7))),
+                      ?.copyWith(color: Theme.of(context).colorScheme.surface.withAlpha((255 * 0.7).round()))),
             ],
           ),
           const Spacer(),

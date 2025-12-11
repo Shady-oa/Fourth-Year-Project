@@ -76,7 +76,7 @@ class _SavingsPageState extends State<SavingsPage> {
                           decoration: BoxDecoration(
                             color: Theme.of(
                               context,
-                            ).colorScheme.onSurface.withOpacity(0.2),
+                            ).colorScheme.onSurface.withAlpha((255 * 0.2).round()),
                             borderRadius: BorderRadius.circular(5),
                           ),
                           child: FractionallySizedBox(

@@ -30,7 +30,7 @@ class Notifications extends StatelessWidget {
                       Icon(
                         Icons.mark_email_unread_outlined,
                         size: 64,
-                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+                        color: Theme.of(context).colorScheme.onSurface.withAlpha((255 * 0.5).round()),
                       ),
                       const SizedBox(height: 24),
 
