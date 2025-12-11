@@ -1,11 +1,9 @@
-import 'package:final_project/Constants/spacing.dart';
 import 'package:final_project/Primary_Screens/ai.dart';
 import 'package:final_project/Primary_Screens/home.dart';
 import 'package:final_project/Primary_Screens/profile.dart';
 import 'package:final_project/Primary_Screens/savings.dart';
 import 'package:final_project/SecondaryScreens/budget.dart';
 import 'package:flutter/material.dart';
-import 'package:google_nav_bar/google_nav_bar.dart';
 
 class BottomNav extends StatefulWidget {
   const BottomNav({super.key});
@@ -15,7 +13,7 @@ class BottomNav extends StatefulWidget {
 }
 
 class _BottomNavState extends State<BottomNav> {
-  int current_index = 0;
+  int current_index = 1;
   List pages = [
     const HomePage(),
     const Budget(),
@@ -35,32 +33,33 @@ class _BottomNavState extends State<BottomNav> {
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surface,
       body: pages[current_index],
-      bottomNavigationBar: Container(
-        padding: paddingAllTiny,
-        child: GNav(
-          backgroundColor: Theme.of(context).colorScheme.surface,
-          color: Theme.of(context).colorScheme.onSurface,
-          activeColor: Theme.of(context).colorScheme.surface,
-          tabBackgroundColor: Theme.of(context).colorScheme.onSurface,
-          gap: 8,
-          onTabChange: select,
-          padding: paddingAllSmall,
-          tabs: const [
-            GButton(icon: Icons.home_rounded, text: 'Home'),
-            GButton(
-              icon: Icons.swap_horizontal_circle_rounded,
-              text: 'Budgets',
-              iconSize: 30,
-            ),
-            GButton(icon: Icons.savings_rounded, text: 'Savings', iconSize: 30),
-            GButton(
-              icon: Icons.auto_awesome_rounded,
-              text: 'Penny AI',
-              iconSize: 30,
-            ),
-            GButton(icon: Icons.person_rounded, text: 'Profile', iconSize: 30),
-          ],
-        ),
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: current_index,
+        onTap: select,
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        selectedItemColor: Theme.of(context).colorScheme.onSurface,
+        unselectedItemColor: Theme.of(
+          context,
+        ).colorScheme.onSurface.withOpacity(0.6),
+        type: BottomNavigationBarType.fixed, // Ensures all items are visible
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home_rounded),
+            label: 'Home',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.swap_horizontal_circle_rounded),
+            label: 'Budgets',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.savings_rounded),
+            label: 'Savings',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.auto_awesome_rounded),
+            label: 'Penny AI',
+          ),
+        ],
       ),
     );
   }

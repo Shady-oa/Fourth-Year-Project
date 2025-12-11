@@ -1,5 +1,6 @@
 // ignore_for_file: prefer_const_constructors, use_build_context_synchronously
 
+import 'package:final_project/Components/back_button.dart';
 import 'package:final_project/Components/form_logo.dart';
 import 'package:final_project/Components/toast.dart';
 import 'package:final_project/Constants/colors.dart';
@@ -131,12 +132,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
             height: 150,
             child: Row(
               children: [
-                IconButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                  },
-                  icon: Icon(Icons.arrow_back_ios_rounded),
-                ),
+                CustomBackButton(),
                 Text(
                   "Change Password",
                   style: Theme.of(context).textTheme.displaySmall?.copyWith(

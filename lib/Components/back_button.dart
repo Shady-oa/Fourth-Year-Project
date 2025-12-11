@@ -9,7 +9,11 @@ class CustomBackButton extends StatelessWidget {
       onPressed: () {
         Navigator.of(context).pop();
       },
-      icon: Icon(Icons.arrow_back_ios, color: Theme.of(context).colorScheme.onSurface),
+      icon: Icon(
+        Icons.arrow_back,
+        size: 30,
+        color: Theme.of(context).colorScheme.onSurface,
+      ),
     );
   }
 }

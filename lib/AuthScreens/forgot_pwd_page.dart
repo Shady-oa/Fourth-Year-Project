@@ -1,4 +1,4 @@
-
+import 'package:final_project/Components/back_button.dart';
 import 'package:final_project/Components/bottom_nav.dart';
 import 'package:final_project/Components/form_logo.dart';
 import 'package:final_project/Components/toast.dart';
@@ -94,15 +94,7 @@ class _ForgotPasswordState extends State<ForgotPassword> {
           children: [
             Row(
               children: [
-                IconButton(
-                  icon: Icon(
-                    Icons.arrow_back_ios_sharp,
-                    color: Theme.of(context).colorScheme.onSurface,
-                  ),
-                  onPressed: () {
-                    Navigator.pop(context);
-                  },
-                ),
+                CustomBackButton(),
                 sizedBoxHeightLarge,
                 Container(
                   alignment: Alignment.center,
