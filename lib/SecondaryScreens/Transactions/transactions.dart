@@ -2,7 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:final_project/Components/Custom_header.dart';
 import 'package:final_project/Constants/colors.dart';
 import 'package:final_project/Constants/spacing.dart';
-import 'package:final_project/Primary_Screens/Transactions/transaction_widget1.dart';
+import 'package:final_project/SecondaryScreens/Transactions/transaction_widget1.dart';
 import 'package:final_project/Primary_Screens/transactions/transaction_widget.dart';
 import 'package:flutter/material.dart';
 
