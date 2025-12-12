@@ -52,25 +52,25 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 title: "Welcome to PennyWise",
                 description:
                     "Your smart financial companion helping you track expenses, save more, and take control of your money.",
-                image: "assets/onboarding.png",
+                image: "assets/image/onboarding.png",
               ),
               OnboardingPage(
                 title: "Track Your Spending",
                 description:
                     "Record your daily expenses easily and understand your spending habits with clean insights.",
-                image: "assets/onboarding.png",
+                image: "assets/image/onboarding.png",
               ),
               OnboardingPage(
                 title: "Set Budgets",
                 description:
                     "Create categorized budgets and stay on track. Spend wisely and avoid overspending.",
-                image: "assets/onboarding.png",
+                image: "assets/image/onboarding.png",
               ),
               OnboardingPage(
                 title: "Achieve Savings Goals",
                 description:
                     "Track your progress toward dreams — vacations, gadgets, emergencies and investments.",
-                image: "assets/onboarding.png",
+                image: "assets/image/onboarding.png",
               ),
             ],
           ),
