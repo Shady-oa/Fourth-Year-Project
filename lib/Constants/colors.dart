@@ -3,10 +3,10 @@ import 'package:flutter/material.dart';
 
 // --- Color Definitions ---
 const Color brandGreen = Color(0xFF00D09E);
-const Color lightBg = Color(0xFFF1FFF3);
-const Color darkBg = Color(0xFF052224);
-const Color textLightMode = Color(0xFF052224);
-const Color textDarkMode = Color(0xFFF1FFF3);
+const Color lightBg = Color(0xFFFFFFFF);
+const Color darkBg = Color(0xFF000000);
+const Color textLightMode = Color(0xFF000000);
+const Color textDarkMode = Color(0xFFFFFFFF);
 const Color accentColor = Color(0xFF2196F3);
 const Color errorColor = Color(0xFFFF4C4C);
 const Color warning = Color(0xFFFFA500);
@@ -15,7 +15,6 @@ const Color warning = Color(0xFFFFA500);
 // This function creates a base text style for a given color.
 // We'll use this inside the ThemeData to set the color correctly.
 
-
 // --- Light Mode Theme Data ---
 ThemeData lightMode = ThemeData(
   scaffoldBackgroundColor: lightBg,
@@ -23,7 +22,8 @@ ThemeData lightMode = ThemeData(
     brightness: Brightness.light,
     surface: lightBg,
     primary: brandGreen, // Primary button color, etc.
-    onSurface: textLightMode, // This is the color for text/icons on the surface (background)
+    onSurface:
+        textLightMode, // This is the color for text/icons on the surface (background)
   ),
   // Assign the TextTheme with the light mode text color
   textTheme: createTextTheme(textLightMode),
@@ -32,12 +32,13 @@ ThemeData lightMode = ThemeData(
 // --- Dark Mode Theme Data ---
 ThemeData darkMode = ThemeData(
   // I replaced your fixed dark color with your defined darkBg
-  scaffoldBackgroundColor: darkBg, 
+  scaffoldBackgroundColor: darkBg,
   colorScheme: ColorScheme.dark(
     brightness: Brightness.dark,
     surface: darkBg,
     primary: brandGreen, // Primary button color, etc.
-    onSurface: textDarkMode, // This is the color for text/icons on the surface (background)
+    onSurface:
+        textDarkMode, // This is the color for text/icons on the surface (background)
   ),
   // Assign the TextTheme with the dark mode text color
   textTheme: createTextTheme(textDarkMode),

@@ -1,3 +1,4 @@
+import 'package:final_project/Components/Custom_header.dart';
 import 'package:flutter/material.dart';
 
 class Savings extends StatefulWidget {
@@ -10,6 +11,11 @@ class Savings extends StatefulWidget {
 class _SavingsState extends State<Savings> {
   @override
   Widget build(BuildContext context) {
-    return const Placeholder();
+    return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        title: CustomHeader(headerName: "Savings"),
+      ),
+    );
   }
 }

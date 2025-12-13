@@ -1,20 +1,15 @@
 import 'package:final_project/Components/Custom_header.dart';
 import 'package:flutter/material.dart';
 
-class Report extends StatefulWidget {
-  const Report({super.key});
+class Budget extends StatelessWidget {
+  const Budget({super.key});
 
-  @override
-  State<Report> createState() => _ReportState();
-}
-
-class _ReportState extends State<Report> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.surface,
-        title: CustomHeader(headerName: "Reports"),
+        title: CustomHeader(headerName: "Budgets"),
       ),
     );
   }

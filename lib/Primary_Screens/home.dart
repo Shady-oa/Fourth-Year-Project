@@ -10,6 +10,7 @@ import 'package:final_project/Primary_Screens/Transactions/alert_dialog.dart';
 import 'package:final_project/Primary_Screens/Transactions/transaction_widget.dart';
 import 'package:final_project/Primary_Screens/Transactions/transaction_widget1.dart';
 import 'package:final_project/Primary_Screens/Transactions/transactions.dart';
+import 'package:final_project/SecondaryScreens/report.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -279,7 +280,9 @@ class _HomePageState extends State<HomePage> {
         borderRadius: radiusMedium,
         boxShadow: [
           BoxShadow(
-            color: Theme.of(context).colorScheme.onSurface.withAlpha((255 * 0.4).round()),
+            color: Theme.of(
+              context,
+            ).colorScheme.onSurface.withAlpha((255 * 0.4).round()),
             spreadRadius: 2,
             blurRadius: 8,
             offset: const Offset(0, 6),
@@ -364,8 +367,13 @@ class _HomePageState extends State<HomePage> {
         ),
         QuickActionCard(
           icon: Icons.analytics_outlined,
-          label: 'Report',
-          onTap: () {},
+          label: 'View Report',
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => Report()),
+            );
+          },
         ),
       ],
     );
@@ -383,7 +391,9 @@ class _HomePageState extends State<HomePage> {
       children: [
         Icon(
           icon,
-          color: Theme.of(context).colorScheme.surface.withAlpha((255 * 0.6).round()),
+          color: Theme.of(
+            context,
+          ).colorScheme.surface.withAlpha((255 * 0.6).round()),
           size: 40,
         ),
         Column(
