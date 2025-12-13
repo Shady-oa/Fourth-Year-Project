@@ -152,6 +152,12 @@ class _AiPageState extends State<AiPage> {
           decoration: BoxDecoration(
             color: Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.circular(30),
+            border: Border.all(
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withAlpha((255 * 0.6).round()),
+              width: .5,
+            ),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withOpacity(0.1),
@@ -165,6 +171,8 @@ class _AiPageState extends State<AiPage> {
               Expanded(
                 child: TextField(
                   controller: _controller,
+                  minLines: 1, // starts as one line
+                  maxLines: 5, // grows up to 5 lines
                   decoration: const InputDecoration(
                     hintText: "Ask Penny AI anything...",
                     border: InputBorder.none,
