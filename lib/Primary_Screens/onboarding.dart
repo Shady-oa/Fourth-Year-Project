@@ -1,6 +1,5 @@
 import 'package:final_project/Firebase/main_page.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class OnboardingScreen extends StatefulWidget {
@@ -52,25 +51,25 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 title: "Welcome to PennyWise",
                 description:
                     "Your smart financial companion helping you track expenses, save more, and take control of your money.",
-                image: "assets/image/onboarding.png",
+                image: "assets/image/penny2.png",
               ),
               OnboardingPage(
                 title: "Track Your Spending",
                 description:
                     "Record your daily expenses easily and understand your spending habits with clean insights.",
-                image: "assets/image/onboarding.png",
+                image: "assets/image/spending.png",
               ),
               OnboardingPage(
                 title: "Set Budgets",
                 description:
                     "Create categorized budgets and stay on track. Spend wisely and avoid overspending.",
-                image: "assets/image/onboarding.png",
+                image: "assets/image/budgets.png",
               ),
               OnboardingPage(
                 title: "Achieve Savings Goals",
                 description:
                     "Track your progress toward dreams — vacations, gadgets, emergencies and investments.",
-                image: "assets/image/onboarding.png",
+                image: "assets/image/saving.png",
               ),
             ],
           ),
@@ -118,7 +117,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       decoration: BoxDecoration(
         color: isActive
             ? Theme.of(context).colorScheme.primary
-            : Colors.white70,
+            : Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(20),
       ),
     );
@@ -134,10 +133,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
         elevation: 3,
       ),
-      child: Text(
-        label,
-        style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600),
-      ),
+      child: Text(label, style: Theme.of(context).textTheme.bodyLarge),
     );
   }
 }
@@ -194,10 +190,8 @@ class OnboardingPage extends StatelessWidget {
               // TITLE
               Text(
                 title,
-                style: GoogleFonts.poppins(
-                  color: Colors.white,
-                  fontSize: 30,
-                  fontWeight: FontWeight.bold,
+                style: Theme.of(context).textTheme.displaySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.surface,
                 ),
               ),
 
@@ -206,10 +200,8 @@ class OnboardingPage extends StatelessWidget {
               // DESCRIPTION
               Text(
                 description,
-                style: GoogleFonts.poppins(
-                  color: Colors.white70,
-                  fontSize: 16,
-                  height: 1.4,
+                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                  color: Theme.of(context).colorScheme.surface,
                 ),
               ),
             ],
