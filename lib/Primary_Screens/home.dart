@@ -127,7 +127,7 @@ class _HomePageState extends State<HomePage> {
             CircleAvatar(
               radius: 24,
               backgroundImage: (profileImage == null)
-                  ? AssetImage("assets/image/icon 2.png")
+                  ? AssetImage("assets/image/icon.png")
                   : NetworkImage(profileImage!),
             ),
           ],
@@ -276,16 +276,15 @@ class _HomePageState extends State<HomePage> {
       width: double.infinity,
       padding: paddingAllMedium,
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.onSurface,
-        borderRadius: radiusMedium,
+        borderRadius: radiusLarge,
+
+        color: brandGreen,
+
         boxShadow: [
           BoxShadow(
-            color: Theme.of(
-              context,
-            ).colorScheme.onSurface.withAlpha((255 * 0.4).round()),
-            spreadRadius: 2,
-            blurRadius: 8,
-            offset: const Offset(0, 6),
+            color: Theme.of(context).colorScheme.primary.withOpacity(0.25),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
@@ -295,17 +294,17 @@ class _HomePageState extends State<HomePage> {
           Text(
             'Total Balance',
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-              color: Theme.of(context).colorScheme.surface,
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
           Text(
-            (totalIncome - totalExpense).toString(),
+            "Ksh ${(totalIncome - totalExpense).toString()}",
             // CalculationUtils.totalBalance(
             //   incomes: incomeList,
             //   expenses: expenseList,
             // ),
             style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-              color: Theme.of(context).colorScheme.surface,
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
           sizedBoxHeightLarge,
@@ -393,7 +392,7 @@ class _HomePageState extends State<HomePage> {
           icon,
           color: Theme.of(
             context,
-          ).colorScheme.surface.withAlpha((255 * 0.6).round()),
+          ).colorScheme.onSurface.withAlpha((255 * 0.6).round()),
           size: 40,
         ),
         Column(
@@ -402,14 +401,14 @@ class _HomePageState extends State<HomePage> {
             Text(
               label,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.surface,
+                color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
             Text(
-              amount.toString(),
+              "Ksh ${amount.toString()}",
               //CalculationUtils.formatAmount(total),
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Theme.of(context).colorScheme.surface,
+                color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
           ],

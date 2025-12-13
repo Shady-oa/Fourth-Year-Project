@@ -13,13 +13,17 @@ Widget buildEmptyTransactions(BuildContext context) {
         Icon(
           Icons.receipt_long_outlined,
           size: 80,
-          color: Theme.of(context).colorScheme.onSurface.withAlpha((255 * 0.3).round()),
+          color: Theme.of(
+            context,
+          ).colorScheme.onSurface.withAlpha((255 * 0.3).round()),
         ),
         sizedBoxHeightSmall,
         Text(
           'No recent transactions found.',
           style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-            color: Theme.of(context).colorScheme.onSurface.withAlpha((255 * 0.6).round()),
+            color: Theme.of(
+              context,
+            ).colorScheme.onSurface.withAlpha((255 * 0.6).round()),
           ),
         ),
       ],
@@ -111,7 +115,9 @@ Widget buildRecentTransactions({
             borderRadius: radiusMedium,
             boxShadow: [
               BoxShadow(
-                color: Theme.of(context).colorScheme.onSurface.withAlpha((255 * 0.1).round()),
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withAlpha((255 * 0.1).round()),
                 blurRadius: 1,
                 offset: const Offset(0, 3),
               ),
@@ -146,7 +152,7 @@ Widget buildRecentTransactions({
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
-                    Statistics.formatAmount(tx.amount),
+                    "Ksh ${Statistics.formatAmount(tx.amount)}",
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                       color: typeColor,

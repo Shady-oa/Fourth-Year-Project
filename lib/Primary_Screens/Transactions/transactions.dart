@@ -231,7 +231,9 @@ class _AllTransactionsPageState extends State<AllTransactionsPage> {
               color: Theme.of(context).colorScheme.surface,
               shape: BoxShape.circle,
               border: Border.all(
-                color: Theme.of(context).colorScheme.onSurface.withAlpha((255 * 0.6).round()),
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withAlpha((255 * 0.6).round()),
               ),
               boxShadow: [
                 BoxShadow(
@@ -259,14 +261,15 @@ class _AllTransactionsPageState extends State<AllTransactionsPage> {
       width: double.infinity,
       padding: paddingAllMedium,
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.onSurface,
-        borderRadius: radiusMedium,
+        borderRadius: radiusLarge,
+
+        color: brandGreen,
+
         boxShadow: [
           BoxShadow(
-            color: Theme.of(context).colorScheme.onSurface.withAlpha((255 * 0.4).round()),
-            spreadRadius: 2,
-            blurRadius: 8,
-            offset: const Offset(0, 6),
+            color: Theme.of(context).colorScheme.primary.withOpacity(0.25),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
@@ -276,13 +279,14 @@ class _AllTransactionsPageState extends State<AllTransactionsPage> {
           Text(
             'Total Transactions',
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-              color: Theme.of(context).colorScheme.surface,
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
           Text(
-            widget.totalTransaction.toString(),
+            "Ksh ${widget.totalTransaction.toString()}",
+            // widget.totalTransaction.toString()",
             style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-              color: Theme.of(context).colorScheme.surface,
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
         ],

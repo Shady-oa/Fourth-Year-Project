@@ -147,7 +147,7 @@ class _ProfileContentState extends State<_ProfileContent> {
                     // Avatar
                     CircleAvatar(
                       radius: 45,
-                      backgroundColor: Colors.white,
+                      backgroundColor: Theme.of(context).colorScheme.onSurface,
                       child: ClipOval(
                         child: Image.asset(
                           "assets/image/icon 2.png",
@@ -168,23 +168,22 @@ class _ProfileContentState extends State<_ProfileContent> {
                           "Shady_o.a",
                           style: Theme.of(context).textTheme.headlineSmall
                               ?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
+                                color: Theme.of(context).colorScheme.onSurface,
                               ),
                         ),
                         const SizedBox(height: 6),
                         Row(
                           children: [
-                            const Icon(
-                              Icons.location_on_rounded,
-                              size: 16,
-                              color: Colors.white70,
-                            ),
+                            const Icon(Icons.location_on_rounded, size: 16),
                             const SizedBox(width: 4),
                             Text(
                               "Kisii, Kenya",
                               style: Theme.of(context).textTheme.bodySmall
-                                  ?.copyWith(color: Colors.white70),
+                                  ?.copyWith(
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onSurface,
+                                  ),
                             ),
                           ],
                         ),
@@ -201,9 +200,7 @@ class _ProfileContentState extends State<_ProfileContent> {
                 alignment: Alignment.centerLeft,
                 child: Text(
                   "Settings",
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(),
                 ),
               ),
 
