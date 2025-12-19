@@ -1,9 +1,15 @@
+import 'dart:async';
+import 'dart:io';
+
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:final_project/AuthScreens/change_pwd.dart';
 import 'package:final_project/AuthScreens/login.dart';
 import 'package:final_project/Components/Custom_header.dart';
 import 'package:final_project/Components/toast.dart';
 import 'package:final_project/Constants/colors.dart';
 import 'package:final_project/Constants/spacing.dart';
+import 'package:final_project/Firebase/cloudinary_service.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -24,6 +30,71 @@ class _ProfileContent extends StatefulWidget {
 }
 
 class _ProfileContentState extends State<_ProfileContent> {
+  final cloudinary = CloudinaryService(
+    backendUrl: 'https://fourth-year-backend.onrender.com',
+  );
+  final userUid = FirebaseAuth.instance.currentUser!.uid;
+  String? username;
+  String? profileImage;
+  StreamSubscription? userSubscription;
+
+  void loadData() async {
+    userSubscription = FirebaseFirestore.instance
+        .collection('users')
+        .doc(userUid)
+        .snapshots()
+        .listen((snapshots) {
+          if (snapshots.exists) {
+            final userData = snapshots.data() as Map<String, dynamic>;
+            // print('this is the userdata');
+            //  print(userData);
+            setState(() {
+              username = userData['username'] ?? '';
+              profileImage = userData['profileUrl'] ?? '';
+            });
+          }
+        });
+  }
+
+  void pickAndUploadImage() async {
+    File? image = await cloudinary.pickImage();
+    if (image != null) {
+      String? url = await cloudinary.uploadFile(image);
+      if (url != null) {
+        try {
+          await FirebaseFirestore.instance
+              .collection('users')
+              .doc(userUid)
+              .update({'profileUrl': url});
+
+          showCustomToast(
+            context: context,
+            message: 'Profile image changed successful!',
+            backgroundColor: accentColor,
+            icon: Icons.check_circle_outline_rounded,
+          );
+        } catch (e) {
+          showCustomToast(
+            context: context,
+            message: 'an error occured please try again',
+            backgroundColor: errorColor,
+            icon: Icons.error,
+          );
+        }
+
+        //print('Uploaded image URL: $url');
+      } else {
+        showCustomToast(
+          context: context,
+          message: 'Upload failed',
+          backgroundColor: errorColor,
+          icon: Icons.error,
+        );
+        //print('Upload failed');
+      }
+    }
+  }
+
   Widget _modernSettingsCard({
     required IconData icon,
     required String title,
@@ -112,6 +183,18 @@ class _ProfileContentState extends State<_ProfileContent> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    loadData();
+  }
+
+  @override
+  void dispose() {
+    userSubscription?.cancel();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surface,
@@ -145,17 +228,37 @@ class _ProfileContentState extends State<_ProfileContent> {
                 child: Row(
                   children: [
                     // Avatar
-                    CircleAvatar(
-                      radius: 45,
-                      backgroundColor: Theme.of(context).colorScheme.onSurface,
-                      child: ClipOval(
-                        child: Image.asset(
-                          "assets/image/icon 2.png",
-                          fit: BoxFit.cover,
-                          width: 85,
-                          height: 85,
+                    Stack(
+                      children: [
+                        CircleAvatar(
+                          radius: 45,
+                          backgroundColor: Theme.of(
+                            context,
+                          ).colorScheme.onSurface,
+                          backgroundImage: (profileImage == null)
+                              ? AssetImage("assets/image/icon.png")
+                              : NetworkImage(profileImage!),
                         ),
-                      ),
+                        Positioned(
+                          right: 5,
+                          bottom: 0,
+                          child: GestureDetector(
+                            onTap: () {
+                              pickAndUploadImage();
+                            },
+                            child: CircleAvatar(
+                              radius: 12,
+                              backgroundColor: Theme.of(
+                                context,
+                              ).colorScheme.surface,
+                              child: Icon(
+                                Icons.add,
+                                color: Theme.of(context).colorScheme.onSurface,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
 
                     const SizedBox(width: 18),
@@ -165,7 +268,7 @@ class _ProfileContentState extends State<_ProfileContent> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          "Shady_o.a",
+                          username ?? 'Shady -o.a',
                           style: Theme.of(context).textTheme.headlineSmall
                               ?.copyWith(
                                 color: Theme.of(context).colorScheme.onSurface,
