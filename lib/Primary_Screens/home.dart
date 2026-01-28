@@ -52,6 +52,46 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
+  Future<void> checkAndInitYearlyData() async {
+    final yearDocRef = statsDB.doc(userUid).collection(year);
+
+    // We check for January (01) as a sentinel to see if the year is initialized
+    final janDoc = await yearDocRef.doc('01').get();
+
+    if (!janDoc.exists) {
+      debugPrint("Initializing data for the year $year...");
+      WriteBatch batch = FirebaseFirestore.instance.batch();
+
+      // List of all months to initialize
+      List<String> months = [
+        '01',
+        '02',
+        '03',
+        '04',
+        '05',
+        '06',
+        '07',
+        '08',
+        '09',
+        '10',
+        '11',
+        '12',
+      ];
+
+      for (String m in months) {
+        DocumentReference monthRef = yearDocRef.doc(m);
+        // We set basic metadata for the month doc so the collection exists
+        batch.set(monthRef, {
+          'initializedAt': FieldValue.serverTimestamp(),
+          'monthName': DateFormat('MMMM').format(DateTime(2026, int.parse(m))),
+        }, SetOptions(merge: true));
+      }
+
+      await batch.commit();
+      debugPrint("Year $year initialized successfully.");
+    }
+  }
+
   Stream<Map<String, dynamic>> getCombinedMonthData() {
     final expensesStream = statsDB
         .doc(userUid)
@@ -93,6 +133,7 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     loadData();
+    checkAndInitYearlyData();
   }
 
   @override
@@ -350,18 +391,22 @@ class _HomePageState extends State<HomePage> {
           icon: Icons.add_card_outlined,
           label: 'Add Expense',
           onTap: () {
-            /* showAddAmountDialog(context, 'Expense', (value, source) {
-              //_addTransaction('Expense', value, source);
-            });*/
+            showAddAmountDialog(
+              context,
+              'Expense',
+              //_addTransaction('Income', value, source);
+            );
           },
         ),
         QuickActionCard(
           icon: Icons.savings_outlined,
           label: 'Add Saving',
           onTap: () {
-            /*showAddAmountDialog(context, 'Saving', (value, source) {
-              // _addTransaction('Saving', value, source);
-            });*/
+            showAddAmountDialog(
+              context,
+              'Savings',
+              //_addTransaction('Income', value, source);
+            );
           },
         ),
         QuickActionCard(
