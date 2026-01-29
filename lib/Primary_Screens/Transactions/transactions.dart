@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:final_project/Components/Custom_header.dart';
 import 'package:final_project/Constants/colors.dart';
 import 'package:final_project/Constants/spacing.dart';
+import 'package:final_project/Primary_Screens/Transactions/alert_dialog.dart';
 import 'package:final_project/Primary_Screens/Transactions/transaction_widget.dart';
 import 'package:final_project/Primary_Screens/Transactions/transaction_widget1.dart';
 import 'package:flutter/material.dart';
@@ -167,22 +168,49 @@ class _AllTransactionsPageState extends State<AllTransactionsPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  _buildCircularQuickAction(
-                    icon: Icons.account_balance_wallet_outlined,
-                    label: 'Income',
-                    type: 'Income',
+                  GestureDetector(
+                    onTap: () {
+                      showAddAmountDialog(
+                        context,
+                        'Income',
+                        //_addTransaction('Income', value, source);
+                      );
+                    },
+                    child: _buildCircularQuickAction(
+                      icon: Icons.account_balance_wallet_outlined,
+                      label: 'Income',
+                      type: 'Income',
+                    ),
                   ),
                   const SizedBox(height: 16),
-                  _buildCircularQuickAction(
-                    icon: Icons.add_card_outlined,
-                    label: 'Expense',
-                    type: 'Expense',
+                  GestureDetector(
+                    onTap: () {
+                      showAddAmountDialog(
+                        context,
+                        'Expense',
+                        //_addTransaction('Income', value, source);
+                      );
+                    },
+                    child: _buildCircularQuickAction(
+                      icon: Icons.add_card_outlined,
+                      label: 'Expense',
+                      type: 'Expense',
+                    ),
                   ),
                   const SizedBox(height: 16),
-                  _buildCircularQuickAction(
-                    icon: Icons.savings_outlined,
-                    label: 'Saving',
-                    type: 'Saving',
+                  GestureDetector(
+                    onTap: () {
+                      showAddAmountDialog(
+                        context,
+                        'Savings',
+                        //_addTransaction('Income', value, source);
+                      );
+                    },
+                    child: _buildCircularQuickAction(
+                      icon: Icons.savings_outlined,
+                      label: 'Saving',
+                      type: 'Saving',
+                    ),
                   ),
                   SizedBox(height: 120),
                 ],
@@ -215,44 +243,36 @@ class _AllTransactionsPageState extends State<AllTransactionsPage> {
     required String label,
     required String type,
   }) {
-    return GestureDetector(
-      onTap: () {
-        /*showAddAmountDialog(context, type, (value, source) {
-          _addTransaction(type, value, source);
-          setState(() => showQuickActions = false);
-        });*/
-      },
-      child: Column(
-        children: [
-          Container(
-            width: 60,
-            height: 60,
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surface,
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: Theme.of(
-                  context,
-                ).colorScheme.onSurface.withAlpha((255 * 0.6).round()),
+    return Column(
+      children: [
+        Container(
+          width: 60,
+          height: 60,
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withAlpha((255 * 0.6).round()),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withAlpha((255 * 0.2).round()),
+                blurRadius: 6,
+                offset: const Offset(0, 3),
               ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withAlpha((255 * 0.2).round()),
-                  blurRadius: 6,
-                  offset: const Offset(0, 3),
-                ),
-              ],
-            ),
-            child: Icon(
-              icon,
-              size: 30,
-              color: Theme.of(context).colorScheme.onSurface,
-            ),
+            ],
           ),
-          const SizedBox(height: 4),
-          Text(label, style: Theme.of(context).textTheme.bodySmall),
-        ],
-      ),
+          child: Icon(
+            icon,
+            size: 30,
+            color: Theme.of(context).colorScheme.onSurface,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(label, style: Theme.of(context).textTheme.bodySmall),
+      ],
     );
   }
 
