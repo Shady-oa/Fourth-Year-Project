@@ -184,8 +184,8 @@ class BudgetScreenState extends State<BudgetScreen> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Icon(
-                          Icons.filter_list_off,
-                          size: 48,
+                          Icons.unpublished_outlined,
+                          size: 60,
                           color: Colors.grey,
                         ),
                         SizedBox(height: 16),
@@ -216,7 +216,7 @@ class BudgetScreenState extends State<BudgetScreen> {
 
   Widget buildFilterBar(ThemeData theme) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+      padding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 8.0),
       child: SegmentedButton<BudgetFilter>(
         segments: const [
           ButtonSegment(
@@ -287,9 +287,7 @@ class BudgetScreenState extends State<BudgetScreen> {
                         budget.name,
                         style: theme.textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.w600,
-                          decoration: budget.achieved
-                              ? TextDecoration.lineThrough
-                              : null,
+
                           color: budget.achieved
                               ? theme.textTheme.bodyMedium?.color?.withOpacity(
                                   0.6,
