@@ -1,11 +1,15 @@
 import 'dart:convert';
 
+import 'package:final_project/Components/Custom_header.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-// Note: Replace with your actual project imports
-// import 'package:final_project/Components/Custom_header.dart';
+// Helper to capitalize first letter
+extension StringExtension on String {
+  String toCapitalized() =>
+      length > 0 ? '${this[0].toUpperCase()}${substring(1)}' : '';
+}
 
 class BudgetScreen extends StatefulWidget {
   const BudgetScreen({super.key});
@@ -24,7 +28,6 @@ class BudgetScreenState extends State<BudgetScreen> {
     loadBudgets();
   }
 
-  // -------------------- Persistence --------------------
   Future<void> loadBudgets() async {
     final prefs = await SharedPreferences.getInstance();
     final budgetStrings = prefs.getStringList('budgets') ?? [];
@@ -51,24 +54,11 @@ class BudgetScreenState extends State<BudgetScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return Scaffold(
-      backgroundColor: const Color(
-        0xFFF8F9FD,
-      ), // Modern light grey-blue background
+      backgroundColor: Theme.of(context).colorScheme.surface,
       appBar: AppBar(
-        elevation: 0,
-        backgroundColor: Colors.transparent,
-        centerTitle: false,
-        title: const Text(
-          "My Budgets",
-          style: TextStyle(
-            color: Colors.black,
-            fontWeight: FontWeight.w800,
-            fontSize: 24,
-          ),
-        ),
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        title: CustomHeader(headerName: "My Budgets"),
       ),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -78,10 +68,7 @@ class BudgetScreenState extends State<BudgetScreen> {
               children: [
                 Expanded(
                   child: ListView.builder(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
-                    ),
+                    padding: const EdgeInsets.all(16),
                     itemCount: budgets.length,
                     itemBuilder: (context, index) =>
                         buildBudgetCard(budgets[index]),
@@ -105,98 +92,71 @@ class BudgetScreenState extends State<BudgetScreen> {
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.blueGrey.withOpacity(0.1),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.shade200),
       ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(24),
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) =>
-                    BudgetDetailScreen(budget: budget, onUpdate: saveBudgets),
-              ),
-            ).then((_) => setState(() {})),
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) =>
+                BudgetDetailScreen(budget: budget, onUpdate: saveBudgets),
+          ),
+        ).then((_) => setState(() {})),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        budget.name,
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF1A1A1A),
-                        ),
-                      ),
-                      _buildPopupMenu(budget),
-                    ],
+                  Text(
+                    budget.name.toCapitalized(),
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                  const SizedBox(height: 12),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            "Total Budget",
-                            style: TextStyle(color: Colors.grey, fontSize: 12),
-                          ),
-                          Text(
-                            formatCurrency(budget.total),
-                            style: const TextStyle(fontWeight: FontWeight.w700),
-                          ),
-                        ],
-                      ),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Text(
-                            isOver ? "Overspend" : "Remaining",
-                            style: TextStyle(
-                              color: isOver ? Colors.red : Colors.green,
-                              fontSize: 12,
-                            ),
-                          ),
-                          Text(
-                            formatCurrency(remaining.abs()),
-                            style: TextStyle(
-                              fontWeight: FontWeight.w900,
-                              color: isOver ? Colors.red : Colors.green,
-                              fontSize: 16,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
+                  _buildPopupMenu(budget),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    formatCurrency(budget.total),
+                    style: const TextStyle(
+                      color: Colors.blueAccent,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
-                  const SizedBox(height: 15),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(10),
-                    child: LinearProgressIndicator(
-                      value: (totalSpent / budget.total).clamp(0.0, 1.0),
-                      backgroundColor: Colors.grey[200],
-                      color: isOver ? Colors.red : Colors.blueAccent,
-                      minHeight: 8,
+                  Text(
+                    isOver
+                        ? "Over by ${formatCurrency(remaining.abs())}"
+                        : "Left: ${formatCurrency(remaining)}",
+                    style: TextStyle(
+                      color: isOver
+                          ? Colors.red.shade700
+                          : Colors.green.shade700,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
                 ],
               ),
-            ),
+              const SizedBox(height: 12),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(4),
+                child: LinearProgressIndicator(
+                  value: (totalSpent / budget.total).clamp(0.0, 1.0),
+                  backgroundColor: Colors.grey[100],
+                  color: isOver ? Colors.red : Colors.blueAccent,
+                  minHeight: 6,
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -205,42 +165,104 @@ class BudgetScreenState extends State<BudgetScreen> {
 
   Widget _buildPopupMenu(Budget budget) {
     return PopupMenuButton(
-      icon: const Icon(Icons.more_horiz, color: Colors.grey),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-      itemBuilder: (context) => [
-        const PopupMenuItem(value: 'edit', child: Text("Edit Budget Amount")),
-        const PopupMenuItem(
-          value: 'delete',
-          child: Text("Delete", style: TextStyle(color: Colors.red)),
-        ),
-      ],
+      icon: const Icon(Icons.more_vert, size: 20),
       onSelected: (val) {
-        if (val == 'edit') showEditBudgetDialog(budget);
+        if (val == 'edit') showAddBudgetDialog(budget: budget);
         if (val == 'delete') {
           setState(() => budgets.remove(budget));
           saveBudgets();
         }
       },
+      itemBuilder: (context) => [
+        const PopupMenuItem(value: 'edit', child: Text("Edit Name/Amount")),
+        const PopupMenuItem(
+          value: 'delete',
+          child: Text("Delete", style: TextStyle(color: Colors.red)),
+        ),
+      ],
     );
   }
 
   Widget _buildAddFab() {
     return Padding(
       padding: const EdgeInsets.all(16.0),
-      child: ElevatedButton(
+      child: ElevatedButton.icon(
         style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.black,
+          backgroundColor: Colors.blueAccent,
           foregroundColor: Colors.white,
-          minimumSize: const Size(double.infinity, 60),
+          minimumSize: const Size(double.infinity, 56),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: BorderRadius.circular(12),
           ),
-          elevation: 5,
         ),
-        onPressed: showAddBudgetDialog,
-        child: const Text(
-          "Create New Budget",
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+        onPressed: () => showAddBudgetDialog(),
+        icon: const Icon(Icons.add),
+        label: const Text(
+          "Create Budget",
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+      ),
+    );
+  }
+
+  void showAddBudgetDialog({Budget? budget}) {
+    final nameCtrl = TextEditingController(text: budget?.name ?? "");
+    final amountCtrl = TextEditingController(
+      text: budget?.total.toString() ?? "",
+    );
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom,
+          left: 20,
+          right: 20,
+          top: 20,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              budget == null ? "New Budget" : "Edit Budget",
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            TextField(
+              controller: nameCtrl,
+              textCapitalization: TextCapitalization.sentences,
+              decoration: const InputDecoration(labelText: "Name"),
+            ),
+            TextField(
+              controller: amountCtrl,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(labelText: "Amount (Ksh)"),
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () {
+                if (nameCtrl.text.isNotEmpty) {
+                  setState(() {
+                    if (budget == null) {
+                      budgets.add(
+                        Budget(
+                          name: nameCtrl.text.trim(),
+                          total: double.tryParse(amountCtrl.text) ?? 0,
+                        ),
+                      );
+                    } else {
+                      budget.name = nameCtrl.text.trim();
+                      budget.total = double.tryParse(amountCtrl.text) ?? 0;
+                    }
+                  });
+                  saveBudgets();
+                  Navigator.pop(context);
+                }
+              },
+              child: const Text("Save Budget"),
+            ),
+            const SizedBox(height: 20),
+          ],
         ),
       ),
     );
@@ -253,122 +275,28 @@ class BudgetScreenState extends State<BudgetScreen> {
         children: [
           Icon(
             Icons.account_balance_wallet_outlined,
-            size: 100,
-            color: Colors.blueGrey[100],
+            size: 64,
+            color: Colors.grey[400],
           ),
-          const SizedBox(height: 20),
-          const Text(
-            "No active budgets",
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-              color: Colors.blueGrey,
-            ),
-          ),
-          const SizedBox(height: 40),
-          _buildAddFab(),
-        ],
-      ),
-    );
-  }
-
-  // -------------------- Dialogs --------------------
-  void showAddBudgetDialog() {
-    final nameCtrl = TextEditingController();
-    final amountCtrl = TextEditingController();
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
-      ),
-      builder: (context) => Padding(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).viewInsets.bottom,
-          left: 24,
-          right: 24,
-          top: 24,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text(
-              "New Budget",
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 20),
-            TextField(
-              controller: nameCtrl,
-              decoration: InputDecoration(
-                labelText: "Budget Name",
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-            ),
-            const SizedBox(height: 15),
-            TextField(
-              controller: amountCtrl,
-              keyboardType: TextInputType.number,
-              decoration: InputDecoration(
-                labelText: "Initial Amount",
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-            ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () {
-                if (nameCtrl.text.isNotEmpty && amountCtrl.text.isNotEmpty) {
-                  setState(
-                    () => budgets.add(
-                      Budget(
-                        name: nameCtrl.text,
-                        total: double.parse(amountCtrl.text),
-                      ),
-                    ),
-                  );
-                  saveBudgets();
-                  Navigator.pop(context);
-                }
-              },
+          Text("No budgets yet.", style: TextStyle(color: Colors.grey[400])),
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: ElevatedButton.icon(
               style: ElevatedButton.styleFrom(
-                minimumSize: const Size(double.infinity, 55),
                 backgroundColor: Colors.blueAccent,
+                foregroundColor: Colors.white,
+                minimumSize: const Size(double.infinity, 56),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
-              child: const Text("Create"),
+              onPressed: () => showAddBudgetDialog(),
+              icon: const Icon(Icons.add),
+              label: const Text(
+                "Create Your First Budget",
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
             ),
-            const SizedBox(height: 30),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void showEditBudgetDialog(Budget budget) {
-    final amountCtrl = TextEditingController(text: budget.total.toString());
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text("Update Budget Amount"),
-        content: TextField(
-          controller: amountCtrl,
-          keyboardType: TextInputType.number,
-          decoration: const InputDecoration(labelText: "Total Budget"),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Cancel"),
-          ),
-          TextButton(
-            onPressed: () {
-              setState(() => budget.total = double.parse(amountCtrl.text));
-              saveBudgets();
-              Navigator.pop(context);
-            },
-            child: const Text("Update"),
           ),
         ],
       ),
@@ -380,7 +308,6 @@ class BudgetScreenState extends State<BudgetScreen> {
 class BudgetDetailScreen extends StatefulWidget {
   final Budget budget;
   final VoidCallback onUpdate;
-
   const BudgetDetailScreen({
     super.key,
     required this.budget,
@@ -399,92 +326,65 @@ class _BudgetDetailScreenState extends State<BudgetDetailScreen> {
       (sum, item) => sum + item.amount,
     );
     double remaining = widget.budget.total - totalSpent;
-    bool isOver = remaining < 0;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: const Color(0xFFF4F7FA),
       appBar: AppBar(
-        elevation: 0,
+        title: Text(widget.budget.name.toCapitalized()),
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
-        title: Text(widget.budget.name),
+        elevation: 0,
       ),
       body: Column(
         children: [
           Container(
             padding: const EdgeInsets.all(24),
-            margin: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: isOver ? Colors.red[50] : Colors.blue[50],
-              borderRadius: BorderRadius.circular(24),
-            ),
+            color: Colors.white,
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      isOver ? "Deficit" : "Available",
-                      style: TextStyle(
-                        color: isOver ? Colors.red : Colors.blue[800],
-                      ),
-                    ),
-                    Text(
-                      "Ksh ${remaining.abs().toStringAsFixed(0)}",
-                      style: TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.w900,
-                        color: isOver ? Colors.red : Colors.blue[900],
-                      ),
-                    ),
-                  ],
-                ),
-                Icon(
-                  isOver
-                      ? Icons.warning_amber_rounded
-                      : Icons.check_circle_outline,
-                  size: 40,
-                  color: isOver ? Colors.red : Colors.blue,
+                _statItem("Budget", widget.budget.total, Colors.blue),
+                _statItem("Spent", totalSpent, Colors.orange),
+                _statItem(
+                  "Left",
+                  remaining,
+                  remaining < 0 ? Colors.red : Colors.green,
                 ),
               ],
             ),
           ),
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 24),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                "Expenses",
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-            ),
-          ),
           Expanded(
             child: ListView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              padding: const EdgeInsets.all(16),
               itemCount: widget.budget.expenses.length,
               itemBuilder: (context, index) {
                 final expense = widget.budget.expenses[index];
-                return Card(
-                  elevation: 0,
-                  color: Colors.grey[50],
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(15),
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 10),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.grey.shade200),
                   ),
                   child: ListTile(
                     title: Text(
-                      expense.name,
-                      style: const TextStyle(fontWeight: FontWeight.w600),
+                      expense.name.toCapitalized(),
+                      style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
-                    subtitle: Text("Ksh ${expense.amount.toStringAsFixed(0)}"),
+                    subtitle: Text(
+                      "Ksh ${expense.amount.toStringAsFixed(0)}",
+                      style: const TextStyle(color: Colors.grey),
+                    ),
                     trailing: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         IconButton(
-                          icon: const Icon(Icons.edit_outlined, size: 20),
-                          onPressed: () =>
-                              showExpenseDialog(expense: expense, index: index),
+                          icon: const Icon(
+                            Icons.edit,
+                            size: 20,
+                            color: Colors.blueAccent,
+                          ),
+                          onPressed: () => showExpenseDialog(expense: expense),
                         ),
                         IconButton(
                           icon: const Icon(
@@ -506,29 +406,40 @@ class _BudgetDetailScreenState extends State<BudgetDetailScreen> {
               },
             ),
           ),
-          _buildAddExpenseButton(),
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                minimumSize: const Size(double.infinity, 50),
+                backgroundColor: Colors.black,
+                foregroundColor: Colors.white,
+              ),
+              onPressed: () => showExpenseDialog(),
+              child: const Text("Add Expense"),
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildAddExpenseButton() {
-    return Padding(
-      padding: const EdgeInsets.all(20),
-      child: ElevatedButton(
-        style: ElevatedButton.styleFrom(
-          minimumSize: const Size(double.infinity, 55),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(15),
+  Widget _statItem(String label, double val, Color color) {
+    return Column(
+      children: [
+        Text(label, style: const TextStyle(color: Colors.grey, fontSize: 12)),
+        Text(
+          "Ksh ${val.abs().toStringAsFixed(0)}",
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: color,
+            fontSize: 16,
           ),
         ),
-        onPressed: () => showExpenseDialog(),
-        child: const Text("Add New Expense"),
-      ),
+      ],
     );
   }
 
-  void showExpenseDialog({Expense? expense, int? index}) {
+  void showExpenseDialog({Expense? expense}) {
     final nameCtrl = TextEditingController(text: expense?.name ?? "");
     final amountCtrl = TextEditingController(
       text: expense?.amount.toString() ?? "",
@@ -537,13 +448,14 @@ class _BudgetDetailScreenState extends State<BudgetDetailScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(expense == null ? "New Expense" : "Edit Expense"),
+        title: Text(expense == null ? "Add Expense" : "Edit Expense"),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             TextField(
               controller: nameCtrl,
-              decoration: const InputDecoration(labelText: "Description"),
+              textCapitalization: TextCapitalization.sentences,
+              decoration: const InputDecoration(labelText: "What for?"),
             ),
             TextField(
               controller: amountCtrl,
@@ -563,15 +475,13 @@ class _BudgetDetailScreenState extends State<BudgetDetailScreen> {
                 if (expense == null) {
                   widget.budget.expenses.add(
                     Expense(
-                      name: nameCtrl.text,
-                      amount: double.parse(amountCtrl.text),
+                      name: nameCtrl.text.trim(),
+                      amount: double.tryParse(amountCtrl.text) ?? 0,
                     ),
                   );
                 } else {
-                  widget.budget.expenses[index!] = Expense(
-                    name: nameCtrl.text,
-                    amount: double.parse(amountCtrl.text),
-                  );
+                  expense.name = nameCtrl.text.trim();
+                  expense.amount = double.tryParse(amountCtrl.text) ?? 0;
                 }
               });
               widget.onUpdate();
@@ -612,9 +522,7 @@ class Budget {
 class Expense {
   String name;
   double amount;
-
   Expense({required this.name, required this.amount});
-
   Map<String, dynamic> toMap() => {'name': name, 'amount': amount};
   factory Expense.fromMap(Map<String, dynamic> map) =>
       Expense(name: map['name'], amount: (map['amount'] as num).toDouble());
