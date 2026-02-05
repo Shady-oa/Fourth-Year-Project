@@ -1,5 +1,4 @@
 import 'package:final_project/Primary_Screens/notifi.dart';
-import 'package:final_project/Primary_Screens/notifications.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 

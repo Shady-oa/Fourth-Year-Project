@@ -245,7 +245,7 @@ class BudgetScreenState extends State<BudgetScreen> {
     return Container(
       decoration: BoxDecoration(
         color: budget.achieved
-            ? theme.colorScheme.surfaceVariant.withOpacity(0.5)
+            ? theme.colorScheme.surfaceContainerHighest.withOpacity(0.5)
             : theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [

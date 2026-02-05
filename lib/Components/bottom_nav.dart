@@ -1,6 +1,5 @@
-import 'package:final_project/Primary_Screens/ai.dart';
 import 'package:final_project/Primary_Screens/Budgets/budget.dart';
-
+import 'package:final_project/Primary_Screens/ai.dart';
 import 'package:final_project/Primary_Screens/home.dart';
 import 'package:final_project/Primary_Screens/profile.dart';
 import 'package:final_project/Primary_Screens/savings.dart';
@@ -18,7 +17,7 @@ class _BottomNavState extends State<BottomNav> {
   List pages = [
     const HomePage(),
     const BudgetScreen(),
-    const Savings(),
+    const SavingsScreen(),
     const AiPage(),
     const Profile(),
   ];

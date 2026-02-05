@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 class NotificationInbox extends StatelessWidget {
   final String userId; // The ID of the logged-in user
 
-  NotificationInbox({required this.userId});
+  const NotificationInbox({super.key, required this.userId});
 
   @override
   Widget build(BuildContext context) {

@@ -19,7 +19,7 @@ class _GoogleBottomNavState extends State<GoogleBottomNav> {
   List pages = [
     const HomePage(),
     const BudgetScreen(),
-    const Savings(),
+    const SavingsScreen(),
     const AiPage(),
     const Profile(),
   ];
