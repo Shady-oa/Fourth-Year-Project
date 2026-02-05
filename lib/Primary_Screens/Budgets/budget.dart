@@ -63,7 +63,7 @@ class BudgetScreenState extends State<BudgetScreen> {
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
           : budgets.isEmpty
-          ? buildEmptyState()
+          ? buildEmptyState(Theme.of(context))
           : Column(
               children: [
                 Expanded(
@@ -74,7 +74,7 @@ class BudgetScreenState extends State<BudgetScreen> {
                         buildBudgetCard(budgets[index]),
                   ),
                 ),
-                _buildAddFab(),
+                _buildAddFab(Theme.of(context)),
               ],
             ),
     );
@@ -183,23 +183,26 @@ class BudgetScreenState extends State<BudgetScreen> {
     );
   }
 
-  Widget _buildAddFab() {
+  Widget _buildAddFab(dynamic theme) {
     return Padding(
       padding: const EdgeInsets.all(16.0),
-      child: ElevatedButton.icon(
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.blueAccent,
-          foregroundColor: Colors.white,
-          minimumSize: const Size(double.infinity, 56),
-          shape: RoundedRectangleBorder(
+      child: GestureDetector(
+        onTap: () => showAddBudgetDialog(),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.primary,
             borderRadius: BorderRadius.circular(12),
           ),
-        ),
-        onPressed: () => showAddBudgetDialog(),
-        icon: const Icon(Icons.add),
-        label: const Text(
-          "Create Budget",
-          style: TextStyle(fontWeight: FontWeight.bold),
+          child: Text(
+            'Add another Budget',
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+              color: theme.colorScheme.onPrimary,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
         ),
       ),
     );
@@ -268,37 +271,44 @@ class BudgetScreenState extends State<BudgetScreen> {
     );
   }
 
-  Widget buildEmptyState() {
+  Widget buildEmptyState(dynamic theme) {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.account_balance_wallet_outlined,
-            size: 64,
-            color: Colors.grey[400],
-          ),
-          Text("No budgets yet.", style: TextStyle(color: Colors.grey[400])),
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blueAccent,
-                foregroundColor: Colors.white,
-                minimumSize: const Size(double.infinity, 56),
-                shape: RoundedRectangleBorder(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.receipt_rounded, size: 80, color: Colors.grey[400]),
+            Text('No Budgets Yet', style: theme.textTheme.headlineSmall),
+            const SizedBox(height: 8),
+            Text(
+              'Create a budget to start your journey.',
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodyMedium?.copyWith(color: Colors.grey),
+            ),
+
+            const SizedBox(height: 18),
+            GestureDetector(
+              onTap: () => showAddBudgetDialog(),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primary,
                   borderRadius: BorderRadius.circular(12),
                 ),
-              ),
-              onPressed: () => showAddBudgetDialog(),
-              icon: const Icon(Icons.add),
-              label: const Text(
-                "Create Your First Budget",
-                style: TextStyle(fontWeight: FontWeight.bold),
+                child: Text(
+                  'Create Budget',
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                    color: theme.colorScheme.onPrimary,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -326,6 +336,7 @@ class _BudgetDetailScreenState extends State<BudgetDetailScreen> {
       (sum, item) => sum + item.amount,
     );
     double remaining = widget.budget.total - totalSpent;
+    final theme = Theme.of(context);
 
     return Scaffold(
       backgroundColor: const Color(0xFFF4F7FA),
@@ -408,14 +419,24 @@ class _BudgetDetailScreenState extends State<BudgetDetailScreen> {
           ),
           Padding(
             padding: const EdgeInsets.all(16),
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                minimumSize: const Size(double.infinity, 50),
-                backgroundColor: Colors.black,
-                foregroundColor: Colors.white,
+            child: GestureDetector(
+              onTap: () => showExpenseDialog(),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primary,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  'Add New Expense',
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                    color: theme.colorScheme.onPrimary,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ),
-              onPressed: () => showExpenseDialog(),
-              child: const Text("Add Expense"),
             ),
           ),
         ],

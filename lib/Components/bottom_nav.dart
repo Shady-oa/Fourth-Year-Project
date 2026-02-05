@@ -2,7 +2,7 @@ import 'package:final_project/Primary_Screens/Budgets/budget.dart';
 import 'package:final_project/Primary_Screens/ai.dart';
 import 'package:final_project/Primary_Screens/home.dart';
 import 'package:final_project/Primary_Screens/profile.dart';
-import 'package:final_project/Primary_Screens/savings.dart';
+import 'package:final_project/Primary_Screens/Savings/savings.dart';
 import 'package:flutter/material.dart';
 
 class BottomNav extends StatefulWidget {
