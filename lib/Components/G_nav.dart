@@ -1,6 +1,6 @@
 import 'package:final_project/Constants/spacing.dart';
 import 'package:final_project/Primary_Screens/ai.dart';
-import 'package:final_project/Primary_Screens/budget.dart';
+import 'package:final_project/Primary_Screens/Budgets/budget.dart';
 import 'package:final_project/Primary_Screens/home.dart';
 import 'package:final_project/Primary_Screens/profile.dart';
 import 'package:final_project/Primary_Screens/savings.dart';
