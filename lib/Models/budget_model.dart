@@ -21,6 +21,8 @@ class Budget {
         achieved = map['achieved'],
         createdAt = DateTime.parse(map['createdAt']);
 
+  get expenses => null;
+
   Map<String, dynamic> toMap() {
     return {
       'id': id,
