@@ -203,7 +203,7 @@ void showAddAmountDialog(BuildContext context, String type) {
                 if (type == 'Expense' || type == 'Savings') ...[
                   sizedBoxHeightSmall,
                   DropdownButtonFormField<String>(
-                    value: selectedCategory,
+                    initialValue: selectedCategory,
                     hint: const Text('Select Category'),
                     decoration: InputDecoration(
                       labelText: 'Category',
