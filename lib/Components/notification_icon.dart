@@ -1,4 +1,6 @@
+import 'package:final_project/Primary_Screens/notifi.dart';
 import 'package:final_project/Primary_Screens/notifications.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 class NotificationIcon extends StatelessWidget {
@@ -6,6 +8,8 @@ class NotificationIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final User user = FirebaseAuth.instance.currentUser!;
+    String userId = user.uid;
     return IconButton(
       icon: Icon(
         Icons.circle_notifications_rounded,
@@ -15,9 +19,10 @@ class NotificationIcon extends StatelessWidget {
       onPressed: () {
         Navigator.of(context).push(
           MaterialPageRoute(
-            builder: (context) => const Notifications(),
+            builder: (context) => NotificationInbox(userId: userId),
           ),
         );
       },
     );
-  }}
+  }
+}

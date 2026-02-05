@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:intl/intl.dart';
+import 'package:onesignal_flutter/onesignal_flutter.dart';
 
 class AuthService {
   final FirebaseAuth auth = FirebaseAuth.instance;
@@ -63,6 +64,7 @@ class AuthService {
           fontSize: 16.0,
         );
       }
+      OneSignal.login(user.uid);
     } on FirebaseAuthException catch (e) {
       // Handle specific errors
       if (e.code == 'email-already-in-use') {
@@ -146,6 +148,7 @@ class AuthService {
           .collection(year)
           .doc(month)
           .set({}, SetOptions(merge: true));
+      OneSignal.login(user.uid);
       Fluttertoast.showToast(
         msg: "Login successful!",
         toastLength: Toast.LENGTH_SHORT,
@@ -194,6 +197,7 @@ class AuthService {
     //final docSnapshot = await userDoc.get();
 
     // First-time login, set all info
+    OneSignal.login(user!.uid);
     await userDoc.set({
       'fullName': userCredential.user!.displayName,
       'username': userCredential.user!.displayName, // or some default
@@ -207,6 +211,7 @@ class AuthService {
         .collection(year)
         .doc(month)
         .set({}, SetOptions(merge: true));
+
     // } else {
     //   // Update only missing fields, keep existing ones
     //   final data = docSnapshot.data()!;
