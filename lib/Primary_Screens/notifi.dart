@@ -65,15 +65,47 @@ class NotificationInbox extends StatelessWidget {
             itemCount: snapshot.data!.docs.length,
             itemBuilder: (context, index) {
               var doc = snapshot.data!.docs[index];
-              return ListTile(
-                title: Text(doc['title']),
-                subtitle: Text(doc['message']),
-                trailing: IconButton(
-                  icon: Icon(Icons.delete, color: Colors.red),
-                  onPressed: () => doc.reference.delete(), // Delete from DB
+              return Padding(
+                padding: const EdgeInsets.all(4.0),
+                child: Container(
+                  decoration: BoxDecoration(
+                    border: Border.all(
+                      color: Theme.of(context).colorScheme.outline,
+                    ),
+                    borderRadius: BorderRadius.circular(12),
+                    color: Theme.of(context).colorScheme.surface,
+                  ),
+                  child: ListTile(
+                    title: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            CircleAvatar(
+                              radius: 16,
+                              backgroundImage: AssetImage(
+                                "assets/image/icon 2.png",
+                              ),
+                            ),
+                            SizedBox(width: 4),
+                            Text(doc['title']),
+                          ],
+                        ),
+                        IconButton(
+                          icon: Icon(Icons.delete, color: Colors.red),
+                          onPressed: () {
+                            doc.reference.update({
+                              'isRead': true,
+                            }); // Mark as read before deletion
+                            doc.reference.delete();
+                          }, // Delete from DB
+                        ),
+                      ],
+                    ),
+                    subtitle: Text(doc['message']),
+                    // Mark as read
+                  ),
                 ),
-                onTap: () =>
-                    doc.reference.update({'isRead': true}), // Mark as read
               );
             },
           );
