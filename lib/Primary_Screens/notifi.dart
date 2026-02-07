@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:final_project/Components/Custom_header.dart';
 import 'package:final_project/Components/back_button.dart';
+import 'package:final_project/Constants/colors.dart';
 import 'package:flutter/material.dart';
 
 class NotificationInbox extends StatelessWidget {
@@ -70,10 +71,14 @@ class NotificationInbox extends StatelessWidget {
                 child: Container(
                   decoration: BoxDecoration(
                     border: Border.all(
-                      color: Theme.of(context).colorScheme.outline,
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withAlpha((255 * 0.1).round()),
                     ),
                     borderRadius: BorderRadius.circular(12),
-                    color: Theme.of(context).colorScheme.surface,
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withAlpha((255 * 0.02).round()),
                   ),
                   child: ListTile(
                     title: Row(
@@ -92,7 +97,7 @@ class NotificationInbox extends StatelessWidget {
                           ],
                         ),
                         IconButton(
-                          icon: Icon(Icons.delete, color: Colors.red),
+                          icon: Icon(Icons.delete, color: errorColor),
                           onPressed: () {
                             doc.reference.update({
                               'isRead': true,
@@ -102,7 +107,14 @@ class NotificationInbox extends StatelessWidget {
                         ),
                       ],
                     ),
-                    subtitle: Text(doc['message']),
+                    subtitle: Text(
+                      doc['message'],
+                      style: TextStyle(
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withAlpha((255 * 0.5).round()),
+                      ),
+                    ),
                     // Mark as read
                   ),
                 ),

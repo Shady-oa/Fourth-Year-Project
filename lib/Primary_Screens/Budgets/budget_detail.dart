@@ -1,3 +1,4 @@
+import 'package:final_project/Constants/colors.dart';
 import 'package:final_project/Primary_Screens/Budgets/budget.dart';
 import 'package:flutter/material.dart';
 
@@ -25,61 +26,42 @@ class _BudgetDetailScreenState extends State<BudgetDetailScreen> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F7FA),
+      backgroundColor: Theme.of(context).colorScheme.surface,
       appBar: AppBar(
         title: Text(
           widget.budget.name.toCapitalized(),
-          style: const TextStyle(fontWeight: FontWeight.w600),
+          style: Theme.of(context).textTheme.titleLarge,
         ),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
-        elevation: 0,
       ),
       body: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
         child: Column(
           children: [
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(24),
+              padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(24),
-                gradient: LinearGradient(
-                  colors: remaining < 0
-                      ? [Colors.red.shade400, Colors.red.shade700]
-                      : [Colors.green.shade400, Colors.green.shade700],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.12),
-                    blurRadius: 25,
-                    offset: const Offset(0, 12),
-                  ),
-                ],
+                borderRadius: BorderRadius.circular(12),
+
+                color: remaining < 0 ? errorColor : accentColor,
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     "Remaining Balance",
-                    style: TextStyle(
-                      color: Colors.white70,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
 
                   Text(
                     "KES ${remaining.toStringAsFixed(0)}",
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 32,
-                      fontWeight: FontWeight.bold,
+                    style: Theme.of(context).textTheme.displaySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
-
+                  SizedBox(height: 4),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -91,34 +73,41 @@ class _BudgetDetailScreenState extends State<BudgetDetailScreen> {
               ),
             ),
             const SizedBox(height: 8),
-            const Padding(
+            Padding(
               padding: EdgeInsets.symmetric(horizontal: 20),
               child: Align(
                 alignment: Alignment.centerLeft,
                 child: Text(
                   "Expenses",
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
                 ),
               ),
             ),
+            const SizedBox(height: 8),
             if (widget.budget.expenses.isNotEmpty)
               Expanded(
                 child: ListView.builder(
-                  padding: const EdgeInsets.all(16),
                   itemCount: widget.budget.expenses.length,
                   itemBuilder: (context, index) {
                     final expense = widget.budget.expenses[index];
                     return Container(
-                      margin: const EdgeInsets.only(bottom: 10),
                       decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.grey.shade200),
+                        border: Border.symmetric(
+                          horizontal: BorderSide(
+                            color: Theme.of(context).colorScheme.onSurface
+                                .withAlpha((255 * 0.1).round()),
+                          ),
+                        ),
                       ),
                       child: ListTile(
                         title: Text(
                           expense.name.toCapitalized(),
-                          style: const TextStyle(fontWeight: FontWeight.bold),
+                          style: Theme.of(context).textTheme.bodyLarge
+                              ?.copyWith(
+                                color: Theme.of(context).colorScheme.onSurface,
+                              ),
                         ),
                         subtitle: Text(
                           "Ksh ${expense.amount.toStringAsFixed(0)}",
@@ -210,15 +199,15 @@ class _BudgetDetailScreenState extends State<BudgetDetailScreen> {
       children: [
         Text(
           label,
-          style: const TextStyle(color: Colors.white70, fontSize: 12),
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            color: Theme.of(context).colorScheme.onSurface,
+          ),
         ),
-        const SizedBox(height: 4),
+
         Text(
           "KES ${value.toStringAsFixed(0)}",
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
       ],

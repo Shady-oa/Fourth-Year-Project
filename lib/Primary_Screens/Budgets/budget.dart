@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:final_project/Components/Custom_header.dart';
+import 'package:final_project/Constants/colors.dart';
 import 'package:final_project/Primary_Screens/Budgets/budget_detail.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -90,11 +91,14 @@ class BudgetScreenState extends State<BudgetScreen> {
     bool isOver = remaining < 0;
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.symmetric(
+          horizontal: BorderSide(
+            color: Theme.of(
+              context,
+            ).colorScheme.onSurface.withAlpha((255 * 0.5).round()),
+          ),
+        ),
       ),
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
@@ -106,7 +110,7 @@ class BudgetScreenState extends State<BudgetScreen> {
           ),
         ).then((_) => setState(() {})),
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(6),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -115,45 +119,44 @@ class BudgetScreenState extends State<BudgetScreen> {
                 children: [
                   Text(
                     budget.name.toCapitalized(),
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
                   _buildPopupMenu(budget),
                 ],
               ),
-              const SizedBox(height: 8),
+
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
                     formatCurrency(budget.total),
                     style: const TextStyle(
-                      color: Colors.blueAccent,
+                      color: accentColor,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                   Text(
                     isOver
-                        ? "Over by ${formatCurrency(remaining.abs())}"
+                        ? "Overspent by ${formatCurrency(remaining.abs())}"
                         : "Left: ${formatCurrency(remaining)}",
                     style: TextStyle(
-                      color: isOver
-                          ? Colors.red.shade700
-                          : Colors.green.shade700,
+                      color: isOver ? errorColor : brandGreen,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
+
               ClipRRect(
                 borderRadius: BorderRadius.circular(4),
                 child: LinearProgressIndicator(
                   value: (totalSpent / budget.total).clamp(0.0, 1.0),
-                  backgroundColor: Colors.grey[100],
-                  color: isOver ? Colors.red : Colors.blueAccent,
+                  backgroundColor: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withAlpha((255 * 0.1).round()),
+                  color: isOver ? errorColor : accentColor,
                   minHeight: 6,
                 ),
               ),
@@ -178,7 +181,7 @@ class BudgetScreenState extends State<BudgetScreen> {
         const PopupMenuItem(value: 'edit', child: Text("Edit Name/Amount")),
         const PopupMenuItem(
           value: 'delete',
-          child: Text("Delete", style: TextStyle(color: Colors.red)),
+          child: Text("Delete", style: TextStyle(color: errorColor)),
         ),
       ],
     );
@@ -279,13 +282,23 @@ class BudgetScreenState extends State<BudgetScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.receipt_rounded, size: 80, color: Colors.grey[400]),
+            Icon(
+              Icons.receipt_rounded,
+              size: 80,
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withAlpha((255 * 0.3).round()),
+            ),
             Text('No Budgets Yet', style: theme.textTheme.headlineSmall),
             const SizedBox(height: 8),
             Text(
               'Create a budget to start your journey.',
               textAlign: TextAlign.center,
-              style: theme.textTheme.bodyMedium?.copyWith(color: Colors.grey),
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withAlpha((255 * 0.6).round()),
+              ),
             ),
 
             const SizedBox(height: 18),
