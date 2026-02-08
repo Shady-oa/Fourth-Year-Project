@@ -12,6 +12,8 @@ import 'package:final_project/Firebase/cloudinary_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+// Note: SharedPreferences import here is optional now since the Provider handles it
+import 'package:shared_preferences/shared_preferences.dart'; 
 
 class Profile extends StatelessWidget {
   const Profile({super.key});
@@ -44,16 +46,14 @@ class _ProfileContentState extends State<_ProfileContent> {
         .doc(userUid)
         .snapshots()
         .listen((snapshots) {
-          if (snapshots.exists) {
-            final userData = snapshots.data() as Map<String, dynamic>;
-            // print('this is the userdata');
-            //  print(userData);
-            setState(() {
-              username = userData['username'] ?? '';
-              profileImage = userData['profileUrl'] ?? '';
-            });
-          }
+      if (snapshots.exists) {
+        final userData = snapshots.data() as Map<String, dynamic>;
+        setState(() {
+          username = userData['username'] ?? '';
+          profileImage = userData['profileUrl'] ?? '';
         });
+      }
+    });
   }
 
   void pickAndUploadImage() async {
@@ -81,8 +81,6 @@ class _ProfileContentState extends State<_ProfileContent> {
             icon: Icons.error,
           );
         }
-
-        //print('Uploaded image URL: $url');
       } else {
         showCustomToast(
           context: context,
@@ -90,7 +88,6 @@ class _ProfileContentState extends State<_ProfileContent> {
           backgroundColor: errorColor,
           icon: Icons.error,
         );
-        //print('Upload failed');
       }
     }
   }
@@ -141,8 +138,8 @@ class _ProfileContentState extends State<_ProfileContent> {
                   Text(
                     title,
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
+                          fontWeight: FontWeight.w600,
+                        ),
                   ),
                   if (subtitle != null) ...[
                     const SizedBox(height: 4),
@@ -166,9 +163,11 @@ class _ProfileContentState extends State<_ProfileContent> {
     );
   }
 
-  Widget _buildDarkModeToggle() {
-    final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
-    final isDarkMode = themeProvider.currentTheme == darkMode;
+  Widget buildDarkModeToggle() {
+    // listen: true (default) allows the UI to rebuild when the theme changes
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    // Determine the state based on which ThemeData is active
+    final isDarkMode = themeProvider.currentTheme.brightness == Brightness.dark;
 
     return _modernSettingsCard(
       icon: Icons.dark_mode_outlined,
@@ -176,7 +175,8 @@ class _ProfileContentState extends State<_ProfileContent> {
       trailing: Switch(
         value: isDarkMode,
         onChanged: (_) => themeProvider.toggleTheme(),
-        activeThumbColor: accentColor,
+        activeTrackColor: brandGreen.withOpacity(0.4),
+        activeColor: brandGreen,
       ),
       onTap: () => themeProvider.toggleTheme(),
     );
@@ -200,6 +200,7 @@ class _ProfileContentState extends State<_ProfileContent> {
       backgroundColor: Theme.of(context).colorScheme.surface,
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.surface,
+        elevation: 0,
         title: CustomHeader(headerName: "Profile"),
       ),
       body: Padding(
@@ -212,14 +213,10 @@ class _ProfileContentState extends State<_ProfileContent> {
                 padding: paddingAllLarge,
                 decoration: BoxDecoration(
                   borderRadius: radiusLarge,
-
                   color: brandGreen,
-
                   boxShadow: [
                     BoxShadow(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.primary.withOpacity(0.25),
+                      color: brandGreen.withOpacity(0.25),
                       blurRadius: 18,
                       offset: const Offset(0, 8),
                     ),
@@ -227,90 +224,74 @@ class _ProfileContentState extends State<_ProfileContent> {
                 ),
                 child: Row(
                   children: [
-                    // Avatar
                     Stack(
                       children: [
                         CircleAvatar(
                           radius: 45,
-                          backgroundColor: Theme.of(
-                            context,
-                          ).colorScheme.onSurface,
-                          backgroundImage: (profileImage == null)
-                              ? AssetImage("assets/image/icon.png")
+                          backgroundColor: Colors.white,
+                          backgroundImage: (profileImage == null || profileImage!.isEmpty)
+                              ? const AssetImage("assets/image/icon.png") as ImageProvider
                               : NetworkImage(profileImage!),
                         ),
                         Positioned(
-                          right: 5,
+                          right: 0,
                           bottom: 0,
                           child: GestureDetector(
-                            onTap: () {
-                              pickAndUploadImage();
-                            },
+                            onTap: pickAndUploadImage,
                             child: CircleAvatar(
-                              radius: 12,
-                              backgroundColor: Theme.of(
-                                context,
-                              ).colorScheme.surface,
-                              child: Icon(
-                                Icons.add,
-                                color: Theme.of(context).colorScheme.onSurface,
+                              radius: 14,
+                              backgroundColor: Colors.white,
+                              child: const Icon(
+                                Icons.add_a_photo,
+                                size: 16,
+                                color: brandGreen,
                               ),
                             ),
                           ),
                         ),
                       ],
                     ),
-
                     const SizedBox(width: 18),
-
-                    // Name & Location
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          username ?? 'Shady -o.a',
-                          style: Theme.of(context).textTheme.headlineSmall
-                              ?.copyWith(
-                                color: Theme.of(context).colorScheme.onSurface,
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            username ?? 'User',
+                            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                          ),
+                          const SizedBox(height: 6),
+                          const Row(
+                            children: [
+                              Icon(Icons.location_on_rounded, size: 16, color: Colors.white70),
+                              SizedBox(width: 4),
+                              Text(
+                                "Kisii, Kenya",
+                                style: TextStyle(color: Colors.white70),
                               ),
-                        ),
-                        const SizedBox(height: 6),
-                        Row(
-                          children: [
-                            const Icon(Icons.location_on_rounded, size: 16),
-                            const SizedBox(width: 4),
-                            Text(
-                              "Kisii, Kenya",
-                              style: Theme.of(context).textTheme.bodySmall
-                                  ?.copyWith(
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.onSurface,
-                                  ),
-                            ),
-                          ],
-                        ),
-                      ],
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
               ),
 
               const SizedBox(height: 30),
-
-              // ------------- SETTINGS TITLE -----------------
               Align(
                 alignment: Alignment.centerLeft,
                 child: Text(
                   "Settings",
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(),
+                  style: Theme.of(context).textTheme.headlineSmall,
                 ),
               ),
-
               const SizedBox(height: 16),
 
-              // ------------- SETTINGS ITEMS -----------------
-              _buildDarkModeToggle(),
+              buildDarkModeToggle(),
 
               _modernSettingsCard(
                 icon: Icons.lock_outline_rounded,
@@ -318,9 +299,7 @@ class _ProfileContentState extends State<_ProfileContent> {
                 onTap: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(
-                      builder: (_) => const ChangePasswordPage(),
-                    ),
+                    MaterialPageRoute(builder: (_) => const ChangePasswordPage()),
                   );
                 },
               ),
@@ -331,8 +310,7 @@ class _ProfileContentState extends State<_ProfileContent> {
                 onTap: () {
                   showCustomToast(
                     context: context,
-                    message:
-                        "Penny Wise helps you track your expenses, budgets, and financial goals.",
+                    message: "Penny Wise helps you track your expenses and budgets.",
                     backgroundColor: brandGreen,
                     icon: Icons.info_outline_rounded,
                   );
@@ -351,13 +329,10 @@ class _ProfileContentState extends State<_ProfileContent> {
                   );
                   Navigator.pushReplacement(
                     context,
-                    MaterialPageRoute(
-                      builder: (_) => Login(showSignupPage: () {}),
-                    ),
+                    MaterialPageRoute(builder: (_) => Login(showSignupPage: () {})),
                   );
                 },
               ),
-
               const SizedBox(height: 30),
             ],
           ),
