@@ -13,7 +13,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 // Note: SharedPreferences import here is optional now since the Provider handles it
-import 'package:shared_preferences/shared_preferences.dart'; 
 
 class Profile extends StatelessWidget {
   const Profile({super.key});
@@ -176,7 +175,7 @@ class _ProfileContentState extends State<_ProfileContent> {
         value: isDarkMode,
         onChanged: (_) => themeProvider.toggleTheme(),
         activeTrackColor: brandGreen.withOpacity(0.4),
-        activeColor: brandGreen,
+        activeThumbColor: brandGreen,
       ),
       onTap: () => themeProvider.toggleTheme(),
     );
