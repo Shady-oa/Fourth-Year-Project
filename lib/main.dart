@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:final_project/Constants/colors.dart';
 import 'package:final_project/Primary_Screens/splash.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -9,6 +10,10 @@ void main() async {
   // Initialize Firebase
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
+  FirebaseFirestore.instance.settings = const Settings(
+    persistenceEnabled: true,
+    cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
+  );
 
   //Onesignal notifications initialization
   OneSignal.Debug.setLogLevel(OSLogLevel.verbose);

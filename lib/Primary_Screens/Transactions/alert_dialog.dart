@@ -113,7 +113,7 @@ void addSavings(
         .doc(month)
         .collection('transactions')
         .add({
-          'type': 'expense',
+          'type': 'saving',
           'amount': amount,
           'name': 'Savings',
           'description': category,

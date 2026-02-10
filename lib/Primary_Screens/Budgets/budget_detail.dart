@@ -1,6 +1,10 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:final_project/Components/toast.dart';
 import 'package:final_project/Constants/colors.dart';
 import 'package:final_project/Primary_Screens/Budgets/budget.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 class BudgetDetailScreen extends StatefulWidget {
   final Budget budget;
@@ -16,6 +20,41 @@ class BudgetDetailScreen extends StatefulWidget {
 }
 
 class _BudgetDetailScreenState extends State<BudgetDetailScreen> {
+  final String year = DateTime.now().year.toString();
+  String month = DateFormat('MM').format(DateTime.now());
+  String userUid = FirebaseAuth.instance.currentUser!.uid;
+
+  void addExpense(String description, String amount) async {
+    try {
+      await FirebaseFirestore.instance
+          .collection('statistics')
+          .doc(userUid)
+          .collection(year)
+          .doc(month)
+          .collection('transactions')
+          .add({
+            'type': 'expense',
+            'name': widget.budget.name,
+            'description': description,
+            'amount': amount,
+            'createdAt': FieldValue.serverTimestamp(),
+          });
+      showCustomToast(
+        context: context,
+        message: 'Expense Added Successfully!',
+        backgroundColor: Colors.green,
+        icon: Icons.check_circle_outline,
+      );
+    } catch (e) {
+      showCustomToast(
+        context: context,
+        message: 'An error occured try again!',
+        backgroundColor: Colors.red,
+        icon: Icons.error_outline,
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     double totalSpent = widget.budget.expenses.fold(
@@ -262,20 +301,40 @@ class _BudgetDetailScreenState extends State<BudgetDetailScreen> {
           ),
           TextButton(
             onPressed: () {
-              setState(() {
-                if (expense == null) {
-                  widget.budget.expenses.add(
+              if (nameCtrl.text.isEmpty || amountCtrl.text.isEmpty) {
+                /*widget.budget.expenses.add(
                     Expense(
                       name: nameCtrl.text.trim(),
                       amount: double.tryParse(amountCtrl.text) ?? 0,
                     ),
-                  );
-                } else {
-                  expense.name = nameCtrl.text.trim();
+                  );*/
+              } else {
+                /*setState(() {
+                  expense!.name = nameCtrl.text.trim();
                   expense.amount = double.tryParse(amountCtrl.text) ?? 0;
+                });*/
+                addExpense(nameCtrl.text.trim(), amountCtrl.text.trim());
+                //widget.onUpdate();
+                Navigator.pop(context);
+              }
+              /*setState(() {
+                if (nameCtrl.text.isEmpty || amountCtrl.text.isEmpty) {
+                  /*widget.budget.expenses.add(
+                    Expense(
+                      name: nameCtrl.text.trim(),
+                      amount: double.tryParse(amountCtrl.text) ?? 0,
+                    ),
+                  );*/
+                } else {
+                  expense!.name = nameCtrl.text.trim();
+                  expense.amount = double.tryParse(amountCtrl.text) ?? 0;
+                  addExpense(
+                    nameCtrl.text.trim(),
+                    double.tryParse(amountCtrl.text) ?? 0,
+                  );
                 }
-              });
-              widget.onUpdate();
+              });*/
+              //widget.onUpdate();
               Navigator.pop(context);
             },
             child: const Text("Save"),
