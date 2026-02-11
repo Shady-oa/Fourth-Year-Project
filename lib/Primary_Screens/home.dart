@@ -1,22 +1,18 @@
 import 'dart:async';
+import 'dart:convert';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:final_project/Components/notification_icon.dart';
 import 'package:final_project/Components/quick_actions.dart';
 import 'package:final_project/Components/them_toggle.dart';
+// Import project constants and components
 import 'package:final_project/Constants/colors.dart';
 import 'package:final_project/Constants/spacing.dart';
-import 'package:final_project/Primary_Screens/Transactions/alert_dialog.dart';
-import 'package:final_project/Primary_Screens/Transactions/transaction_widget.dart';
-import 'package:final_project/Primary_Screens/Transactions/transaction_widget1.dart';
-import 'package:final_project/Primary_Screens/Transactions/transactions.dart';
-import 'package:final_project/SecondaryScreens/report.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+// Import Screens
+import 'package:final_project/Primary_Screens/Budgets/budget.dart';
+import 'package:final_project/Primary_Screens/Savings/savings.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:rxdart/rxdart.dart';
-
-// Import the reusable calculations
+import 'package:shared_preferences/shared_preferences.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -26,349 +22,489 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  // Use lists of Transaction objects directly to simplify
-  // List<Transaction> transactions = [];
-  final usersDB = FirebaseFirestore.instance.collection('users');
-  final statsDB = FirebaseFirestore.instance.collection('statistics');
-  final userUid = FirebaseAuth.instance.currentUser!.uid;
-  final String year = DateTime.now().year.toString();
-  String month = DateFormat('MM').format(DateTime.now());
+  // Persistence Keys
+  static const String keyTransactions = 'recent_transactions';
+  static const String keyBudgets = 'budgets';
+  static const String keySavings = 'savings';
+  static const String keyTotalIncome = 'total_income';
 
-  String? username;
-  String? profileImage;
-  StreamSubscription? userSubscription;
+  List<Map<String, dynamic>> _transactions = [];
+  List<Budget> _budgets = [];
+  List<Saving> _savings = [];
 
-  void loadData() async {
-    userSubscription = usersDB.doc(userUid).snapshots().listen((snapshots) {
-      if (snapshots.exists) {
-        final userData = snapshots.data() as Map<String, dynamic>;
-        // print('this is the userdata');
-        //  print(userData);
-        setState(() {
-          username = userData['username'] ?? '';
-          profileImage = userData['profileUrl'] ?? '';
-        });
-      }
-    });
-  }
-
-  Future<void> checkAndInitYearlyData() async {
-    final yearDocRef = statsDB.doc(userUid).collection(year);
-
-    // We check for January (01) as a sentinel to see if the year is initialized
-    final janDoc = await yearDocRef.doc('01').get();
-
-    if (!janDoc.exists) {
-      debugPrint("Initializing data for the year $year...");
-      WriteBatch batch = FirebaseFirestore.instance.batch();
-
-      // List of all months to initialize
-      List<String> months = [
-        '01',
-        '02',
-        '03',
-        '04',
-        '05',
-        '06',
-        '07',
-        '08',
-        '09',
-        '10',
-        '11',
-        '12',
-      ];
-
-      for (String m in months) {
-        DocumentReference monthRef = yearDocRef.doc(m);
-        // We set basic metadata for the month doc so the collection exists
-        batch.set(monthRef, {
-          'initializedAt': FieldValue.serverTimestamp(),
-          'monthName': DateFormat('MMMM').format(DateTime(2026, int.parse(m))),
-        }, SetOptions(merge: true));
-      }
-
-      await batch.commit();
-      debugPrint("Year $year initialized successfully.");
-    }
-  }
-
-  Stream<Map<String, dynamic>> getCombinedMonthData() {
-    final expensesStream = statsDB
-        .doc(userUid)
-        .collection(year)
-        .doc(month)
-        .collection('transactions')
-        .orderBy('createdAt', descending: true)
-        .snapshots();
-
-    final budgetsStream = statsDB
-        .doc(userUid)
-        .collection(year)
-        .doc(month)
-        .collection('budgets')
-        .snapshots();
-
-    final savingsStream = statsDB
-        .doc(userUid)
-        .collection(year)
-        .doc(month)
-        .collection('savings')
-        .snapshots();
-
-    return Rx.combineLatest3(expensesStream, budgetsStream, savingsStream, (
-      QuerySnapshot e,
-      QuerySnapshot b,
-      QuerySnapshot s,
-    ) {
-      return {'expense': e.docs, 'savings': s.docs, 'budgets': b.docs};
-    });
-  }
-
-  String capitalize(String s) {
-    if (s.isEmpty) return s;
-    return s[0].toUpperCase() + s.substring(1);
-  }
+  double _totalIncome = 0.0;
+  double _totalExpenses = 0.0;
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    loadData();
-    checkAndInitYearlyData();
+    _refreshData();
   }
 
-  @override
-  void dispose() {
-    // TODO: implement dispose
-    userSubscription?.cancel();
-    super.dispose();
+  // --- DATA PERSISTENCE ---
+
+  Future<void> _refreshData() async {
+    setState(() => _isLoading = true);
+    final prefs = await SharedPreferences.getInstance();
+
+    // Load Transactions
+    final txString = prefs.getString(keyTransactions) ?? '[]';
+    _transactions = List<Map<String, dynamic>>.from(json.decode(txString));
+
+    // Load Budgets
+    final budgetStrings = prefs.getStringList(keyBudgets) ?? [];
+    _budgets = budgetStrings
+        .map((s) => Budget.fromMap(json.decode(s)))
+        .toList();
+
+    // Load Savings
+    final savingsStrings = prefs.getStringList(keySavings) ?? [];
+    _savings = savingsStrings
+        .map((s) => Saving.fromMap(json.decode(s)))
+        .toList();
+
+    // Load Income
+    _totalIncome = prefs.getDouble(keyTotalIncome) ?? 0.0;
+
+    _calculateStats();
+    setState(() => _isLoading = false);
   }
 
-  @override
-  Widget build(BuildContext context) {
-    // final recentTransactions = transactions.take(5).toList();
-
-    String greetings() {
-      final int hour = DateTime.now().hour;
-      if (hour < 12) {
-        return 'Good Morning';
-      } else if (hour < 17) {
-        return 'Good Afternoon';
-      } else {
-        return 'Good Evening';
+  void _calculateStats() {
+    double expenses = 0.0;
+    for (var tx in _transactions) {
+      if (tx['type'] == 'expense' ||
+          tx['type'] == 'budget_expense' ||
+          tx['type'] == 'savings_deduction') {
+        expenses += double.tryParse(tx['amount'].toString()) ?? 0.0;
       }
     }
+    _totalExpenses = expenses;
+  }
 
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Theme.of(context).colorScheme.surface,
-        elevation: 0,
-        leading: Row(
-          children: [
-            SizedBox(width: 8),
-            CircleAvatar(
-              radius: 24,
-              backgroundImage: (profileImage == null)
-                  ? AssetImage("assets/image/icon.png")
-                  : NetworkImage(profileImage!),
-            ),
-          ],
-        ),
+  Future<void> _saveTransaction(
+    String title,
+    double amount,
+    String type,
+  ) async {
+    final prefs = await SharedPreferences.getInstance();
+    final newTx = {
+      'title': title,
+      'amount': amount,
+      'type': type,
+      'date': DateTime.now().toIso8601String(),
+    };
+    _transactions.insert(0, newTx);
+    await prefs.setString(keyTransactions, json.encode(_transactions));
+    _calculateStats();
+    setState(() {});
+  }
 
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(greetings(), style: Theme.of(context).textTheme.headlineSmall),
-            Text(username ?? '', style: Theme.of(context).textTheme.bodyLarge),
-          ],
+  Future<void> _syncBudgets() async {
+    final prefs = await SharedPreferences.getInstance();
+    final data = _budgets.map((b) => json.encode(b.toMap())).toList();
+    await prefs.setStringList(keyBudgets, data);
+  }
+
+  Future<void> _syncSavings() async {
+    final prefs = await SharedPreferences.getInstance();
+    final data = _savings.map((s) => json.encode(s.toMap())).toList();
+    await prefs.setStringList(keySavings, data);
+  }
+
+  // --- DIALOGS & LOGIC ---
+
+  void _showAddIncomeDialog() {
+    final amountController = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Add Income"),
+        content: TextField(
+          controller: amountController,
+          keyboardType: TextInputType.number,
+          decoration: const InputDecoration(hintText: "Amount (Ksh)"),
         ),
         actions: [
-          Padding(
-            padding: paddingAllTiny,
-            child: Row(children: [const ThemeToggleIcon(), NotificationIcon()]),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Cancel"),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final amt = double.tryParse(amountController.text) ?? 0;
+              if (amt > 0) {
+                final prefs = await SharedPreferences.getInstance();
+                _totalIncome += amt;
+                await prefs.setDouble(keyTotalIncome, _totalIncome);
+                await _saveTransaction("Income Added", amt, "income");
+                Navigator.pop(context);
+                _refreshData();
+              }
+            },
+            child: const Text("Add"),
           ),
         ],
-      ),
-      backgroundColor: Theme.of(context).colorScheme.surface,
-      body: StreamBuilder(
-        stream: getCombinedMonthData(),
-        builder: (context, snapshots) {
-          if (!snapshots.hasData) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          final data = snapshots.data!;
-
-          final expenses = data['expense'] as List<QueryDocumentSnapshot>;
-          int totalIncome = 0;
-          int totalExpenses = 0;
-          //int totalBalance = ;
-          List<Map<String, dynamic>> transactionsData = [];
-
-          for (var tx in expenses) {
-            transactionsData.add(tx.data() as Map<String, dynamic>);
-            final map = tx.data() as Map<String, dynamic>;
-            if (map['type'] == 'income') {
-              String amount = map['amount'] ?? '0';
-              totalIncome += int.parse(amount);
-            } else if (map['type'] == 'expense' || map['type'] == 'saving') {
-              String amount = map['amount'] ?? '0';
-              totalExpenses += int.parse(amount);
-            }
-          }
-
-          //  print('this is the list of the transactions✅✅✅✅');
-          //print(transactionsData);
-
-          return Padding(
-            padding: paddingAllMedium,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Balance Section
-                _buildBalanceCard(
-                  totalExpense: totalExpenses,
-                  totalIncome: totalIncome,
-                ),
-                sizedBoxHeightLarge,
-                // Quick Actions Section
-                Text(
-                  'Quick Actions',
-                  style: Theme.of(context).textTheme.titleLarge,
-                ),
-                sizedBoxHeightSmall,
-                _buildQuickActions(),
-                sizedBoxHeightLarge,
-                // Recent Transactions Section
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Recent Transactions',
-                      style: Theme.of(context).textTheme.titleLarge,
-                    ),
-                    TextButton(
-                      onPressed: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (context) => AllTransactionsPage(
-                              expenses: expenses,
-                              totalTransaction: (totalIncome - totalExpenses),
-                            ),
-                          ),
-                        );
-                      },
-                      child: Text(
-                        'See all Transactions',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: accentColor,
-                          decoration: TextDecoration.underline,
-                          decorationColor: accentColor,
-                          decorationThickness: 2,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                sizedBoxHeightSmall,
-
-                transactionsData.isEmpty
-                    ? buildEmptyTransactions(context)
-                    : Expanded(
-                        child: ListView.builder(
-                          //shrinkWrap: true,
-                          itemCount: (transactionsData.length > 5)
-                              ? 5
-                              : transactionsData.length,
-                          itemBuilder: (contex, index) {
-                            String name = transactionsData[index]['name'] ?? '';
-                            String description =
-                                transactionsData[index]['description'] ?? '';
-                            String amount =
-                                transactionsData[index]['amount'] ?? '';
-                            String type = transactionsData[index]['type'] ?? '';
-                            Timestamp createdAt =
-                                transactionsData[index]['createdAt'] ??
-                                Timestamp.now();
-
-                            return transactionCell(
-                              name: capitalize(name),
-                              context: context,
-                              description: capitalize(description),
-                              type: type,
-                              amount: amount,
-                              createdAt: createdAt,
-                            );
-                          },
-                        ),
-                      ),
-              ],
-            ),
-          );
-        },
       ),
     );
   }
 
-  Widget _buildBalanceCard({
-    required int totalIncome,
-    required int totalExpense,
-  }) {
-    return Container(
-      width: double.infinity,
-      padding: paddingAllMedium,
-      decoration: BoxDecoration(
-        borderRadius: radiusLarge,
+  void _showSmartExpenseDialog() {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const SizedBox(height: 20),
+          Text("Expense for?", style: Theme.of(context).textTheme.titleLarge),
+          ListTile(
+            leading: const Icon(Icons.savings, color: Colors.green),
+            title: const Text("Savings Goal"),
+            onTap: () {
+              Navigator.pop(context);
+              _handleSavingsExpense();
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.receipt_long, color: Colors.orange),
+            title: const Text("Existing Budget"),
+            onTap: () {
+              Navigator.pop(context);
+              _handleBudgetExpense();
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.shopping_cart, color: Colors.blue),
+            title: const Text("Other Expense"),
+            onTap: () {
+              Navigator.pop(context);
+              _showGeneralExpenseDialog();
+            },
+          ),
+          const SizedBox(height: 20),
+        ],
+      ),
+    );
+  }
 
-        color: brandGreen,
+  // --- SAVINGS LOGIC ---
+  void _handleSavingsExpense() {
+    final activeSavings = _savings.where((s) => !s.achieved).toList();
+    if (activeSavings.isEmpty) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const SavingsScreen()),
+      ).then((_) => _refreshData());
+      return;
+    }
 
-        boxShadow: [
-          BoxShadow(
-            color: Theme.of(context).colorScheme.primary.withOpacity(0.25),
-            blurRadius: 18,
-            offset: const Offset(0, 8),
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Select Savings Goal"),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: ListView.builder(
+            shrinkWrap: true,
+            itemCount: activeSavings.length,
+            itemBuilder: (context, index) {
+              final s = activeSavings[index];
+              return ListTile(
+                title: Text(s.name),
+                subtitle: Text("Saved: Ksh ${s.savedAmount}"),
+                onTap: () {
+                  Navigator.pop(context);
+                  _showAmountDialog(
+                    title: "Add to ${s.name}",
+                    onConfirm: (amt) async {
+                      s.savedAmount += amt;
+                      if (s.savedAmount >= s.targetAmount) {
+                        s.achieved = true;
+                      }
+                      await _syncSavings();
+                      await _saveTransaction(
+                        "Saved for ${s.name}",
+                        amt,
+                        "savings_deduction",
+                      );
+                      _refreshData();
+                    },
+                  );
+                },
+              );
+            },
+          ),
+        ),
+      ),
+    );
+  }
+
+  // --- BUDGET LOGIC ---
+  void _handleBudgetExpense() {
+    if (_budgets.isEmpty) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const BudgetScreen()),
+      ).then((_) => _refreshData());
+      return;
+    }
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Select Budget"),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: ListView.builder(
+            shrinkWrap: true,
+            itemCount: _budgets.length,
+            itemBuilder: (context, index) {
+              final b = _budgets[index];
+              return ListTile(
+                title: Text(b.name),
+                onTap: () {
+                  Navigator.pop(context);
+                  _showBudgetDetailEntryDialog(b);
+                },
+              );
+            },
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showBudgetDetailEntryDialog(Budget budget) {
+    final titleCtrl = TextEditingController();
+    final amtCtrl = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text("Expense for ${budget.name}"),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: titleCtrl,
+              decoration: const InputDecoration(hintText: "Title (e.g. Lunch)"),
+            ),
+            TextField(
+              controller: amtCtrl,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(hintText: "Amount"),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Cancel"),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final amt = double.tryParse(amtCtrl.text) ?? 0;
+              if (amt > 0 && titleCtrl.text.isNotEmpty) {
+                budget.expenses.add(Expense(name: titleCtrl.text, amount: amt));
+                await _syncBudgets();
+                await _saveTransaction(
+                  "${budget.name}: ${titleCtrl.text}",
+                  amt,
+                  "budget_expense",
+                );
+                Navigator.pop(context);
+                _refreshData();
+              }
+            },
+            child: const Text("Save"),
           ),
         ],
       ),
+    );
+  }
+
+  // --- OTHER EXPENSE ---
+  void _showGeneralExpenseDialog() {
+    final titleCtrl = TextEditingController();
+    final amtCtrl = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Other Expense"),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: titleCtrl,
+              decoration: const InputDecoration(hintText: "What was it for?"),
+            ),
+            TextField(
+              controller: amtCtrl,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(hintText: "Amount"),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Cancel"),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final amt = double.tryParse(amtCtrl.text) ?? 0;
+              if (amt > 0 && titleCtrl.text.isNotEmpty) {
+                await _saveTransaction(titleCtrl.text, amt, "expense");
+                Navigator.pop(context);
+                _refreshData();
+              }
+            },
+            child: const Text("Deduct"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showAmountDialog({
+    required String title,
+    required Function(double) onConfirm,
+  }) {
+    final ctrl = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(title),
+        content: TextField(
+          controller: ctrl,
+          keyboardType: TextInputType.number,
+          decoration: const InputDecoration(hintText: "Amount"),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Cancel"),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final val = double.tryParse(ctrl.text) ?? 0;
+              if (val > 0) {
+                onConfirm(val);
+                Navigator.pop(context);
+              }
+            },
+            child: const Text("Confirm"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // --- UI BUILDING ---
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      appBar: AppBar(
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        elevation: 0,
+        title: Text(
+          "Penny Wise",
+          style: Theme.of(context).textTheme.headlineSmall,
+        ),
+        actions: [const ThemeToggleIcon(), NotificationIcon()],
+      ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : RefreshIndicator(
+              onRefresh: _refreshData,
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: paddingAllMedium,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildBalanceCard(),
+                    sizedBoxHeightLarge,
+                    Text(
+                      'Quick Actions',
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                    sizedBoxHeightSmall,
+                    _buildQuickActions(),
+                    sizedBoxHeightLarge,
+                    const Text(
+                      'Recent Transactions',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    _buildRecentTransactions(),
+                  ],
+                ),
+              ),
+            ),
+    );
+  }
+
+  Widget _buildBalanceCard() {
+    double balance = _totalIncome - _totalExpenses;
+    return Container(
+      width: double.infinity,
+      padding: paddingAllMedium,
+      decoration: BoxDecoration(borderRadius: radiusLarge, color: brandGreen),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          const Text('Total Balance', style: TextStyle(color: Colors.white70)),
           Text(
-            'Total Balance',
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-              color: Theme.of(context).colorScheme.onSurface,
-            ),
-          ),
-          Text(
-            "Ksh ${(totalIncome - totalExpense).toString()}",
-            // CalculationUtils.totalBalance(
-            //   incomes: incomeList,
-            //   expenses: expenseList,
-            // ),
-            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-              color: Theme.of(context).colorScheme.onSurface,
+            "Ksh ${balance.toStringAsFixed(0)}",
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 32,
+              fontWeight: FontWeight.bold,
             ),
           ),
           sizedBoxHeightLarge,
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _buildIncomeExpenseColumn(
-                context,
-                'Income',
-                totalIncome.toString(),
-                Icons.arrow_circle_down_rounded,
-              ),
-              sizedBoxWidthLarge,
-              _buildIncomeExpenseColumn(
-                context,
-                'Expenses',
-                totalExpense.toString(),
-                Icons.arrow_circle_up_rounded,
-              ),
+              _statItem("Income", _totalIncome, Icons.arrow_downward),
+              _statItem("Expenses", _totalExpenses, Icons.arrow_upward),
             ],
           ),
         ],
       ),
+    );
+  }
+
+  Widget _statItem(String label, double amt, IconData icon) {
+    return Row(
+      children: [
+        Icon(icon, color: Colors.white54, size: 16),
+        const SizedBox(width: 5),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              label,
+              style: const TextStyle(color: Colors.white70, fontSize: 12),
+            ),
+            Text(
+              "Ksh ${amt.toStringAsFixed(0)}",
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+      ],
     );
   }
 
@@ -377,88 +513,78 @@ class _HomePageState extends State<HomePage> {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         QuickActionCard(
-          icon: Icons.account_balance_wallet_outlined,
-          label: 'Add Income',
-          onTap: () {
-            showAddAmountDialog(
-              context,
-              'Income',
-              //_addTransaction('Income', value, source);
-            );
-          },
+          icon: Icons.add,
+          label: 'Income',
+          onTap: _showAddIncomeDialog,
         ),
         QuickActionCard(
-          icon: Icons.add_card_outlined,
-          label: 'Add Expense',
-          onTap: () {
-            showAddAmountDialog(
-              context,
-              'Expense',
-              //_addTransaction('Income', value, source);
-            );
-          },
+          icon: Icons.remove,
+          label: 'Expense',
+          onTap: _showSmartExpenseDialog,
         ),
         QuickActionCard(
-          icon: Icons.savings_outlined,
-          label: 'Add Saving',
-          onTap: () {
-            showAddAmountDialog(
-              context,
-              'Savings',
-              //_addTransaction('Income', value, source);
-            );
-          },
+          icon: Icons.account_balance,
+          label: 'Budgets',
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const BudgetScreen()),
+          ).then((_) => _refreshData()),
         ),
         QuickActionCard(
-          icon: Icons.analytics_outlined,
-          label: 'View Report',
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => Report()),
-            );
-          },
+          icon: Icons.savings,
+          label: 'Savings',
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const SavingsScreen()),
+          ).then((_) => _refreshData()),
         ),
       ],
     );
   }
 
-  Widget _buildIncomeExpenseColumn(
-    BuildContext context,
-    String label,
-    //List<double> list,
-    String amount,
-    IconData icon,
-  ) {
-    //final total = list.isEmpty ? 0.0 : CalculationUtils.calculateTotal(list);
-    return Row(
-      children: [
-        Icon(
-          icon,
-          color: Theme.of(
-            context,
-          ).colorScheme.onSurface.withAlpha((255 * 0.6).round()),
-          size: 40,
+  Widget _buildRecentTransactions() {
+    if (_transactions.isEmpty) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 20),
+        child: Center(
+          child: Text(
+            "No transactions yet",
+            style: TextStyle(color: Colors.grey),
+          ),
         ),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              label,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.onSurface,
-              ),
+      );
+    }
+    return ListView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: _transactions.length > 10 ? 10 : _transactions.length,
+      itemBuilder: (context, index) {
+        final tx = _transactions[index];
+        final isIncome = tx['type'] == 'income';
+        final date = DateTime.parse(tx['date']);
+
+        return ListTile(
+          contentPadding: EdgeInsets.zero,
+          leading: CircleAvatar(
+            backgroundColor: isIncome
+                ? Colors.green.withOpacity(0.1)
+                : Colors.red.withOpacity(0.1),
+            child: Icon(
+              isIncome ? Icons.add : Icons.remove,
+              color: isIncome ? Colors.green : Colors.red,
             ),
-            Text(
-              "Ksh ${amount.toString()}",
-              //CalculationUtils.formatAmount(total),
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Theme.of(context).colorScheme.onSurface,
-              ),
+          ),
+          title: Text(tx['title'] ?? "Unknown"),
+          subtitle: Text(DateFormat('dd MMM, hh:mm a').format(date)),
+          trailing: Text(
+            "${isIncome ? '+' : '-'} Ksh ${tx['amount']}",
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: isIncome ? Colors.green : Colors.red,
             ),
-          ],
-        ),
-      ],
+          ),
+        );
+      },
     );
   }
 }
