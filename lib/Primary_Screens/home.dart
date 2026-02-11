@@ -178,7 +178,10 @@ class _HomePageState extends State<HomePage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(greetings(), style: Theme.of(context).textTheme.headlineSmall),
-            Text(username ?? '', style: Theme.of(context).textTheme.bodyLarge),
+            Text(
+              username ?? 'Penny User',
+              style: Theme.of(context).textTheme.bodyLarge,
+            ),
           ],
         ),
         actions: [

@@ -45,14 +45,14 @@ class _ProfileContentState extends State<_ProfileContent> {
         .doc(userUid)
         .snapshots()
         .listen((snapshots) {
-      if (snapshots.exists) {
-        final userData = snapshots.data() as Map<String, dynamic>;
-        setState(() {
-          username = userData['username'] ?? '';
-          profileImage = userData['profileUrl'] ?? '';
+          if (snapshots.exists) {
+            final userData = snapshots.data() as Map<String, dynamic>;
+            setState(() {
+              username = userData['username'] ?? '';
+              profileImage = userData['profileUrl'] ?? '';
+            });
+          }
         });
-      }
-    });
   }
 
   void pickAndUploadImage() async {
@@ -137,8 +137,8 @@ class _ProfileContentState extends State<_ProfileContent> {
                   Text(
                     title,
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                   if (subtitle != null) ...[
                     const SizedBox(height: 4),
@@ -228,8 +228,10 @@ class _ProfileContentState extends State<_ProfileContent> {
                         CircleAvatar(
                           radius: 45,
                           backgroundColor: Colors.white,
-                          backgroundImage: (profileImage == null || profileImage!.isEmpty)
-                              ? const AssetImage("assets/image/icon.png") as ImageProvider
+                          backgroundImage:
+                              (profileImage == null || profileImage!.isEmpty)
+                              ? const AssetImage("assets/image/icon.png")
+                                    as ImageProvider
                               : NetworkImage(profileImage!),
                         ),
                         Positioned(
@@ -256,8 +258,9 @@ class _ProfileContentState extends State<_ProfileContent> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            username ?? 'User',
-                            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                            username ?? 'Penny User',
+                            style: Theme.of(context).textTheme.headlineSmall
+                                ?.copyWith(
                                   color: Colors.white,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -265,7 +268,11 @@ class _ProfileContentState extends State<_ProfileContent> {
                           const SizedBox(height: 6),
                           const Row(
                             children: [
-                              Icon(Icons.location_on_rounded, size: 16, color: Colors.white70),
+                              Icon(
+                                Icons.location_on_rounded,
+                                size: 16,
+                                color: Colors.white70,
+                              ),
                               SizedBox(width: 4),
                               Text(
                                 "Kisii, Kenya",
@@ -298,7 +305,9 @@ class _ProfileContentState extends State<_ProfileContent> {
                 onTap: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => const ChangePasswordPage()),
+                    MaterialPageRoute(
+                      builder: (_) => const ChangePasswordPage(),
+                    ),
                   );
                 },
               ),
@@ -309,7 +318,8 @@ class _ProfileContentState extends State<_ProfileContent> {
                 onTap: () {
                   showCustomToast(
                     context: context,
-                    message: "Penny Wise helps you track your expenses and budgets.",
+                    message:
+                        "Penny Wise helps you track your expenses and budgets.",
                     backgroundColor: brandGreen,
                     icon: Icons.info_outline_rounded,
                   );
@@ -328,7 +338,9 @@ class _ProfileContentState extends State<_ProfileContent> {
                   );
                   Navigator.pushReplacement(
                     context,
-                    MaterialPageRoute(builder: (_) => Login(showSignupPage: () {})),
+                    MaterialPageRoute(
+                      builder: (_) => Login(showSignupPage: () {}),
+                    ),
                   );
                 },
               ),
