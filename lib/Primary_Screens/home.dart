@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:final_project/Components/notification_icon.dart';
 import 'package:final_project/Components/quick_actions.dart';
 import 'package:final_project/Components/them_toggle.dart';
@@ -10,6 +11,7 @@ import 'package:final_project/Constants/spacing.dart';
 // Import Screens
 import 'package:final_project/Primary_Screens/Budgets/budget.dart';
 import 'package:final_project/Primary_Screens/Savings/savings.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -27,6 +29,25 @@ class _HomePageState extends State<HomePage> {
   static const String keyBudgets = 'budgets';
   static const String keySavings = 'savings';
   static const String keyTotalIncome = 'total_income';
+  final userUid = FirebaseAuth.instance.currentUser!.uid;
+  final usersDB = FirebaseFirestore.instance.collection('users');
+  String? username;
+  String? profileImage;
+  StreamSubscription? userSubscription;
+
+  void loadData() async {
+    userSubscription = usersDB.doc(userUid).snapshots().listen((snapshots) {
+      if (snapshots.exists) {
+        final userData = snapshots.data() as Map<String, dynamic>;
+        // print('this is the userdata');
+        //  print(userData);
+        setState(() {
+          username = userData['username'] ?? '';
+          profileImage = userData['profileUrl'] ?? '';
+        });
+      }
+    });
+  }
 
   List<Map<String, dynamic>> _transactions = [];
   List<Budget> _budgets = [];
@@ -419,16 +440,50 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
+    String greetings() {
+      final int hour = DateTime.now().hour;
+      if (hour < 12) {
+        return 'Good Morning';
+      } else if (hour < 17) {
+        return 'Good Afternoon';
+      } else {
+        return 'Good Evening';
+      }
+    }
+
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surface,
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.surface,
         elevation: 0,
-        title: Text(
-          "Penny Wise",
-          style: Theme.of(context).textTheme.headlineSmall,
+        leading: Row(
+          children: [
+            SizedBox(width: 8),
+            CircleAvatar(
+              radius: 24,
+              backgroundImage: (profileImage == null)
+                  ? AssetImage("assets/image/icon.png")
+                  : NetworkImage(profileImage!),
+            ),
+          ],
         ),
-        actions: [const ThemeToggleIcon(), NotificationIcon()],
+
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(greetings(), style: Theme.of(context).textTheme.headlineSmall),
+            Text(
+              username ?? 'Penny User',
+              style: Theme.of(context).textTheme.bodyLarge,
+            ),
+          ],
+        ),
+        actions: [
+          Padding(
+            padding: paddingAllTiny,
+            child: Row(children: [const ThemeToggleIcon(), NotificationIcon()]),
+          ),
+        ],
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
