@@ -1,8 +1,12 @@
 import 'dart:convert';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:final_project/Components/Custom_header.dart';
+import 'package:final_project/Components/end_month.dart';
+import 'package:final_project/Components/toast.dart';
 import 'package:final_project/Constants/colors.dart';
 import 'package:final_project/Primary_Screens/Budgets/budget_detail.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -23,11 +27,46 @@ class BudgetScreen extends StatefulWidget {
 class BudgetScreenState extends State<BudgetScreen> {
   List<Budget> budgets = [];
   bool isLoading = true;
+  String userUid = FirebaseAuth.instance.currentUser!.uid;
+  final String year = DateTime.now().year.toString();
+  String month = DateFormat('MM').format(DateTime.now());
 
   @override
   void initState() {
     super.initState();
     loadBudgets();
+  }
+
+  void addBudget(String bName, String bAmount) async {
+    try {
+      await FirebaseFirestore.instance
+          .collection('statistics')
+          .doc(userUid)
+          .collection(year)
+          .doc(month)
+          .collection('budgets')
+          .doc(bName)
+          .set({
+            'bName': bName,
+            'createdAt': FieldValue.serverTimestamp(),
+            'dueDate': DateTime.now().lastDayOfMonth(),
+            'bAmount': bAmount,
+            'usedAmount': '0',
+          });
+      showCustomToast(
+        context: context,
+        message: 'Budget Added Successfully!',
+        backgroundColor: Colors.green,
+        icon: Icons.check_circle_outline,
+      );
+    } catch (e) {
+      showCustomToast(
+        context: context,
+        message: 'An error occured try again',
+        backgroundColor: Colors.red,
+        icon: Icons.error_outline,
+      );
+    }
   }
 
   Future<void> loadBudgets() async {
@@ -263,6 +302,7 @@ class BudgetScreenState extends State<BudgetScreen> {
                     }
                   });
                   saveBudgets();
+                  addBudget(nameCtrl.text.trim(), amountCtrl.text.trim());
                   Navigator.pop(context);
                 }
               },
