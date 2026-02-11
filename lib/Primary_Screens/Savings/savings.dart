@@ -1,11 +1,7 @@
 import 'dart:convert';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:final_project/Components/Custom_header.dart';
-import 'package:final_project/Components/toast.dart';
 import 'package:final_project/Constants/colors.dart';
-import 'package:final_project/Primary_Screens/Savings/streak_banner.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:intl/intl.dart';
@@ -30,65 +26,14 @@ class SavingsScreenState extends State<SavingsScreen> {
   List<Saving> savings = [];
   SavingsFilter currentFilter = SavingsFilter.all;
   bool isLoading = true;
-  String userUid = FirebaseAuth.instance.currentUser!.uid;
-  final String year = DateTime.now().year.toString();
-  String month = DateFormat('MM').format(DateTime.now());
 
   // Streak Variables
 
   @override
   void initState() {
     super.initState();
-    loadLocalBackup();
-    listenToFirestore();
     loadSavings();
     loadStreakData();
-  }
-
-  Future<void> loadLocalBackup() async {
-    final prefs = await SharedPreferences.getInstance();
-    final savingsStrings = prefs.getStringList('savings') ?? [];
-    setState(() {
-      savings = savingsStrings
-          .map((str) => Saving.fromMap(json.decode(str)))
-          .toList();
-      isLoading = false;
-    });
-  }
-
-  void listenToFirestore() {
-    FirebaseFirestore.instance
-        .collection('statistics')
-        .doc(userUid)
-        .collection(year)
-        .doc(month)
-        .collection('savings')
-        .snapshots() // This is the magic stream
-        .listen((snapshot) {
-          final List<Saving> firestoreSavings = snapshot.docs.map((doc) {
-            final data = doc.data();
-            return Saving(
-              id: doc.id,
-              name: data['gName'] ?? '',
-              // Note: Firestore returns Strings for these based on your createSaving method
-              savedAmount:
-                  double.tryParse(data['savedAmount'].toString()) ?? 0.0,
-              targetAmount: double.tryParse(data['tAmount'].toString()) ?? 0.0,
-              deadline: (data['dueDate'] as Timestamp).toDate(),
-              achieved:
-                  (double.tryParse(data['savedAmount'].toString()) ?? 0.0) >=
-                  (double.tryParse(data['tAmount'].toString()) ?? 0.0),
-            );
-          }).toList();
-
-          setState(() {
-            savings = firestoreSavings;
-            isLoading = false;
-          });
-
-          // Keep SharedPreferences updated as a backup
-          saveSavingsToStorage();
-        });
   }
 
   // -------------------- Public Helpers --------------------
@@ -228,79 +173,10 @@ class SavingsScreenState extends State<SavingsScreen> {
 
   // -------------------- Actions --------------------
 
-  void createSaving(String gName, String tAmount, Timestamp dueDate) async {
-    try {
-      await FirebaseFirestore.instance
-          .collection('statistics')
-          .doc(userUid)
-          .collection(year)
-          .doc(month)
-          .collection('savings')
-          .add({
-            'createdAt': FieldValue.serverTimestamp(),
-            'gName': gName,
-            'dueDate': dueDate,
-            'tAmount': tAmount,
-            'savedAmount': '0',
-          });
-      showCustomToast(
-        context: context,
-        message: 'Saving Added Successfully!',
-        backgroundColor: Colors.green,
-        icon: Icons.check_circle_outline,
-      );
-    } catch (e) {
-      showCustomToast(
-        context: context,
-        message: 'An error occurred, try again',
-        backgroundColor: Colors.red,
-        icon: Icons.error,
-      );
-    }
-  }
-
-  void addSavingsExpense(String amount) async {
-    try {
-      await FirebaseFirestore.instance
-          .collection('statistics')
-          .doc(userUid)
-          .collection(year)
-          .doc(month)
-          .collection('transactions')
-          .add({
-            'name': 'Savings',
-            'type': 'saving',
-            'description': 'saving goal',
-            'createdAt': FieldValue.serverTimestamp(),
-            'amount': amount,
-          });
-
-      showCustomToast(
-        context: context,
-        message: 'Expense Added Successfully!',
-        backgroundColor: Colors.green,
-        icon: Icons.check_circle_outline,
-      );
-    } catch (e) {
-      showCustomToast(
-        context: context,
-        message: 'An error occurred, try again',
-        backgroundColor: Colors.red,
-        icon: Icons.error_outline,
-      );
-    }
-  }
-
-  void addSaving(
-    String name,
-    double targetAmount,
-    DateTime deadline,
-    String id,
-  ) {
+  void addSaving(String name, double targetAmount, DateTime deadline) {
     setState(() {
       savings.add(
         Saving(
-          id: id,
           name: capitalizeWords(name),
           savedAmount: 0.0, // Starts at 0
           targetAmount: targetAmount,
@@ -312,33 +188,10 @@ class SavingsScreenState extends State<SavingsScreen> {
     Fluttertoast.showToast(msg: 'Saving goal for $name created.');
   }
 
-  void addFunds(int index, double amount) async {
-    // 1. Get the current saving object
-    final saving = savings[index];
-    final double newSavedAmount = saving.savedAmount + amount;
-
-    // 2. Perform the Firestore Update FIRST (Handles offline automatically)
-    if (saving.id != null) {
-      try {
-        await FirebaseFirestore.instance
-            .collection('statistics')
-            .doc(userUid)
-            .collection(year)
-            .doc(month)
-            .collection('savings')
-            .doc(saving.id)
-            .update({
-              'savedAmount': newSavedAmount
-                  .toString(), // Keep as string to match your DB schema
-            });
-      } catch (e) {
-        debugPrint("Firestore update failed: $e");
-      }
-    }
-
-    // 3. Update the Local State to reflect the change immediately
+  void addFunds(int index, double amount) {
     setState(() {
-      saving.savedAmount = newSavedAmount;
+      final saving = savings[index];
+      saving.savedAmount += amount;
 
       // Auto-achieve logic
       if (saving.savedAmount >= saving.targetAmount && !saving.achieved) {
@@ -353,13 +206,12 @@ class SavingsScreenState extends State<SavingsScreen> {
       }
     });
 
-    // 4. Persistence and Side Effects
-    updateStreak();
+    updateStreak(); // Check and update streak
     saveSavingsToStorage();
 
-    if (!saving.achieved) {
+    if (!savings[index].achieved) {
       Fluttertoast.showToast(
-        msg: 'Added ${formatCurrency(amount)} to ${saving.name}',
+        msg: 'Added ${formatCurrency(amount)} to ${savings[index].name}',
       );
     }
   }
@@ -370,34 +222,12 @@ class SavingsScreenState extends State<SavingsScreen> {
     Fluttertoast.showToast(msg: 'Saving for ${saving.name} deleted');
   }
 
-  void renameSaving(Saving saving, String newName) async {
-    // 1. Check if the ID exists before trying to update Firestore
-    if (saving.id == null || saving.id!.isEmpty) {
-      debugPrint("Error: Saving ID is null or empty");
-      return;
-    }
-
-    try {
-      await FirebaseFirestore.instance
-          .collection('statistics')
-          .doc(userUid)
-          .collection(year)
-          .doc(month)
-          .collection('savings')
-          .doc(saving.id) // Use the ID from the object
-          .update({'gName': newName});
-
-      // 2. Update local state ONLY if Firestore succeeds (or use a try-finally)
-      setState(() {
-        saving.name = capitalizeWords(newName);
-      });
-
-      saveSavingsToStorage();
-      Fluttertoast.showToast(msg: 'Saving renamed to ${saving.name}');
-    } catch (e) {
-      debugPrint("Firestore update failed: $e");
-      Fluttertoast.showToast(msg: 'Failed to rename in database');
-    }
+  void renameSaving(Saving saving, String newName) {
+    setState(() {
+      saving.name = capitalizeWords(newName);
+    });
+    saveSavingsToStorage();
+    Fluttertoast.showToast(msg: 'Saving renamed to ${saving.name}');
   }
 
   // -------------------- UI Methods --------------------
@@ -464,6 +294,74 @@ class SavingsScreenState extends State<SavingsScreen> {
 
           // Bottom Add Button (Only if list is not empty)
           if (savings.isNotEmpty) buildAddAnotherButton(theme),
+        ],
+      ),
+    );
+  }
+
+  Widget buildStreakBanner(ThemeData theme) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      margin: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Colors.orange.shade300, Colors.deepOrange.shade400],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.orange.withOpacity(0.3),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Row(
+            children: [
+              const Text("🔥", style: TextStyle(fontSize: 24)),
+              const SizedBox(width: 8),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "$streakCount Day Streak",
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                  Text(
+                    "Keep saving daily!",
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.9),
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Text(
+              "Level $streakLevel",
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -740,8 +638,7 @@ class SavingsScreenState extends State<SavingsScreen> {
                 }),
               optionTile(Icons.edit_outlined, 'Rename Goal', () {
                 Navigator.pop(context);
-                final index = savings.indexOf(saving);
-                showRenameSavingDialog(saving, index);
+                showRenameSavingDialog(saving);
               }),
               const Divider(),
               optionTile(Icons.delete_outline, 'Delete Goal', () {
@@ -858,12 +755,7 @@ class SavingsScreenState extends State<SavingsScreen> {
                   final target = double.tryParse(targetController.text) ?? 0;
 
                   if (name.isNotEmpty && target > 0 && selectedDate != null) {
-                    (name, target, selectedDate!);
-                    createSaving(
-                      nameController.text.trim(),
-                      targetController.text.trim(),
-                      Timestamp.fromDate(selectedDate!),
-                    );
+                    addSaving(name, target, selectedDate!);
                     Navigator.pop(context);
                   } else {
                     Fluttertoast.showToast(msg: 'Please fill all fields');
@@ -902,7 +794,6 @@ class SavingsScreenState extends State<SavingsScreen> {
               final amount = double.tryParse(controller.text) ?? 0;
               if (amount > 0) {
                 addFunds(index, amount);
-                addSavingsExpense(controller.text.trim());
                 Navigator.pop(context);
               } else {
                 Fluttertoast.showToast(msg: 'Invalid amount');
@@ -939,7 +830,7 @@ class SavingsScreenState extends State<SavingsScreen> {
     );
   }
 
-  void showRenameSavingDialog(Saving saving, int index) {
+  void showRenameSavingDialog(Saving saving) {
     final controller = TextEditingController(text: saving.name);
     showDialog(
       context: context,
@@ -958,8 +849,7 @@ class SavingsScreenState extends State<SavingsScreen> {
           FilledButton(
             onPressed: () {
               if (controller.text.isNotEmpty) {
-                // Just pass the saving object and the new name
-                renameSaving(saving, controller.text.trim());
+                renameSaving(saving, controller.text);
                 Navigator.pop(context);
               }
             },
@@ -975,7 +865,6 @@ class SavingsScreenState extends State<SavingsScreen> {
 
 class Saving {
   String name;
-  String? id;
   double savedAmount; // Current funds
   double targetAmount; // Goal
   DateTime deadline; // Date goal
@@ -983,7 +872,6 @@ class Saving {
   String? iconCode;
 
   Saving({
-    required this.id,
     required this.name,
     required this.savedAmount,
     required this.targetAmount,
@@ -994,7 +882,6 @@ class Saving {
 
   Map<String, dynamic> toMap() {
     return {
-      'id': id,
       'name': name,
       'savedAmount': savedAmount,
       'targetAmount': targetAmount,
@@ -1006,7 +893,6 @@ class Saving {
 
   factory Saving.fromMap(Map<String, dynamic> map) {
     return Saving(
-      id: map['id'] ?? '',
       name: map['name'] ?? 'Unnamed',
       savedAmount: map['savedAmount'] is String
           ? double.tryParse(map['savedAmount']) ?? 0.0
