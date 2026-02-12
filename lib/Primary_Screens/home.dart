@@ -261,8 +261,8 @@ class _HomePageState extends State<HomePage> {
                 subtitle: Text("Balance: Ksh ${s.balance}"),
                 onTap: () {
                   Navigator.pop(context);
-                  _showAmountDialog(
-                    title: "Deduct from ${s.name}",
+                  showAmountDialog(
+                    title: "Add funds to ${s.name}",
                     onConfirm: (amt) async {
                       s.savedAmount += amt;
                       if (s.savedAmount >= s.targetAmount) {
@@ -488,7 +488,7 @@ class _HomePageState extends State<HomePage> {
                 ),
                 onTap: () {
                   Navigator.pop(context); // Pop the goal selection dialog
-                  _showAmountDialog(
+                  showAmountDialog(
                     title: "Add funds to ${s.name}",
                     onConfirm: (amt) async {
                       s.savedAmount += amt;
@@ -519,7 +519,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  void _showAmountDialog({
+  void showAmountDialog({
     required String title,
     required Function(double) onConfirm,
   }) {
