@@ -13,7 +13,12 @@ int streakLevel = 1;
 String lastSaveDateStr = "";
 
 class SavingsScreen extends StatefulWidget {
-  const SavingsScreen({super.key});
+  const SavingsScreen({
+    super.key,
+    this.onTransactionAdded,
+  });
+
+  final Function(String title, double amount, String type)? onTransactionAdded;
 
   @override
   State<SavingsScreen> createState() => SavingsScreenState();
@@ -204,6 +209,11 @@ class SavingsScreenState extends State<SavingsScreen> {
           textColor: Colors.white,
         );
       }
+      widget.onTransactionAdded?.call(
+        'Added to ${saving.name}',
+        amount,
+        'saving_deposit',
+      );
     });
 
     updateStreak(); // Check and update streak

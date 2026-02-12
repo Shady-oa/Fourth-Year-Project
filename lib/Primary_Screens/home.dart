@@ -134,6 +134,12 @@ class _HomePageState extends State<HomePage> {
     await prefs.setStringList(keySavings, data);
   }
 
+  // New method to expose transaction saving for SavingsScreen
+  Future<void> _onSavingsTransactionAdded(String title, double amount, String type) async {
+    await _saveTransaction(title, amount, type);
+    _refreshData(); // Refresh data to update UI immediately
+  }
+
   // --- DIALOGS & LOGIC ---
 
   void _showAddIncomeDialog() {
@@ -252,7 +258,7 @@ class _HomePageState extends State<HomePage> {
                 onTap: () {
                   Navigator.pop(context);
                   _showAmountDialog(
-                    title: "Add to ${s.name}",
+                    title: "Deduct from ${s.name}",
                     onConfirm: (amt) async {
                       s.savedAmount += amt;
                       if (s.savedAmount >= s.targetAmount) {
@@ -402,6 +408,100 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  void _showSavingsOptionsBottomSheet() {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const SizedBox(height: 20),
+          Text("Savings Options", style: Theme.of(context).textTheme.titleLarge),
+          ListTile(
+            leading: const Icon(Icons.account_balance_wallet, color: Colors.blue),
+            title: const Text("Go to Savings Page"),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => SavingsScreen(
+                    onTransactionAdded: _onSavingsTransactionAdded,
+                  ),
+                ),
+              ).then((_) => _refreshData());
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.add_circle, color: Colors.green),
+            title: const Text("Add Funds to Saving Goal"),
+            onTap: () {
+              Navigator.pop(context);
+              if (_savings.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text("No saving goals created yet. Create one on the Savings page.")),
+                );
+              } else {
+                _showAddFundsToSavingGoalDialog();
+              }
+            },
+          ),
+          const SizedBox(height: 20),
+        ],
+      ),
+    );
+  }
+
+  void _showAddFundsToSavingGoalDialog() {
+    final activeSavings = _savings.where((s) => !s.achieved).toList();
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Select Saving Goal to Add Funds"),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: ListView.builder(
+            shrinkWrap: true,
+            itemCount: activeSavings.length,
+            itemBuilder: (context, index) {
+              final s = activeSavings[index];
+              return ListTile(
+                title: Text(s.name),
+                subtitle: Text("Current Balance: Ksh ${s.savedAmount.toStringAsFixed(2)}"),
+                onTap: () {
+                  Navigator.pop(context); // Pop the goal selection dialog
+                  _showAmountDialog(
+                    title: "Add funds to ${s.name}",
+                    onConfirm: (amt) async {
+                      s.savedAmount += amt;
+                      if (s.savedAmount >= s.targetAmount) {
+                        s.achieved = true;
+                      }
+                      await _syncSavings();
+                      await _onSavingsTransactionAdded(
+                        "Added to ${s.name}",
+                        amt,
+                        "saving_deposit",
+                      );
+                      _refreshData(); // Refresh UI after adding funds
+                    },
+                  );
+                },
+              );
+            },
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Cancel"),
+          ),
+        ],
+      ),
+    );
+  }
   void _showAmountDialog({
     required String title,
     required Function(double) onConfirm,
@@ -597,10 +697,7 @@ class _HomePageState extends State<HomePage> {
         QuickActionCard(
           icon: Icons.savings,
           label: 'Savings',
-          onTap: () => Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const SavingsScreen()),
-          ).then((_) => _refreshData()),
+          onTap: _showSavingsOptionsBottomSheet,
         ),
       ],
     );
