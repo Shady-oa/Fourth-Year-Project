@@ -135,7 +135,11 @@ class _HomePageState extends State<HomePage> {
   }
 
   // New method to expose transaction saving for SavingsScreen
-  Future<void> _onSavingsTransactionAdded(String title, double amount, String type) async {
+  Future<void> _onSavingsTransactionAdded(
+    String title,
+    double amount,
+    String type,
+  ) async {
     await _saveTransaction(title, amount, type);
     _refreshData(); // Refresh data to update UI immediately
   }
@@ -254,7 +258,7 @@ class _HomePageState extends State<HomePage> {
               final s = activeSavings[index];
               return ListTile(
                 title: Text(s.name),
-                subtitle: Text("Saved: Ksh ${s.savedAmount}"),
+                subtitle: Text("Balance: Ksh ${s.balance}"),
                 onTap: () {
                   Navigator.pop(context);
                   _showAmountDialog(
@@ -418,9 +422,15 @@ class _HomePageState extends State<HomePage> {
         mainAxisSize: MainAxisSize.min,
         children: [
           const SizedBox(height: 20),
-          Text("Savings Options", style: Theme.of(context).textTheme.titleLarge),
+          Text(
+            "Savings Options",
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
           ListTile(
-            leading: const Icon(Icons.account_balance_wallet, color: Colors.blue),
+            leading: const Icon(
+              Icons.account_balance_wallet,
+              color: Colors.blue,
+            ),
             title: const Text("Go to Savings Page"),
             onTap: () {
               Navigator.pop(context);
@@ -441,7 +451,11 @@ class _HomePageState extends State<HomePage> {
               Navigator.pop(context);
               if (_savings.isEmpty) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text("No saving goals created yet. Create one on the Savings page.")),
+                  const SnackBar(
+                    content: Text(
+                      "No saving goals created yet. Create one on the Savings page.",
+                    ),
+                  ),
                 );
               } else {
                 _showAddFundsToSavingGoalDialog();
@@ -469,7 +483,9 @@ class _HomePageState extends State<HomePage> {
               final s = activeSavings[index];
               return ListTile(
                 title: Text(s.name),
-                subtitle: Text("Current Balance: Ksh ${s.savedAmount.toStringAsFixed(2)}"),
+                subtitle: Text(
+                  "Current Balance: Ksh ${s.savedAmount.toStringAsFixed(2)}",
+                ),
                 onTap: () {
                   Navigator.pop(context); // Pop the goal selection dialog
                   _showAmountDialog(
@@ -502,6 +518,7 @@ class _HomePageState extends State<HomePage> {
       ),
     );
   }
+
   void _showAmountDialog({
     required String title,
     required Function(double) onConfirm,
@@ -572,7 +589,10 @@ class _HomePageState extends State<HomePage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(greetings(), style: Theme.of(context).textTheme.headlineSmall),
-            Text(username ?? 'Penny User', style: Theme.of(context).textTheme.bodyLarge),
+            Text(
+              username ?? 'Penny User',
+              style: Theme.of(context).textTheme.bodyLarge,
+            ),
           ],
         ),
         actions: [

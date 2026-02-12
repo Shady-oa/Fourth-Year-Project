@@ -13,10 +13,7 @@ int streakLevel = 1;
 String lastSaveDateStr = "";
 
 class SavingsScreen extends StatefulWidget {
-  const SavingsScreen({
-    super.key,
-    this.onTransactionAdded,
-  });
+  const SavingsScreen({super.key, this.onTransactionAdded});
 
   final Function(String title, double amount, String type)? onTransactionAdded;
 
@@ -876,6 +873,7 @@ class SavingsScreenState extends State<SavingsScreen> {
 class Saving {
   String name;
   double savedAmount; // Current funds
+
   double targetAmount; // Goal
   DateTime deadline; // Date goal
   bool achieved;
@@ -890,6 +888,8 @@ class Saving {
     this.iconCode,
   });
 
+  double get balance =>
+      targetAmount - savedAmount; // Remaining amount to reach goal
   Map<String, dynamic> toMap() {
     return {
       'name': name,
