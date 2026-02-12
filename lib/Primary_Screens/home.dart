@@ -11,6 +11,7 @@ import 'package:final_project/Constants/spacing.dart';
 // Import Screens
 import 'package:final_project/Primary_Screens/Budgets/budget.dart';
 import 'package:final_project/Primary_Screens/Savings/savings.dart';
+import 'package:final_project/SecondaryScreens/all_transactions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -39,8 +40,6 @@ class _HomePageState extends State<HomePage> {
     userSubscription = usersDB.doc(userUid).snapshots().listen((snapshots) {
       if (snapshots.exists) {
         final userData = snapshots.data() as Map<String, dynamic>;
-        // print('this is the userdata');
-        //  print(userData);
         setState(() {
           username = userData['username'] ?? '';
           profileImage = userData['profileUrl'] ?? '';
@@ -60,7 +59,14 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
+    loadData();
     _refreshData();
+  }
+
+  @override
+  void dispose() {
+    userSubscription?.cancel();
+    super.dispose();
   }
 
   // --- DATA PERSISTENCE ---
@@ -97,7 +103,8 @@ class _HomePageState extends State<HomePage> {
     for (var tx in _transactions) {
       if (tx['type'] == 'expense' ||
           tx['type'] == 'budget_expense' ||
-          tx['type'] == 'savings_deduction') {
+          tx['type'] == 'savings_deduction' ||
+          tx['type'] == 'saving_deposit') {
         expenses += double.tryParse(tx['amount'].toString()) ?? 0.0;
       }
     }
@@ -118,6 +125,8 @@ class _HomePageState extends State<HomePage> {
     };
     _transactions.insert(0, newTx);
     await prefs.setString(keyTransactions, json.encode(_transactions));
+    debugPrint('💾 Transaction saved: $title, $amount, $type');
+    debugPrint('📊 Total transactions: ${_transactions.length}');
     _calculateStats();
     setState(() {});
   }
@@ -134,14 +143,18 @@ class _HomePageState extends State<HomePage> {
     await prefs.setStringList(keySavings, data);
   }
 
-  // New method to expose transaction saving for SavingsScreen
+  // Method to expose transaction saving for SavingsScreen
   Future<void> _onSavingsTransactionAdded(
     String title,
     double amount,
     String type,
   ) async {
+    debugPrint(
+      '🔔 Callback received from SavingsScreen: $title, $amount, $type',
+    );
     await _saveTransaction(title, amount, type);
-    _refreshData(); // Refresh data to update UI immediately
+    await _refreshData(); // Refresh data to update UI immediately
+    debugPrint('✨ Home page refreshed');
   }
 
   // --- DIALOGS & LOGIC ---
@@ -240,7 +253,10 @@ class _HomePageState extends State<HomePage> {
     if (activeSavings.isEmpty) {
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => const SavingsScreen()),
+        MaterialPageRoute(
+          builder: (context) =>
+              SavingsScreen(onTransactionAdded: _onSavingsTransactionAdded),
+        ),
       ).then((_) => _refreshData());
       return;
     }
@@ -501,7 +517,6 @@ class _HomePageState extends State<HomePage> {
                         amt,
                         "saving_deposit",
                       );
-                      _refreshData(); // Refresh UI after adding funds
                     },
                   );
                 },
@@ -584,7 +599,6 @@ class _HomePageState extends State<HomePage> {
             ),
           ],
         ),
-
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -621,12 +635,30 @@ class _HomePageState extends State<HomePage> {
                     sizedBoxHeightSmall,
                     _buildQuickActions(),
                     sizedBoxHeightLarge,
-                    const Text(
-                      'Recent Transactions',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Recent Transactions',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        if (_transactions.isNotEmpty)
+                          TextButton(
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      const AllTransactionsPage(),
+                                ),
+                              );
+                            },
+                            child: const Text('View All'),
+                          ),
+                      ],
                     ),
                     _buildRecentTransactions(),
                   ],
@@ -707,12 +739,14 @@ class _HomePageState extends State<HomePage> {
           onTap: _showSmartExpenseDialog,
         ),
         QuickActionCard(
-          icon: Icons.account_balance,
-          label: 'Budgets',
+          icon: Icons.receipt_long,
+          label: 'All Trans.',
           onTap: () => Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => const BudgetScreen()),
-          ).then((_) => _refreshData()),
+            MaterialPageRoute(
+              builder: (context) => const AllTransactionsPage(),
+            ),
+          ),
         ),
         QuickActionCard(
           icon: Icons.savings,
@@ -735,37 +769,138 @@ class _HomePageState extends State<HomePage> {
         ),
       );
     }
+
+    // Show only first 8 transactions
+    final displayTransactions = _transactions.length > 8
+        ? _transactions.sublist(0, 8)
+        : _transactions;
+
     return ListView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      itemCount: _transactions.length > 10 ? 10 : _transactions.length,
+      itemCount: displayTransactions.length,
       itemBuilder: (context, index) {
-        final tx = _transactions[index];
-        final isIncome = tx['type'] == 'income';
-        final date = DateTime.parse(tx['date']);
-
-        return ListTile(
-          contentPadding: EdgeInsets.zero,
-          leading: CircleAvatar(
-            backgroundColor: isIncome
-                ? Colors.green.withOpacity(0.1)
-                : Colors.red.withOpacity(0.1),
-            child: Icon(
-              isIncome ? Icons.add : Icons.remove,
-              color: isIncome ? Colors.green : Colors.red,
-            ),
-          ),
-          title: Text(tx['title'] ?? "Unknown"),
-          subtitle: Text(DateFormat('dd MMM, hh:mm a').format(date)),
-          trailing: Text(
-            "${isIncome ? '+' : '-'} Ksh ${tx['amount']}",
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              color: isIncome ? Colors.green : Colors.red,
-            ),
-          ),
-        );
+        final tx = displayTransactions[index];
+        return _buildTransactionCard(tx);
       },
     );
+  }
+
+  Widget _buildTransactionCard(Map<String, dynamic> tx) {
+    final theme = Theme.of(context);
+    final isIncome = tx['type'] == 'income';
+    final date = DateTime.parse(tx['date']);
+    final time = DateFormat('hh:mm a').format(date);
+    final amount = double.tryParse(tx['amount'].toString()) ?? 0.0;
+
+    // Get icon based on transaction type
+    IconData txIcon;
+    Color iconBgColor;
+
+    switch (tx['type']) {
+      case 'income':
+        txIcon = Icons.arrow_downward;
+        iconBgColor = Colors.green;
+        break;
+      case 'budget_expense':
+        txIcon = Icons.receipt_long;
+        iconBgColor = Colors.orange;
+        break;
+      case 'savings_deduction':
+      case 'saving_deposit':
+        txIcon = Icons.savings;
+        iconBgColor = Colors.blue;
+        break;
+      default:
+        txIcon = Icons.shopping_cart;
+        iconBgColor = Colors.red;
+    }
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade200, width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+        leading: Container(
+          width: 48,
+          height: 48,
+          decoration: BoxDecoration(
+            color: iconBgColor.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(txIcon, color: iconBgColor, size: 24),
+        ),
+        title: Text(
+          tx['title'] ?? "Unknown",
+          style: theme.textTheme.bodyLarge?.copyWith(
+            fontWeight: FontWeight.w600,
+          ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        subtitle: Row(
+          children: [
+            Icon(Icons.access_time, size: 12, color: Colors.grey.shade600),
+            const SizedBox(width: 4),
+            Text(
+              time,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: Colors.grey.shade600,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: iconBgColor.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(
+                _getTypeLabel(tx['type']),
+                style: TextStyle(
+                  fontSize: 10,
+                  color: iconBgColor,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        ),
+        trailing: Text(
+          "${isIncome ? '+' : '-'} Ksh ${amount.toStringAsFixed(0)}",
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+            color: isIncome ? Colors.green : Colors.red,
+          ),
+        ),
+      ),
+    );
+  }
+
+  String _getTypeLabel(String type) {
+    switch (type) {
+      case 'income':
+        return 'Income';
+      case 'budget_expense':
+        return 'Budget';
+      case 'savings_deduction':
+      case 'saving_deposit':
+        return 'Savings';
+      case 'expense':
+        return 'Expense';
+      default:
+        return 'Other';
+    }
   }
 }
