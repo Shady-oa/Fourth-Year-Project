@@ -218,7 +218,7 @@ class _HomePageState extends State<HomePage> {
           const SizedBox(height: 20),
           Text("Expense for?", style: Theme.of(context).textTheme.titleLarge),
           ListTile(
-            leading: const Icon(Icons.savings, color: Colors.green),
+            leading: const Icon(Icons.savings, color: brandGreen),
             title: const Text("Savings Goal"),
             onTap: () {
               Navigator.pop(context);
@@ -236,7 +236,7 @@ class _HomePageState extends State<HomePage> {
           ListTile(
             leading: const Icon(
               Icons.arrow_circle_up_rounded,
-              color: Colors.blue,
+              color: errorColor,
             ),
             title: const Text("Other Expense"),
             onTap: () {
@@ -744,7 +744,7 @@ class _HomePageState extends State<HomePage> {
 
     switch (tx['type']) {
       case 'income':
-        txIcon = Icons.arrow_circle_up_rounded;
+        txIcon = Icons.arrow_circle_down_rounded;
         iconBgColor = accentColor;
         break;
       case 'budget_expense':
@@ -757,8 +757,8 @@ class _HomePageState extends State<HomePage> {
         iconBgColor = brandGreen;
         break;
       default:
-        txIcon = Icons.shopping_cart;
-        iconBgColor = Colors.red;
+        txIcon = Icons.arrow_circle_up_outlined;
+        iconBgColor = errorColor;
     }
 
     return Container(
@@ -786,7 +786,7 @@ class _HomePageState extends State<HomePage> {
             color: iconBgColor.withOpacity(0.1),
             borderRadius: BorderRadius.circular(100),
           ),
-          child: Icon(txIcon, color: iconBgColor, size: 24),
+          child: Icon(txIcon, color: iconBgColor, size: 30),
         ),
         title: Text(
           tx['title'] ?? "Unknown",
@@ -798,15 +798,25 @@ class _HomePageState extends State<HomePage> {
         ),
         subtitle: Row(
           children: [
-            Icon(Icons.access_time, size: 12, color: Colors.grey.shade600),
+            Icon(
+              Icons.access_time,
+              size: 12,
+              color: Theme.of(context).colorScheme.onSurface.withAlpha(80),
+            ),
             const SizedBox(width: 4),
             Text(
               time,
               style: theme.textTheme.bodySmall?.copyWith(
-                color: Colors.grey.shade600,
+                color: Theme.of(context).colorScheme.onSurface.withAlpha(80),
               ),
             ),
             const SizedBox(width: 12),
+          ],
+        ),
+        trailing: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
               decoration: BoxDecoration(
@@ -815,21 +825,19 @@ class _HomePageState extends State<HomePage> {
               ),
               child: Text(
                 _getTypeLabel(tx['type']),
-                style: TextStyle(
-                  fontSize: 10,
-                  color: iconBgColor,
-                  fontWeight: FontWeight.w600,
-                ),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(color: iconBgColor),
+              ),
+            ),
+            Text(
+              "${isIncome ? '+' : '-'} Ksh ${amount.toStringAsFixed(0)}",
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: isIncome ? brandGreen : errorColor,
+                fontWeight: FontWeight.bold,
               ),
             ),
           ],
-        ),
-        trailing: Text(
-          "${isIncome ? '+' : '-'} Ksh ${amount.toStringAsFixed(0)}",
-          style: theme.textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: isIncome ? Colors.green : Colors.red,
-          ),
         ),
       ),
     );

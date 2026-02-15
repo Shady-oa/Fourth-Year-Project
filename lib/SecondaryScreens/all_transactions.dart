@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'package:final_project/Constants/colors.dart';
+import 'package:final_project/Constants/spacing.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -132,10 +134,14 @@ class _AllTransactionsPageState extends State<AllTransactionsPage> {
                                   ),
                                   child: Text(
                                     _getDateLabel(dateKey),
-                                    style: theme.textTheme.titleSmall?.copyWith(
-                                      color: Colors.grey.shade600,
-                                      fontWeight: FontWeight.w600,
-                                    ),
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodyMedium
+                                        ?.copyWith(
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.onSurface.withAlpha(80),
+                                        ),
                                   ),
                                 ),
 
@@ -169,7 +175,7 @@ class _AllTransactionsPageState extends State<AllTransactionsPage> {
           border: Border.all(
             color: isSelected
                 ? theme.colorScheme.primary
-                : Colors.grey.shade300,
+                : Theme.of(context).colorScheme.onSurface.withAlpha(80),
             width: 1.5,
           ),
         ),
@@ -212,7 +218,7 @@ class _AllTransactionsPageState extends State<AllTransactionsPage> {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: radiusSmall,
         boxShadow: [
           BoxShadow(
             color: theme.colorScheme.primary.withOpacity(0.3),
@@ -227,15 +233,15 @@ class _AllTransactionsPageState extends State<AllTransactionsPage> {
           _buildSummaryStat(
             'Income',
             totalIncome,
-            Icons.arrow_downward,
-            Colors.green.shade300,
+            Icons.arrow_circle_down_rounded,
+            theme.colorScheme.onSurface,
           ),
           Container(height: 40, width: 1, color: Colors.white.withOpacity(0.3)),
           _buildSummaryStat(
             'Expenses',
             totalExpense,
-            Icons.arrow_upward,
-            Colors.red.shade300,
+            Icons.arrow_circle_up_rounded,
+            theme.colorScheme.onSurface,
           ),
         ],
       ),
@@ -249,6 +255,7 @@ class _AllTransactionsPageState extends State<AllTransactionsPage> {
     Color color,
   ) {
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           children: [
@@ -256,17 +263,17 @@ class _AllTransactionsPageState extends State<AllTransactionsPage> {
             const SizedBox(width: 4),
             Text(
               label,
-              style: const TextStyle(color: Colors.white70, fontSize: 12),
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
             ),
           ],
         ),
         const SizedBox(height: 4),
         Text(
           'Ksh ${amount.toStringAsFixed(0)}',
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
+          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+            color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
       ],
@@ -285,21 +292,21 @@ class _AllTransactionsPageState extends State<AllTransactionsPage> {
 
     switch (tx['type']) {
       case 'income':
-        txIcon = Icons.arrow_downward;
-        iconBgColor = Colors.green;
+        txIcon = Icons.arrow_circle_down_rounded;
+        iconBgColor = accentColor;
         break;
       case 'budget_expense':
-        txIcon = Icons.receipt_long;
+        txIcon = Icons.receipt_rounded;
         iconBgColor = Colors.orange;
         break;
       case 'savings_deduction':
       case 'saving_deposit':
         txIcon = Icons.savings;
-        iconBgColor = Colors.blue;
+        iconBgColor = brandGreen;
         break;
       default:
-        txIcon = Icons.shopping_cart;
-        iconBgColor = Colors.red;
+        txIcon = Icons.arrow_circle_up_outlined;
+        iconBgColor = errorColor;
     }
 
     return Container(
@@ -323,9 +330,9 @@ class _AllTransactionsPageState extends State<AllTransactionsPage> {
           height: 48,
           decoration: BoxDecoration(
             color: iconBgColor.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(100),
           ),
-          child: Icon(txIcon, color: iconBgColor, size: 24),
+          child: Icon(txIcon, color: iconBgColor, size: 30),
         ),
         title: Text(
           tx['title'] ?? "Unknown",
@@ -337,15 +344,25 @@ class _AllTransactionsPageState extends State<AllTransactionsPage> {
         ),
         subtitle: Row(
           children: [
-            Icon(Icons.access_time, size: 12, color: Colors.grey.shade600),
+            Icon(
+              Icons.access_time,
+              size: 12,
+              color: Theme.of(context).colorScheme.onSurface.withAlpha(80),
+            ),
             const SizedBox(width: 4),
             Text(
               time,
               style: theme.textTheme.bodySmall?.copyWith(
-                color: Colors.grey.shade600,
+                color: Theme.of(context).colorScheme.onSurface.withAlpha(80),
               ),
             ),
             const SizedBox(width: 12),
+          ],
+        ),
+        trailing: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
               decoration: BoxDecoration(
@@ -354,21 +371,19 @@ class _AllTransactionsPageState extends State<AllTransactionsPage> {
               ),
               child: Text(
                 _getTypeLabel(tx['type']),
-                style: TextStyle(
-                  fontSize: 10,
-                  color: iconBgColor,
-                  fontWeight: FontWeight.w600,
-                ),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(color: iconBgColor),
+              ),
+            ),
+            Text(
+              "${isIncome ? '+' : '-'} Ksh ${amount.toStringAsFixed(0)}",
+              style: theme.textTheme.bodyLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: isIncome ? brandGreen : errorColor,
               ),
             ),
           ],
-        ),
-        trailing: Text(
-          "${isIncome ? '+' : '-'} Ksh ${amount.toStringAsFixed(0)}",
-          style: theme.textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: isIncome ? Colors.green : Colors.red,
-          ),
         ),
       ),
     );
