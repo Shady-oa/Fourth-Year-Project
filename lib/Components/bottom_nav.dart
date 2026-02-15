@@ -16,8 +16,8 @@ class _BottomNavState extends State<BottomNav> {
   int currentIndex = 0;
   List pages = [
     const HomePage(),
-    const BudgetScreen(),
-    const SavingsScreen(),
+    const BudgetPage(),
+    const SavingsPage(),
     const AiPage(),
     const Profile(),
   ];

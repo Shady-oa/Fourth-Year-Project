@@ -11,20 +11,19 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-// Helper to capitalize first letter
-extension StringExtension on String {
-  String toCapitalized() =>
-      length > 0 ? '${this[0].toUpperCase()}${substring(1)}' : '';
-}
+class BudgetPage extends StatefulWidget {
+  const BudgetPage({super.key, this.onTransactionAdded, this.onExpenseDeleted});
 
-class BudgetScreen extends StatefulWidget {
-  const BudgetScreen({super.key});
+  final Function(String title, double amount, String type)? onTransactionAdded;
+  final Function(String title, double amount)? onExpenseDeleted;
 
   @override
-  State<BudgetScreen> createState() => BudgetScreenState();
+  State<BudgetPage> createState() => BudgetPageState();
 }
 
-class BudgetScreenState extends State<BudgetScreen> {
+class BudgetPageState extends State<BudgetPage> {
+  static const String keyBudgets = 'budgets';
+  
   List<Budget> budgets = [];
   bool isLoading = true;
   String userUid = FirebaseAuth.instance.currentUser!.uid;
@@ -53,29 +52,17 @@ class BudgetScreenState extends State<BudgetScreen> {
             'bAmount': bAmount,
             'usedAmount': '0',
           });
-      showCustomToast(
-        context: context,
-        message: 'Budget Added Successfully!',
-        backgroundColor: Colors.green,
-        icon: Icons.check_circle_outline,
-      );
+      showCustomToast(context: context, message: 'Budget Added Successfully!', backgroundColor: Colors.green, icon: Icons.check_circle_outline);
     } catch (e) {
-      showCustomToast(
-        context: context,
-        message: 'An error occured try again',
-        backgroundColor: Colors.red,
-        icon: Icons.error_outline,
-      );
+      showCustomToast(context: context, message: 'An error occured try again', backgroundColor: Colors.red, icon: Icons.error_outline);
     }
   }
 
   Future<void> loadBudgets() async {
     final prefs = await SharedPreferences.getInstance();
-    final budgetStrings = prefs.getStringList('budgets') ?? [];
+    final budgetStrings = prefs.getStringList(keyBudgets) ?? [];
     setState(() {
-      budgets = budgetStrings
-          .map((s) => Budget.fromMap(json.decode(s)))
-          .toList();
+      budgets = budgetStrings.map((s) => Budget.fromMap(json.decode(s))).toList();
       isLoading = false;
     });
   }
@@ -83,14 +70,28 @@ class BudgetScreenState extends State<BudgetScreen> {
   Future<void> saveBudgets() async {
     final prefs = await SharedPreferences.getInstance();
     final data = budgets.map((b) => json.encode(b.toMap())).toList();
-    await prefs.setStringList('budgets', data);
+    await prefs.setStringList(keyBudgets, data);
+  }
+
+  Future<void> sendNotification(String title, String message) async {
+    try {
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(userUid)
+          .collection('notifications')
+          .add({
+        'title': title,
+        'message': message,
+        'createdAt': FieldValue.serverTimestamp(),
+        'isRead': false,
+      });
+    } catch (e) {
+      debugPrint('Error sending notification: $e');
+    }
   }
 
   String formatCurrency(double amount) {
-    return NumberFormat.currency(
-      symbol: 'Ksh ',
-      decimalDigits: 0,
-    ).format(amount);
+    return NumberFormat.currency(symbol: 'Ksh ', decimalDigits: 0).format(amount);
   }
 
   @override
@@ -104,39 +105,31 @@ class BudgetScreenState extends State<BudgetScreen> {
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
           : budgets.isEmpty
-          ? buildEmptyState(Theme.of(context))
-          : Column(
-              children: [
-                Expanded(
-                  child: ListView.builder(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: budgets.length,
-                    itemBuilder: (context, index) =>
-                        buildBudgetCard(budgets[index]),
-                  ),
+              ? buildEmptyState(Theme.of(context))
+              : Column(
+                  children: [
+                    Expanded(
+                      child: ListView.builder(
+                        padding: const EdgeInsets.all(16),
+                        itemCount: budgets.length,
+                        itemBuilder: (context, index) => buildBudgetCard(budgets[index]),
+                      ),
+                    ),
+                    buildAddFab(Theme.of(context)),
+                  ],
                 ),
-                _buildAddFab(Theme.of(context)),
-              ],
-            ),
     );
   }
 
   Widget buildBudgetCard(Budget budget) {
-    double totalSpent = budget.expenses.fold(
-      0,
-      (sum, item) => sum + item.amount,
-    );
+    double totalSpent = budget.expenses.fold(0, (sum, item) => sum + item.amount);
     double remaining = budget.total - totalSpent;
     bool isOver = remaining < 0;
 
     return Container(
       decoration: BoxDecoration(
         border: Border.symmetric(
-          horizontal: BorderSide(
-            color: Theme.of(
-              context,
-            ).colorScheme.onSurface.withAlpha((255 * 0.5).round()),
-          ),
+          horizontal: BorderSide(color: Theme.of(context).colorScheme.onSurface.withAlpha((255 * 0.5).round())),
         ),
       ),
       child: InkWell(
@@ -144,8 +137,12 @@ class BudgetScreenState extends State<BudgetScreen> {
         onTap: () => Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) =>
-                BudgetDetailScreen(budget: budget, onUpdate: saveBudgets),
+            builder: (context) => BudgetDetailPage(
+              budget: budget,
+              onUpdate: saveBudgets,
+              onTransactionAdded: widget.onTransactionAdded,
+              onExpenseDeleted: widget.onExpenseDeleted,
+            ),
           ),
         ).then((_) => setState(() {})),
         child: Padding(
@@ -156,45 +153,25 @@ class BudgetScreenState extends State<BudgetScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    budget.name.toCapitalized(),
-                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurface,
-                    ),
-                  ),
-                  _buildPopupMenu(budget),
+                  Text(budget.name.toCapitalized(), style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: Theme.of(context).colorScheme.onSurface)),
+                  buildPopupMenu(budget),
                 ],
               ),
-
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
+                  Text(formatCurrency(budget.total), style: const TextStyle(color: accentColor, fontWeight: FontWeight.w600)),
                   Text(
-                    formatCurrency(budget.total),
-                    style: const TextStyle(
-                      color: accentColor,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  Text(
-                    isOver
-                        ? "Overspent by ${formatCurrency(remaining.abs())}"
-                        : "Left: ${formatCurrency(remaining)}",
-                    style: TextStyle(
-                      color: isOver ? errorColor : brandGreen,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    isOver ? "Overspent by ${formatCurrency(remaining.abs())}" : "Left: ${formatCurrency(remaining)}",
+                    style: TextStyle(color: isOver ? errorColor : brandGreen, fontWeight: FontWeight.bold),
                   ),
                 ],
               ),
-
               ClipRRect(
                 borderRadius: BorderRadius.circular(4),
                 child: LinearProgressIndicator(
                   value: (totalSpent / budget.total).clamp(0.0, 1.0),
-                  backgroundColor: Theme.of(
-                    context,
-                  ).colorScheme.onSurface.withAlpha((255 * 0.1).round()),
+                  backgroundColor: Theme.of(context).colorScheme.onSurface.withAlpha((255 * 0.1).round()),
                   color: isOver ? errorColor : accentColor,
                   minHeight: 6,
                 ),
@@ -206,7 +183,7 @@ class BudgetScreenState extends State<BudgetScreen> {
     );
   }
 
-  Widget _buildPopupMenu(Budget budget) {
+  Widget buildPopupMenu(Budget budget) {
     return PopupMenuButton(
       icon: const Icon(Icons.more_vert, size: 20),
       onSelected: (val) {
@@ -214,19 +191,17 @@ class BudgetScreenState extends State<BudgetScreen> {
         if (val == 'delete') {
           setState(() => budgets.remove(budget));
           saveBudgets();
+          sendNotification('🗑️ Budget Deleted', 'Your ${budget.name} budget has been deleted. Note: Expenses from this budget are still in your transactions.');
         }
       },
       itemBuilder: (context) => [
         const PopupMenuItem(value: 'edit', child: Text("Edit Name/Amount")),
-        const PopupMenuItem(
-          value: 'delete',
-          child: Text("Delete", style: TextStyle(color: errorColor)),
-        ),
+        const PopupMenuItem(value: 'delete', child: Text("Delete", style: TextStyle(color: errorColor))),
       ],
     );
   }
 
-  Widget _buildAddFab(dynamic theme) {
+  Widget buildAddFab(dynamic theme) {
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: GestureDetector(
@@ -234,17 +209,11 @@ class BudgetScreenState extends State<BudgetScreen> {
         child: Container(
           width: double.infinity,
           padding: const EdgeInsets.symmetric(vertical: 16),
-          decoration: BoxDecoration(
-            color: theme.colorScheme.primary,
-            borderRadius: BorderRadius.circular(12),
-          ),
+          decoration: BoxDecoration(color: theme.colorScheme.primary, borderRadius: BorderRadius.circular(12)),
           child: Text(
             'Add another Budget',
             textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-              color: theme.colorScheme.onPrimary,
-              fontWeight: FontWeight.bold,
-            ),
+            style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: theme.colorScheme.onPrimary, fontWeight: FontWeight.bold),
           ),
         ),
       ),
@@ -253,49 +222,26 @@ class BudgetScreenState extends State<BudgetScreen> {
 
   void showAddBudgetDialog({Budget? budget}) {
     final nameCtrl = TextEditingController(text: budget?.name ?? "");
-    final amountCtrl = TextEditingController(
-      text: budget?.total.toString() ?? "",
-    );
+    final amountCtrl = TextEditingController(text: budget?.total.toString() ?? "");
 
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       builder: (context) => Padding(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).viewInsets.bottom,
-          left: 20,
-          right: 20,
-          top: 20,
-        ),
+        padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom, left: 20, right: 20, top: 20),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              budget == null ? "New Budget" : "Edit Budget",
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            TextField(
-              controller: nameCtrl,
-              textCapitalization: TextCapitalization.words,
-              decoration: const InputDecoration(labelText: "Name"),
-            ),
-            TextField(
-              controller: amountCtrl,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(labelText: "Amount (Ksh)"),
-            ),
+            Text(budget == null ? "New Budget" : "Edit Budget", style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            TextField(controller: nameCtrl, textCapitalization: TextCapitalization.words, decoration: const InputDecoration(labelText: "Name")),
+            TextField(controller: amountCtrl, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: "Amount (Ksh)")),
             const SizedBox(height: 20),
             ElevatedButton(
               onPressed: () {
                 if (nameCtrl.text.isNotEmpty) {
                   setState(() {
                     if (budget == null) {
-                      budgets.add(
-                        Budget(
-                          name: nameCtrl.text.trim(),
-                          total: double.tryParse(amountCtrl.text) ?? 0,
-                        ),
-                      );
+                      budgets.add(Budget(name: nameCtrl.text.trim(), total: double.tryParse(amountCtrl.text) ?? 0));
                     } else {
                       budget.name = nameCtrl.text.trim();
                       budget.total = double.tryParse(amountCtrl.text) ?? 0;
@@ -322,43 +268,18 @@ class BudgetScreenState extends State<BudgetScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.receipt_rounded,
-              size: 80,
-              color: Theme.of(
-                context,
-              ).colorScheme.onSurface.withAlpha((255 * 0.3).round()),
-            ),
+            Icon(Icons.receipt_rounded, size: 80, color: Theme.of(context).colorScheme.onSurface.withAlpha((255 * 0.3).round())),
             Text('No Budgets Yet', style: theme.textTheme.headlineSmall),
             const SizedBox(height: 8),
-            Text(
-              'Create a budget to start your journey.',
-              textAlign: TextAlign.center,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: Theme.of(
-                  context,
-                ).colorScheme.onSurface.withAlpha((255 * 0.6).round()),
-              ),
-            ),
-
+            Text('Create a budget to start your journey.', textAlign: TextAlign.center, style: theme.textTheme.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.onSurface.withAlpha((255 * 0.6).round()))),
             const SizedBox(height: 18),
             GestureDetector(
               onTap: () => showAddBudgetDialog(),
               child: Container(
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(vertical: 16),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.primary,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  'Create Budget',
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    color: theme.colorScheme.onPrimary,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
+                decoration: BoxDecoration(color: theme.colorScheme.primary, borderRadius: BorderRadius.circular(12)),
+                child: Text('Create Budget', textAlign: TextAlign.center, style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: theme.colorScheme.onPrimary, fontWeight: FontWeight.bold)),
               ),
             ),
           ],
@@ -368,35 +289,3 @@ class BudgetScreenState extends State<BudgetScreen> {
   }
 }
 
-// -------------------- MODELS --------------------
-class Budget {
-  String name;
-  double total;
-  List<Expense> expenses;
-
-  Budget({required this.name, required this.total, List<Expense>? expenses})
-    : expenses = expenses ?? [];
-
-  Map<String, dynamic> toMap() => {
-    'name': name,
-    'total': total,
-    'expenses': expenses.map((e) => e.toMap()).toList(),
-  };
-
-  factory Budget.fromMap(Map<String, dynamic> map) => Budget(
-    name: map['name'],
-    total: (map['total'] as num).toDouble(),
-    expenses:
-        (map['expenses'] as List?)?.map((e) => Expense.fromMap(e)).toList() ??
-        [],
-  );
-}
-
-class Expense {
-  String name;
-  double amount;
-  Expense({required this.name, required this.amount});
-  Map<String, dynamic> toMap() => {'name': name, 'amount': amount};
-  factory Expense.fromMap(Map<String, dynamic> map) =>
-      Expense(name: map['name'], amount: (map['amount'] as num).toDouble());
-}

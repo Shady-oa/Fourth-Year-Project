@@ -18,7 +18,7 @@ class NotificationIcon extends StatelessWidget {
       onPressed: () {
         Navigator.of(context).push(
           MaterialPageRoute(
-            builder: (context) => NotificationInbox(userId: userId),
+            builder: (context) => NotificationsPage(userId: userId),
           ),
         );
       },

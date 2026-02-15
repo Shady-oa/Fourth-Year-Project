@@ -5,10 +5,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:final_project/Components/notification_icon.dart';
 import 'package:final_project/Components/quick_actions.dart';
 import 'package:final_project/Components/them_toggle.dart';
-// Import project constants and components
 import 'package:final_project/Constants/colors.dart';
 import 'package:final_project/Constants/spacing.dart';
-// Import Screens
 import 'package:final_project/Primary_Screens/Budgets/budget.dart';
 import 'package:final_project/Primary_Screens/Savings/savings.dart';
 import 'package:final_project/SecondaryScreens/all_transactions.dart';
@@ -25,18 +23,41 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  // Persistence Keys
-  static const String keyTransactions = 'recent_transactions';
+  static const String keyTransactions = 'transactions';
   static const String keyBudgets = 'budgets';
   static const String keySavings = 'savings';
   static const String keyTotalIncome = 'total_income';
+  static const String keyStreakCount = 'streak_count';
+  static const String keyLastSaveDate = 'last_save_date';
+
   final userUid = FirebaseAuth.instance.currentUser!.uid;
   final usersDB = FirebaseFirestore.instance.collection('users');
   String? username;
   String? profileImage;
   StreamSubscription? userSubscription;
 
-  void loadData() async {
+  List<Map<String, dynamic>> transactions = [];
+  List<Budget> budgets = [];
+  List<Saving> savings = [];
+
+  double totalIncome = 0.0;
+  double totalExpenses = 0.0;
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    loadUserData();
+    refreshData();
+  }
+
+  @override
+  void dispose() {
+    userSubscription?.cancel();
+    super.dispose();
+  }
+
+  void loadUserData() async {
     userSubscription = usersDB.doc(userUid).snapshots().listen((snapshots) {
       if (snapshots.exists) {
         final userData = snapshots.data() as Map<String, dynamic>;
@@ -48,59 +69,32 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
-  List<Map<String, dynamic>> _transactions = [];
-  List<Budget> _budgets = [];
-  List<Saving> _savings = [];
-
-  double _totalIncome = 0.0;
-  double _totalExpenses = 0.0;
-  bool _isLoading = true;
-
-  @override
-  void initState() {
-    super.initState();
-    loadData();
-    _refreshData();
-  }
-
-  @override
-  void dispose() {
-    userSubscription?.cancel();
-    super.dispose();
-  }
-
-  // --- DATA PERSISTENCE ---
-
-  Future<void> _refreshData() async {
-    setState(() => _isLoading = true);
+  Future<void> refreshData() async {
+    setState(() => isLoading = true);
     final prefs = await SharedPreferences.getInstance();
 
-    // Load Transactions
     final txString = prefs.getString(keyTransactions) ?? '[]';
-    _transactions = List<Map<String, dynamic>>.from(json.decode(txString));
+    transactions = List<Map<String, dynamic>>.from(json.decode(txString));
 
-    // Load Budgets
     final budgetStrings = prefs.getStringList(keyBudgets) ?? [];
-    _budgets = budgetStrings
-        .map((s) => Budget.fromMap(json.decode(s)))
-        .toList();
+    budgets = budgetStrings.map((s) => Budget.fromMap(json.decode(s))).toList();
 
-    // Load Savings
     final savingsStrings = prefs.getStringList(keySavings) ?? [];
-    _savings = savingsStrings
+    savings = savingsStrings
         .map((s) => Saving.fromMap(json.decode(s)))
         .toList();
 
-    // Load Income
-    _totalIncome = prefs.getDouble(keyTotalIncome) ?? 0.0;
+    totalIncome = prefs.getDouble(keyTotalIncome) ?? 0.0;
 
-    _calculateStats();
-    setState(() => _isLoading = false);
+    checkSavingsDeadlines();
+    checkBudgetLimits();
+    calculateStats();
+    setState(() => isLoading = false);
   }
 
-  void _calculateStats() {
+  void calculateStats() {
     double expenses = 0.0;
-    for (var tx in _transactions) {
+    for (var tx in transactions) {
       if (tx['type'] == 'expense' ||
           tx['type'] == 'budget_expense' ||
           tx['type'] == 'savings_deduction' ||
@@ -108,14 +102,10 @@ class _HomePageState extends State<HomePage> {
         expenses += double.tryParse(tx['amount'].toString()) ?? 0.0;
       }
     }
-    _totalExpenses = expenses;
+    totalExpenses = expenses;
   }
 
-  Future<void> _saveTransaction(
-    String title,
-    double amount,
-    String type,
-  ) async {
+  Future<void> saveTransaction(String title, double amount, String type) async {
     final prefs = await SharedPreferences.getInstance();
     final newTx = {
       'title': title,
@@ -123,19 +113,14 @@ class _HomePageState extends State<HomePage> {
       'type': type,
       'date': DateTime.now().toIso8601String(),
     };
-    _transactions.insert(0, newTx);
-    await prefs.setString(keyTransactions, json.encode(_transactions));
-    debugPrint('💾 Transaction saved: $title, $amount, $type');
-    debugPrint('📊 Total transactions: ${_transactions.length}');
-    _calculateStats();
+    transactions.insert(0, newTx);
+    await prefs.setString(keyTransactions, json.encode(transactions));
+    calculateStats();
     setState(() {});
-
-    // Show informative toast
-    _showTransactionToast(type, amount);
+    showTransactionToast(type, amount);
   }
 
-  // NEW: Show toast notification after adding transaction
-  void _showTransactionToast(String type, double amount) {
+  void showTransactionToast(String type, double amount) {
     final isIncome = type == 'income';
     final icon = isIncome ? '💰' : '💸';
     final action = isIncome ? 'Income Added' : 'Expense Recorded';
@@ -181,13 +166,11 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // NEW: Delete transaction method
-  Future<void> _deleteTransaction(int index) async {
-    final tx = _transactions[index];
+  Future<void> deleteTransaction(int index) async {
+    final tx = transactions[index];
     final amount = double.tryParse(tx['amount'].toString()) ?? 0.0;
     final type = tx['type'];
 
-    // Show confirmation dialog
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -251,26 +234,18 @@ class _HomePageState extends State<HomePage> {
     );
 
     if (confirmed == true) {
-      // Remove transaction from list
-      _transactions.removeAt(index);
-
-      // Update SharedPreferences
+      transactions.removeAt(index);
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(keyTransactions, json.encode(_transactions));
+      await prefs.setString(keyTransactions, json.encode(transactions));
 
-      // Update total income if it was an income transaction
       if (type == 'income') {
-        _totalIncome -= amount;
-        await prefs.setDouble(keyTotalIncome, _totalIncome);
+        totalIncome -= amount;
+        await prefs.setDouble(keyTotalIncome, totalIncome);
       }
 
-      // Recalculate statistics
-      _calculateStats();
-
-      // Update UI
+      calculateStats();
       setState(() {});
 
-      // Show success message
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -281,40 +256,137 @@ class _HomePageState extends State<HomePage> {
           ),
         );
       }
-
-      debugPrint('🗑️ Transaction deleted: ${tx['title']}');
     }
   }
 
-  Future<void> _syncBudgets() async {
+  Future<void> syncBudgets() async {
     final prefs = await SharedPreferences.getInstance();
-    final data = _budgets.map((b) => json.encode(b.toMap())).toList();
+    final data = budgets.map((b) => json.encode(b.toMap())).toList();
     await prefs.setStringList(keyBudgets, data);
   }
 
-  Future<void> _syncSavings() async {
+  Future<void> syncSavings() async {
     final prefs = await SharedPreferences.getInstance();
-    final data = _savings.map((s) => json.encode(s.toMap())).toList();
+    final data = savings.map((s) => json.encode(s.toMap())).toList();
     await prefs.setStringList(keySavings, data);
   }
 
-  // Method to expose transaction saving for SavingsScreen
-  Future<void> _onSavingsTransactionAdded(
+  Future<void> onSavingsTransactionAdded(
     String title,
     double amount,
     String type,
   ) async {
-    debugPrint(
-      '🔔 Callback received from SavingsScreen: $title, $amount, $type',
-    );
-    await _saveTransaction(title, amount, type);
-    await _refreshData(); // Refresh data to update UI immediately
-    debugPrint('✨ Home page refreshed');
+    await saveTransaction(title, amount, type);
+    await updateStreak();
+    await refreshData();
   }
 
-  // --- DIALOGS & LOGIC ---
+  Future<void> onBudgetTransactionAdded(
+    String title,
+    double amount,
+    String type,
+  ) async {
+    await saveTransaction(title, amount, type);
+    await refreshData();
+  }
 
-  void _showAddIncomeDialog() {
+  Future<void> onBudgetExpenseDeleted(String title, double amount) async {
+    transactions.removeWhere(
+      (tx) =>
+          tx['title'] == title &&
+          double.tryParse(tx['amount'].toString()) == amount &&
+          tx['type'] == 'budget_expense',
+    );
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(keyTransactions, json.encode(transactions));
+    await refreshData();
+  }
+
+  Future<void> updateStreak() async {
+    final prefs = await SharedPreferences.getInstance();
+    final now = DateTime.now();
+    final todayStr = DateFormat('yyyy-MM-dd').format(now);
+
+    int streakCount = prefs.getInt(keyStreakCount) ?? 0;
+    String lastSaveDateStr = prefs.getString(keyLastSaveDate) ?? "";
+
+    if (lastSaveDateStr == todayStr) return;
+
+    if (lastSaveDateStr.isNotEmpty) {
+      final lastDate = DateFormat('yyyy-MM-dd').parse(lastSaveDateStr);
+      final difference = now.difference(lastDate).inDays;
+
+      if (difference == 1) {
+        streakCount++;
+      } else {
+        streakCount = 1;
+      }
+    } else {
+      streakCount = 1;
+    }
+
+    await prefs.setInt(keyStreakCount, streakCount);
+    await prefs.setString(keyLastSaveDate, todayStr);
+
+    if (streakCount % 7 == 0) {
+      sendNotification(
+        '🔥 Streak Milestone!',
+        'Amazing! You\'ve maintained a $streakCount day savings streak!',
+      );
+    }
+  }
+
+  void checkSavingsDeadlines() {
+    for (var saving in savings) {
+      if (saving.achieved) continue;
+
+      final daysRemaining = saving.deadline.difference(DateTime.now()).inDays;
+
+      if (daysRemaining < 0) {
+        sendNotification(
+          '⚠️ Savings Goal Overdue',
+          'Your ${saving.name} goal is ${daysRemaining.abs()} days overdue. Current: Ksh ${saving.savedAmount.toStringAsFixed(0)} / Ksh ${saving.targetAmount.toStringAsFixed(0)}',
+        );
+      } else if (daysRemaining <= 3 && daysRemaining > 0) {
+        sendNotification(
+          '⏰ Savings Deadline Approaching',
+          'Your ${saving.name} goal is due in $daysRemaining days. Current: Ksh ${saving.savedAmount.toStringAsFixed(0)} / Ksh ${saving.targetAmount.toStringAsFixed(0)}',
+        );
+      }
+    }
+  }
+
+  void checkBudgetLimits() {
+    for (var budget in budgets) {
+      final totalSpent = budget.expenses.fold(0.0, (sum, e) => sum + e.amount);
+      if (totalSpent > budget.total) {
+        final overspent = totalSpent - budget.total;
+        sendNotification(
+          '💸 Budget Exceeded',
+          'Your ${budget.name} budget is overspent by Ksh ${overspent.toStringAsFixed(0)}',
+        );
+      }
+    }
+  }
+
+  Future<void> sendNotification(String title, String message) async {
+    try {
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(userUid)
+          .collection('notifications')
+          .add({
+            'title': title,
+            'message': message,
+            'createdAt': FieldValue.serverTimestamp(),
+            'isRead': false,
+          });
+    } catch (e) {
+      debugPrint('Error sending notification: $e');
+    }
+  }
+
+  void showAddIncomeDialog() {
     final amountController = TextEditingController();
     final titleCtrl = TextEditingController();
     showDialog(
@@ -326,10 +398,10 @@ class _HomePageState extends State<HomePage> {
           children: [
             TextField(
               controller: titleCtrl,
+              textCapitalization: TextCapitalization.words,
               decoration: const InputDecoration(
                 hintText: "Source (e.g. Salary)",
               ),
-              textCapitalization: TextCapitalization.words,
             ),
             TextField(
               controller: amountController,
@@ -348,11 +420,11 @@ class _HomePageState extends State<HomePage> {
               final amt = double.tryParse(amountController.text) ?? 0;
               if (amt > 0 && titleCtrl.text.isNotEmpty) {
                 final prefs = await SharedPreferences.getInstance();
-                _totalIncome += amt;
-                await prefs.setDouble(keyTotalIncome, _totalIncome);
-                await _saveTransaction(titleCtrl.text, amt, "income");
+                totalIncome += amt;
+                await prefs.setDouble(keyTotalIncome, totalIncome);
+                await saveTransaction(titleCtrl.text, amt, "income");
                 Navigator.pop(context);
-                _refreshData();
+                refreshData();
               }
             },
             child: const Text("Add"),
@@ -362,7 +434,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  void _showSmartExpenseDialog() {
+  void showSmartExpenseDialog() {
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -378,7 +450,7 @@ class _HomePageState extends State<HomePage> {
             title: const Text("Savings Goal"),
             onTap: () {
               Navigator.pop(context);
-              _handleSavingsExpense();
+              handleSavingsExpense();
             },
           ),
           ListTile(
@@ -386,7 +458,7 @@ class _HomePageState extends State<HomePage> {
             title: const Text("Existing Budget"),
             onTap: () {
               Navigator.pop(context);
-              _handleBudgetExpense();
+              handleBudgetExpense();
             },
           ),
           ListTile(
@@ -397,7 +469,7 @@ class _HomePageState extends State<HomePage> {
             title: const Text("Other Expense"),
             onTap: () {
               Navigator.pop(context);
-              _showGeneralExpenseDialog();
+              showGeneralExpenseDialog();
             },
           ),
           const SizedBox(height: 20),
@@ -406,17 +478,16 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // --- SAVINGS LOGIC ---
-  void _handleSavingsExpense() {
-    final activeSavings = _savings.where((s) => !s.achieved).toList();
+  void handleSavingsExpense() {
+    final activeSavings = savings.where((s) => !s.achieved).toList();
     if (activeSavings.isEmpty) {
       Navigator.push(
         context,
         MaterialPageRoute(
           builder: (context) =>
-              SavingsScreen(onTransactionAdded: _onSavingsTransactionAdded),
+              SavingsPage(onTransactionAdded: onSavingsTransactionAdded),
         ),
-      ).then((_) => _refreshData());
+      ).then((_) => refreshData());
       return;
     }
 
@@ -433,23 +504,28 @@ class _HomePageState extends State<HomePage> {
               final s = activeSavings[index];
               return ListTile(
                 title: Text(s.name),
-                subtitle: Text("Balance: Ksh ${s.balance}"),
+                subtitle: Text("Balance: Ksh ${s.balance.toStringAsFixed(0)}"),
                 onTap: () {
                   Navigator.pop(context);
                   showAmountDialog(
                     title: "Add funds to ${s.name}",
                     onConfirm: (amt) async {
                       s.savedAmount += amt;
-                      if (s.savedAmount >= s.targetAmount) {
+                      if (s.savedAmount >= s.targetAmount && !s.achieved) {
                         s.achieved = true;
+                        sendNotification(
+                          '🎉 Goal Achieved!',
+                          'Congratulations! You\'ve reached your ${s.name} savings goal of Ksh ${s.targetAmount.toStringAsFixed(0)}!',
+                        );
                       }
-                      await _syncSavings();
-                      await _saveTransaction(
+                      await syncSavings();
+                      await saveTransaction(
                         "Saved for ${s.name}",
                         amt,
                         "savings_deduction",
                       );
-                      _refreshData();
+                      await updateStreak();
+                      refreshData();
                     },
                   );
                 },
@@ -461,13 +537,17 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // --- BUDGET LOGIC ---
-  void _handleBudgetExpense() {
-    if (_budgets.isEmpty) {
+  void handleBudgetExpense() {
+    if (budgets.isEmpty) {
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => const BudgetScreen()),
-      ).then((_) => _refreshData());
+        MaterialPageRoute(
+          builder: (context) => BudgetPage(
+            onTransactionAdded: onBudgetTransactionAdded,
+            onExpenseDeleted: onBudgetExpenseDeleted,
+          ),
+        ),
+      ).then((_) => refreshData());
       return;
     }
 
@@ -479,14 +559,14 @@ class _HomePageState extends State<HomePage> {
           width: double.maxFinite,
           child: ListView.builder(
             shrinkWrap: true,
-            itemCount: _budgets.length,
+            itemCount: budgets.length,
             itemBuilder: (context, index) {
-              final b = _budgets[index];
+              final b = budgets[index];
               return ListTile(
                 title: Text(b.name),
                 onTap: () {
                   Navigator.pop(context);
-                  _showBudgetDetailEntryDialog(b);
+                  showBudgetDetailEntryDialog(b);
                 },
               );
             },
@@ -496,7 +576,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  void _showBudgetDetailEntryDialog(Budget budget) {
+  void showBudgetDetailEntryDialog(Budget budget) {
     final titleCtrl = TextEditingController();
     final amtCtrl = TextEditingController();
     showDialog(
@@ -508,8 +588,8 @@ class _HomePageState extends State<HomePage> {
           children: [
             TextField(
               controller: titleCtrl,
-              decoration: const InputDecoration(hintText: "Title (e.g. Lunch)"),
               textCapitalization: TextCapitalization.words,
+              decoration: const InputDecoration(hintText: "Title (e.g. Lunch)"),
             ),
             TextField(
               controller: amtCtrl,
@@ -528,14 +608,14 @@ class _HomePageState extends State<HomePage> {
               final amt = double.tryParse(amtCtrl.text) ?? 0;
               if (amt > 0 && titleCtrl.text.isNotEmpty) {
                 budget.expenses.add(Expense(name: titleCtrl.text, amount: amt));
-                await _syncBudgets();
-                await _saveTransaction(
+                await syncBudgets();
+                await saveTransaction(
                   "${budget.name}: ${titleCtrl.text}",
                   amt,
                   "budget_expense",
                 );
                 Navigator.pop(context);
-                _refreshData();
+                refreshData();
               }
             },
             child: const Text("Save"),
@@ -545,8 +625,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // --- OTHER EXPENSE ---
-  void _showGeneralExpenseDialog() {
+  void showGeneralExpenseDialog() {
     final titleCtrl = TextEditingController();
     final amtCtrl = TextEditingController();
     showDialog(
@@ -558,8 +637,8 @@ class _HomePageState extends State<HomePage> {
           children: [
             TextField(
               controller: titleCtrl,
-              decoration: const InputDecoration(hintText: "What was it for?"),
               textCapitalization: TextCapitalization.words,
+              decoration: const InputDecoration(hintText: "What was it for?"),
             ),
             TextField(
               controller: amtCtrl,
@@ -577,9 +656,9 @@ class _HomePageState extends State<HomePage> {
             onPressed: () async {
               final amt = double.tryParse(amtCtrl.text) ?? 0;
               if (amt > 0 && titleCtrl.text.isNotEmpty) {
-                await _saveTransaction(titleCtrl.text, amt, "expense");
+                await saveTransaction(titleCtrl.text, amt, "expense");
                 Navigator.pop(context);
-                _refreshData();
+                refreshData();
               }
             },
             child: const Text("Deduct"),
@@ -623,19 +702,13 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // --- UI BUILDING ---
-
   @override
   Widget build(BuildContext context) {
     String greetings() {
       final int hour = DateTime.now().hour;
-      if (hour < 12) {
-        return 'Good Morning';
-      } else if (hour < 17) {
-        return 'Good Afternoon';
-      } else {
-        return 'Good Evening';
-      }
+      if (hour < 12) return 'Good Morning';
+      if (hour < 17) return 'Good Afternoon';
+      return 'Good Evening';
     }
 
     return Scaffold(
@@ -671,24 +744,24 @@ class _HomePageState extends State<HomePage> {
           ),
         ],
       ),
-      body: _isLoading
+      body: isLoading
           ? const Center(child: CircularProgressIndicator())
           : RefreshIndicator(
-              onRefresh: _refreshData,
+              onRefresh: refreshData,
               child: SingleChildScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
                 padding: paddingAllMedium,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildBalanceCard(),
+                    buildBalanceCard(),
                     sizedBoxHeightLarge,
                     Text(
                       'Quick Actions',
                       style: Theme.of(context).textTheme.titleLarge,
                     ),
                     sizedBoxHeightSmall,
-                    _buildQuickActions(),
+                    buildQuickActions(),
                     sizedBoxHeightLarge,
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -702,7 +775,7 @@ class _HomePageState extends State<HomePage> {
                         ),
                       ],
                     ),
-                    _buildRecentTransactions(),
+                    buildRecentTransactions(),
                   ],
                 ),
               ),
@@ -710,8 +783,8 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildBalanceCard() {
-    double balance = _totalIncome - _totalExpenses;
+  Widget buildBalanceCard() {
+    double balance = totalIncome - totalExpenses;
     return Container(
       width: double.infinity,
       padding: paddingAllMedium,
@@ -734,18 +807,13 @@ class _HomePageState extends State<HomePage> {
               color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
-
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _statItem(
-                "Income",
-                _totalIncome,
-                Icons.arrow_circle_down_rounded,
-              ),
-              _statItem(
+              statItem("Income", totalIncome, Icons.arrow_circle_down_rounded),
+              statItem(
                 "Expenses",
-                _totalExpenses,
+                totalExpenses,
                 Icons.arrow_circle_up_rounded,
               ),
             ],
@@ -755,7 +823,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _statItem(String label, double amt, IconData icon) {
+  Widget statItem(String label, double amt, IconData icon) {
     return Row(
       children: [
         Icon(
@@ -785,41 +853,37 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildQuickActions() {
+  Widget buildQuickActions() {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         QuickActionCard(
           icon: Icons.add,
           label: 'Add Income',
-          onTap: _showAddIncomeDialog,
+          onTap: showAddIncomeDialog,
         ),
         QuickActionCard(
           icon: Icons.remove,
           label: 'Expense',
-          onTap: _showSmartExpenseDialog,
+          onTap: showSmartExpenseDialog,
         ),
         QuickActionCard(
           icon: Icons.receipt_long,
           label: 'All Trans.',
           onTap: () async {
-            // Navigate and refresh on return
             await Navigator.push(
               context,
-              MaterialPageRoute(
-                builder: (context) => const AllTransactionsPage(),
-              ),
+              MaterialPageRoute(builder: (context) => const TransactionsPage()),
             );
-            // Refresh data when coming back from All Transactions
-            _refreshData();
+            refreshData();
           },
         ),
       ],
     );
   }
 
-  Widget _buildRecentTransactions() {
-    if (_transactions.isEmpty) {
+  Widget buildRecentTransactions() {
+    if (transactions.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -841,29 +905,27 @@ class _HomePageState extends State<HomePage> {
       );
     }
 
-    // Show only first 8 transactions
-    final displayTransactions = _transactions.length > 8
-        ? _transactions.sublist(0, 8)
-        : _transactions;
+    final displayTransactions = transactions.length > 8
+        ? transactions.sublist(0, 8)
+        : transactions;
 
     return ListView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       itemCount: displayTransactions.length,
       itemBuilder: (context, index) {
-        return _buildTransactionCard(displayTransactions[index], index);
+        return buildTransactionCard(displayTransactions[index], index);
       },
     );
   }
 
-  Widget _buildTransactionCard(Map<String, dynamic> tx, int index) {
+  Widget buildTransactionCard(Map<String, dynamic> tx, int index) {
     final theme = Theme.of(context);
     final isIncome = tx['type'] == 'income';
     final date = DateTime.parse(tx['date']);
     final time = DateFormat('hh:mm a').format(date);
     final amount = double.tryParse(tx['amount'].toString()) ?? 0.0;
 
-    // Get icon based on transaction type
     IconData txIcon;
     Color iconBgColor;
 
@@ -890,9 +952,8 @@ class _HomePageState extends State<HomePage> {
       key: Key('${tx['date']}_$index'),
       direction: DismissDirection.horizontal,
       confirmDismiss: (direction) async {
-        // This will be handled by the delete method which shows the dialog
-        await _deleteTransaction(index);
-        return false; // Always return false because we handle deletion manually
+        await deleteTransaction(index);
+        return false;
       },
       background: Container(
         margin: const EdgeInsets.only(bottom: 8),
@@ -980,7 +1041,7 @@ class _HomePageState extends State<HomePage> {
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Text(
-                  _getTypeLabel(tx['type']),
+                  getTypeLabel(tx['type']),
                   style: Theme.of(
                     context,
                   ).textTheme.bodySmall?.copyWith(color: iconBgColor),
@@ -1000,7 +1061,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  String _getTypeLabel(String type) {
+  String getTypeLabel(String type) {
     switch (type) {
       case 'income':
         return 'Income';
@@ -1014,5 +1075,85 @@ class _HomePageState extends State<HomePage> {
       default:
         return 'Other';
     }
+  }
+}
+
+class Budget {
+  String name;
+  double total;
+  List<Expense> expenses;
+
+  Budget({required this.name, required this.total, List<Expense>? expenses})
+    : expenses = expenses ?? [];
+
+  Map<String, dynamic> toMap() => {
+    'name': name,
+    'total': total,
+    'expenses': expenses.map((e) => e.toMap()).toList(),
+  };
+
+  factory Budget.fromMap(Map<String, dynamic> map) => Budget(
+    name: map['name'],
+    total: (map['total'] as num).toDouble(),
+    expenses:
+        (map['expenses'] as List?)?.map((e) => Expense.fromMap(e)).toList() ??
+        [],
+  );
+}
+
+class Expense {
+  String name;
+  double amount;
+  Expense({required this.name, required this.amount});
+  Map<String, dynamic> toMap() => {'name': name, 'amount': amount};
+  factory Expense.fromMap(Map<String, dynamic> map) =>
+      Expense(name: map['name'], amount: (map['amount'] as num).toDouble());
+}
+
+class Saving {
+  String name;
+  double savedAmount;
+  double targetAmount;
+  DateTime deadline;
+  bool achieved;
+  String? iconCode;
+
+  Saving({
+    required this.name,
+    required this.savedAmount,
+    required this.targetAmount,
+    required this.deadline,
+    this.achieved = false,
+    this.iconCode,
+  });
+
+  double get balance => targetAmount - savedAmount;
+
+  Map<String, dynamic> toMap() {
+    return {
+      'name': name,
+      'savedAmount': savedAmount,
+      'targetAmount': targetAmount,
+      'deadline': deadline.toIso8601String(),
+      'achieved': achieved,
+      'iconCode': iconCode,
+    };
+  }
+
+  factory Saving.fromMap(Map<String, dynamic> map) {
+    return Saving(
+      name: map['name'] ?? 'Unnamed',
+      savedAmount: map['savedAmount'] is String
+          ? double.tryParse(map['savedAmount']) ?? 0.0
+          : (map['savedAmount'] as num?)?.toDouble() ?? 0.0,
+      targetAmount: map['targetAmount'] is String
+          ? double.tryParse(map['targetAmount']) ?? 0.0
+          : (map['targetAmount'] as num?)?.toDouble() ?? 0.0,
+      deadline: map['deadline'] != null
+          ? DateTime.parse(map['deadline'])
+          : DateTime.now().add(const Duration(days: 30)),
+      achieved: map['achieved'] ?? false,
+      iconCode: map['iconCode'],
+    );
   }
 }

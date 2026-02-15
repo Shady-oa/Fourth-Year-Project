@@ -4,10 +4,10 @@ import 'package:final_project/Components/back_button.dart';
 import 'package:final_project/Constants/colors.dart';
 import 'package:flutter/material.dart';
 
-class NotificationInbox extends StatelessWidget {
-  final String userId; // The ID of the logged-in user
+class NotificationsPage extends StatelessWidget {
+  final String userId;
 
-  const NotificationInbox({super.key, required this.userId});
+  const NotificationsPage({super.key, required this.userId});
 
   @override
   Widget build(BuildContext context) {
@@ -19,7 +19,6 @@ class NotificationInbox extends StatelessWidget {
         title: CustomHeader(headerName: "Notifications"),
       ),
       body: StreamBuilder(
-        // Listen to the notifications collection in Firestore
         stream: FirebaseFirestore.instance
             .collection('users')
             .doc(userId)
@@ -41,15 +40,10 @@ class NotificationInbox extends StatelessWidget {
                     Icon(
                       Icons.mark_email_unread_outlined,
                       size: 64,
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.onSurface.withAlpha((255 * 0.5).round()),
+                      color: Theme.of(context).colorScheme.onSurface.withAlpha((255 * 0.5).round()),
                     ),
                     const SizedBox(height: 24),
-                    Text(
-                      'No Notifications',
-                      style: Theme.of(context).textTheme.headlineSmall,
-                    ),
+                    Text('No Notifications', style: Theme.of(context).textTheme.headlineSmall),
                     const SizedBox(height: 8),
                     Text(
                       'We\'ll let you know when there will be something to update you.',
@@ -70,15 +64,9 @@ class NotificationInbox extends StatelessWidget {
                 padding: const EdgeInsets.all(4.0),
                 child: Container(
                   decoration: BoxDecoration(
-                    border: Border.all(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.onSurface.withAlpha((255 * 0.1).round()),
-                    ),
+                    border: Border.all(color: Theme.of(context).colorScheme.onSurface.withAlpha((255 * 0.1).round())),
                     borderRadius: BorderRadius.circular(12),
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.onSurface.withAlpha((255 * 0.02).round()),
+                    color: Theme.of(context).colorScheme.onSurface.withAlpha((255 * 0.02).round()),
                   ),
                   child: ListTile(
                     title: Row(
@@ -86,12 +74,7 @@ class NotificationInbox extends StatelessWidget {
                       children: [
                         Row(
                           children: [
-                            CircleAvatar(
-                              radius: 16,
-                              backgroundImage: AssetImage(
-                                "assets/image/icon 2.png",
-                              ),
-                            ),
+                            CircleAvatar(radius: 16, backgroundImage: AssetImage("assets/image/icon 2.png")),
                             SizedBox(width: 4),
                             Text(doc['title']),
                           ],
@@ -99,23 +82,16 @@ class NotificationInbox extends StatelessWidget {
                         IconButton(
                           icon: Icon(Icons.delete, color: errorColor),
                           onPressed: () {
-                            doc.reference.update({
-                              'isRead': true,
-                            }); // Mark as read before deletion
+                            doc.reference.update({'isRead': true});
                             doc.reference.delete();
-                          }, // Delete from DB
+                          },
                         ),
                       ],
                     ),
                     subtitle: Text(
                       doc['message'],
-                      style: TextStyle(
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.onSurface.withAlpha((255 * 0.5).round()),
-                      ),
+                      style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withAlpha((255 * 0.5).round())),
                     ),
-                    // Mark as read
                   ),
                 ),
               );
