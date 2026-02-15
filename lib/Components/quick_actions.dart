@@ -19,26 +19,37 @@ class QuickActionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: Column(
-        children: [
-          Container(
-            padding: paddingAllMedium,
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surface,
-              borderRadius: radiusMedium,
-              border: Border.all(
-                color: Theme.of(context).colorScheme.onSurface.withAlpha((255 * 0.6).round()),
+      child: Container(
+        padding: paddingAllTiny,
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: radiusMedium,
+          border: Border.all(
+            color: Theme.of(
+              context,
+            ).colorScheme.onSurface.withAlpha((255 * 0.6).round()),
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: EdgeInsets.all(3),
+              decoration: BoxDecoration(
+                color: Theme.of(
+                  context,
+                ).colorScheme.primary.withAlpha((255 * 0.2).round()),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                icon,
+                size: 30,
+                color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
-            child: Icon(
-              icon,
-              size: 30,
-              color: Theme.of(context).colorScheme.onSurface,
-            ),
-          ),
-          sizedBoxHeightSmall,
-          Text(label, style: Theme.of(context).textTheme.bodySmall),
-        ],
+            SizedBox(width: 4),
+            Text(label, style: Theme.of(context).textTheme.bodySmall),
+          ],
+        ),
       ),
     );
   }

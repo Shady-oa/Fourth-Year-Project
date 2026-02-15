@@ -1,4 +1,5 @@
 import 'package:final_project/Constants/colors.dart';
+import 'package:final_project/Constants/spacing.dart';
 import 'package:final_project/Primary_Screens/Budgets/budget.dart';
 import 'package:flutter/material.dart';
 
@@ -41,7 +42,7 @@ class _BudgetDetailScreenState extends State<BudgetDetailScreen> {
               width: double.infinity,
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: radiusSmall,
 
                 color: remaining < 0 ? errorColor : accentColor,
               ),
@@ -56,7 +57,7 @@ class _BudgetDetailScreenState extends State<BudgetDetailScreen> {
                   ),
 
                   Text(
-                    "KES ${remaining.toStringAsFixed(0)}",
+                    "Ksh ${remaining.toStringAsFixed(0)}",
                     style: Theme.of(context).textTheme.displaySmall?.copyWith(
                       color: Theme.of(context).colorScheme.onSurface,
                     ),
@@ -205,7 +206,7 @@ class _BudgetDetailScreenState extends State<BudgetDetailScreen> {
         ),
 
         Text(
-          "KES ${value.toStringAsFixed(0)}",
+          "Ksh ${value.toStringAsFixed(0)}",
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
             color: Theme.of(context).colorScheme.onSurface,
           ),

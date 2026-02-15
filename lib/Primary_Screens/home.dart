@@ -226,7 +226,7 @@ class _HomePageState extends State<HomePage> {
             },
           ),
           ListTile(
-            leading: const Icon(Icons.receipt_long, color: Colors.orange),
+            leading: const Icon(Icons.receipt_rounded, color: Colors.orange),
             title: const Text("Existing Budget"),
             onTap: () {
               Navigator.pop(context);
@@ -234,7 +234,10 @@ class _HomePageState extends State<HomePage> {
             },
           ),
           ListTile(
-            leading: const Icon(Icons.shopping_cart, color: Colors.blue),
+            leading: const Icon(
+              Icons.arrow_circle_up_rounded,
+              color: Colors.blue,
+            ),
             title: const Text("Other Expense"),
             onTap: () {
               Navigator.pop(context);
@@ -428,62 +431,6 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  void _showSavingsOptionsBottomSheet() {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const SizedBox(height: 20),
-          Text(
-            "Savings Options",
-            style: Theme.of(context).textTheme.titleLarge,
-          ),
-          ListTile(
-            leading: const Icon(
-              Icons.account_balance_wallet,
-              color: Colors.blue,
-            ),
-            title: const Text("Go to Savings Page"),
-            onTap: () {
-              Navigator.pop(context);
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => SavingsScreen(
-                    onTransactionAdded: _onSavingsTransactionAdded,
-                  ),
-                ),
-              ).then((_) => _refreshData());
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.add_circle, color: Colors.green),
-            title: const Text("Add Funds to Saving Goal"),
-            onTap: () {
-              Navigator.pop(context);
-              if (_savings.isEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text(
-                      "No saving goals created yet. Create one on the Savings page.",
-                    ),
-                  ),
-                );
-              } else {
-                _showAddFundsToSavingGoalDialog();
-              }
-            },
-          ),
-          const SizedBox(height: 20),
-        ],
-      ),
-    );
-  }
-
   void _showAddFundsToSavingGoalDialog() {
     final activeSavings = _savings.where((s) => !s.achieved).toList();
     showDialog(
@@ -645,19 +592,6 @@ class _HomePageState extends State<HomePage> {
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        if (_transactions.isNotEmpty)
-                          TextButton(
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) =>
-                                      const AllTransactionsPage(),
-                                ),
-                              );
-                            },
-                            child: const Text('View All'),
-                          ),
                       ],
                     ),
                     _buildRecentTransactions(),
@@ -673,25 +607,36 @@ class _HomePageState extends State<HomePage> {
     return Container(
       width: double.infinity,
       padding: paddingAllMedium,
-      decoration: BoxDecoration(borderRadius: radiusLarge, color: brandGreen),
+      decoration: BoxDecoration(borderRadius: radiusSmall, color: brandGreen),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Total Balance', style: TextStyle(color: Colors.white70)),
           Text(
-            "Ksh ${balance.toStringAsFixed(0)}",
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 32,
-              fontWeight: FontWeight.bold,
+            'Total Balance',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
-          sizedBoxHeightLarge,
+          Text(
+            "Ksh ${balance.toStringAsFixed(0)}",
+            style: Theme.of(context).textTheme.displaySmall?.copyWith(
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
+          ),
+
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _statItem("Income", _totalIncome, Icons.arrow_downward),
-              _statItem("Expenses", _totalExpenses, Icons.arrow_upward),
+              _statItem(
+                "Income",
+                _totalIncome,
+                Icons.arrow_circle_down_rounded,
+              ),
+              _statItem(
+                "Expenses",
+                _totalExpenses,
+                Icons.arrow_circle_up_rounded,
+              ),
             ],
           ),
         ],
@@ -702,20 +647,25 @@ class _HomePageState extends State<HomePage> {
   Widget _statItem(String label, double amt, IconData icon) {
     return Row(
       children: [
-        Icon(icon, color: Colors.white54, size: 16),
+        Icon(
+          icon,
+          color: Theme.of(context).colorScheme.onSurface.withAlpha(100),
+          size: 30,
+        ),
         const SizedBox(width: 5),
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               label,
-              style: const TextStyle(color: Colors.white70, fontSize: 12),
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
             ),
             Text(
               "Ksh ${amt.toStringAsFixed(0)}",
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
           ],
@@ -730,7 +680,7 @@ class _HomePageState extends State<HomePage> {
       children: [
         QuickActionCard(
           icon: Icons.add,
-          label: 'Income',
+          label: 'Add Income',
           onTap: _showAddIncomeDialog,
         ),
         QuickActionCard(
@@ -747,11 +697,6 @@ class _HomePageState extends State<HomePage> {
               builder: (context) => const AllTransactionsPage(),
             ),
           ),
-        ),
-        QuickActionCard(
-          icon: Icons.savings,
-          label: 'Savings',
-          onTap: _showSavingsOptionsBottomSheet,
         ),
       ],
     );
@@ -799,17 +744,17 @@ class _HomePageState extends State<HomePage> {
 
     switch (tx['type']) {
       case 'income':
-        txIcon = Icons.arrow_downward;
-        iconBgColor = Colors.green;
+        txIcon = Icons.arrow_circle_up_rounded;
+        iconBgColor = accentColor;
         break;
       case 'budget_expense':
-        txIcon = Icons.receipt_long;
+        txIcon = Icons.receipt_rounded;
         iconBgColor = Colors.orange;
         break;
       case 'savings_deduction':
       case 'saving_deposit':
         txIcon = Icons.savings;
-        iconBgColor = Colors.blue;
+        iconBgColor = brandGreen;
         break;
       default:
         txIcon = Icons.shopping_cart;
@@ -821,10 +766,12 @@ class _HomePageState extends State<HomePage> {
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200, width: 1),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.onSurface.withAlpha(10),
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
+            color: Colors.black.withAlpha(8),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -837,7 +784,7 @@ class _HomePageState extends State<HomePage> {
           height: 48,
           decoration: BoxDecoration(
             color: iconBgColor.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(100),
           ),
           child: Icon(txIcon, color: iconBgColor, size: 24),
         ),
