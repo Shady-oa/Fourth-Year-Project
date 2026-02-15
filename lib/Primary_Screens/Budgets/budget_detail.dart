@@ -215,21 +215,6 @@ class _BudgetDetailScreenState extends State<BudgetDetailScreen> {
     );
   }
 
-  Widget _statItem(String label, double val, Color color) {
-    return Column(
-      children: [
-        Text(label, style: const TextStyle(color: Colors.grey, fontSize: 12)),
-        Text(
-          "Ksh ${val.abs().toStringAsFixed(0)}",
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: color,
-            fontSize: 16,
-          ),
-        ),
-      ],
-    );
-  }
 
   void showExpenseDialog({Expense? expense}) {
     final nameCtrl = TextEditingController(text: expense?.name ?? "");

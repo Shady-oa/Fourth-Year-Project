@@ -131,6 +131,111 @@ class _HomePageState extends State<HomePage> {
     setState(() {});
   }
 
+  // NEW: Delete transaction method
+  Future<void> _deleteTransaction(int index) async {
+    final tx = _transactions[index];
+    final amount = double.tryParse(tx['amount'].toString()) ?? 0.0;
+    final type = tx['type'];
+
+    // Show confirmation dialog
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Transaction'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Are you sure you want to delete this transaction?'),
+            const SizedBox(height: 12),
+            Text(
+              '${tx['title']}',
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            Text('Amount: Ksh ${amount.toStringAsFixed(0)}'),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.orange.shade50,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.orange.shade200),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.warning_amber_rounded,
+                    color: Colors.orange.shade700,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'This will affect your balance and statistics.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.orange.shade900,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: errorColor,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      // Remove transaction from list
+      _transactions.removeAt(index);
+
+      // Update SharedPreferences
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(keyTransactions, json.encode(_transactions));
+
+      // Update total income if it was an income transaction
+      if (type == 'income') {
+        _totalIncome -= amount;
+        await prefs.setDouble(keyTotalIncome, _totalIncome);
+      }
+
+      // Recalculate statistics
+      _calculateStats();
+
+      // Update UI
+      setState(() {});
+
+      // Show success message
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Transaction deleted successfully'),
+            backgroundColor: brandGreen,
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+
+      debugPrint('🗑️ Transaction deleted: ${tx['title']}');
+    }
+  }
+
   Future<void> _syncBudgets() async {
     final prefs = await SharedPreferences.getInstance();
     final data = _budgets.map((b) => json.encode(b.toMap())).toList();
@@ -431,56 +536,6 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  void _showAddFundsToSavingGoalDialog() {
-    final activeSavings = _savings.where((s) => !s.achieved).toList();
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text("Select Saving Goal to Add Funds"),
-        content: SizedBox(
-          width: double.maxFinite,
-          child: ListView.builder(
-            shrinkWrap: true,
-            itemCount: activeSavings.length,
-            itemBuilder: (context, index) {
-              final s = activeSavings[index];
-              return ListTile(
-                title: Text(s.name),
-                subtitle: Text(
-                  "Current Balance: Ksh ${s.savedAmount.toStringAsFixed(2)}",
-                ),
-                onTap: () {
-                  Navigator.pop(context); // Pop the goal selection dialog
-                  showAmountDialog(
-                    title: "Add funds to ${s.name}",
-                    onConfirm: (amt) async {
-                      s.savedAmount += amt;
-                      if (s.savedAmount >= s.targetAmount) {
-                        s.achieved = true;
-                      }
-                      await _syncSavings();
-                      await _onSavingsTransactionAdded(
-                        "Added to ${s.name}",
-                        amt,
-                        "saving_deposit",
-                      );
-                    },
-                  );
-                },
-              );
-            },
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Cancel"),
-          ),
-        ],
-      ),
-    );
-  }
-
   void showAmountDialog({
     required String title,
     required Function(double) onConfirm,
@@ -607,7 +662,10 @@ class _HomePageState extends State<HomePage> {
     return Container(
       width: double.infinity,
       padding: paddingAllMedium,
-      decoration: BoxDecoration(borderRadius: radiusSmall, color: brandGreen),
+      decoration: BoxDecoration(
+        borderRadius: radiusSmall,
+        color: balance < 0 ? errorColor : accentColor,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -725,13 +783,12 @@ class _HomePageState extends State<HomePage> {
       physics: const NeverScrollableScrollPhysics(),
       itemCount: displayTransactions.length,
       itemBuilder: (context, index) {
-        final tx = displayTransactions[index];
-        return _buildTransactionCard(tx);
+        return _buildTransactionCard(displayTransactions[index], index);
       },
     );
   }
 
-  Widget _buildTransactionCard(Map<String, dynamic> tx) {
+  Widget _buildTransactionCard(Map<String, dynamic> tx, int index) {
     final theme = Theme.of(context);
     final isIncome = tx['type'] == 'income';
     final date = DateTime.parse(tx['date']);
@@ -761,83 +818,115 @@ class _HomePageState extends State<HomePage> {
         iconBgColor = errorColor;
     }
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: Theme.of(context).colorScheme.onSurface.withAlpha(10),
+    return Dismissible(
+      key: Key('${tx['date']}_$index'),
+      direction: DismissDirection.horizontal,
+      confirmDismiss: (direction) async {
+        // This will be handled by the delete method which shows the dialog
+        await _deleteTransaction(index);
+        return false; // Always return false because we handle deletion manually
+      },
+      background: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        decoration: BoxDecoration(
+          color: errorColor,
+          borderRadius: BorderRadius.circular(12),
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withAlpha(8),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        alignment: Alignment.centerLeft,
+        padding: const EdgeInsets.only(left: 20),
+        child: const Icon(Icons.delete_outline, color: Colors.white, size: 32),
       ),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-        leading: Container(
-          width: 48,
-          height: 48,
-          decoration: BoxDecoration(
-            color: iconBgColor.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(100),
-          ),
-          child: Icon(txIcon, color: iconBgColor, size: 30),
+      secondaryBackground: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        decoration: BoxDecoration(
+          color: errorColor,
+          borderRadius: BorderRadius.circular(12),
         ),
-        title: Text(
-          tx['title'] ?? "Unknown",
-          style: theme.textTheme.bodyLarge?.copyWith(
-            fontWeight: FontWeight.w600,
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.only(right: 20),
+        child: const Icon(Icons.delete_outline, color: Colors.white, size: 32),
+      ),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surface,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: Theme.of(context).colorScheme.onSurface.withAlpha(10),
           ),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-        subtitle: Row(
-          children: [
-            Icon(
-              Icons.access_time,
-              size: 12,
-              color: Theme.of(context).colorScheme.onSurface.withAlpha(80),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withAlpha(8),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
             ),
-            const SizedBox(width: 4),
-            Text(
-              time,
-              style: theme.textTheme.bodySmall?.copyWith(
+          ],
+        ),
+        child: ListTile(
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 12,
+            vertical: 4,
+          ),
+          leading: Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: iconBgColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(100),
+            ),
+            child: Icon(txIcon, color: iconBgColor, size: 30),
+          ),
+          title: Text(
+            tx['title'] ?? "Unknown",
+            style: theme.textTheme.bodyLarge?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          subtitle: Row(
+            children: [
+              Icon(
+                Icons.access_time,
+                size: 12,
                 color: Theme.of(context).colorScheme.onSurface.withAlpha(80),
               ),
-            ),
-            const SizedBox(width: 12),
-          ],
-        ),
-        trailing: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-              decoration: BoxDecoration(
-                color: iconBgColor.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(4),
+              const SizedBox(width: 4),
+              Text(
+                time,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurface.withAlpha(80),
+                ),
               ),
-              child: Text(
-                _getTypeLabel(tx['type']),
-                style: Theme.of(
-                  context,
-                ).textTheme.bodySmall?.copyWith(color: iconBgColor),
+              const SizedBox(width: 12),
+            ],
+          ),
+          trailing: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: iconBgColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  _getTypeLabel(tx['type']),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodySmall?.copyWith(color: iconBgColor),
+                ),
               ),
-            ),
-            Text(
-              "${isIncome ? '+' : '-'} Ksh ${amount.toStringAsFixed(0)}",
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: isIncome ? brandGreen : errorColor,
-                fontWeight: FontWeight.bold,
+              Text(
+                "${isIncome ? '+' : '-'} Ksh ${amount.toStringAsFixed(0)}",
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: isIncome ? brandGreen : errorColor,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

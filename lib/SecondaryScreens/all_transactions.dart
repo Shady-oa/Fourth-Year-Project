@@ -17,6 +17,7 @@ class _AllTransactionsPageState extends State<AllTransactionsPage> {
   List<Map<String, dynamic>> _transactions = [];
   String _filter = 'all'; // all, income, expense
   bool _isLoading = true;
+  double _totalIncome = 0.0;
 
   @override
   void initState() {
@@ -29,7 +30,109 @@ class _AllTransactionsPageState extends State<AllTransactionsPage> {
     final prefs = await SharedPreferences.getInstance();
     final txString = prefs.getString('recent_transactions') ?? '[]';
     _transactions = List<Map<String, dynamic>>.from(json.decode(txString));
+    _totalIncome = prefs.getDouble('total_income') ?? 0.0;
     setState(() => _isLoading = false);
+  }
+
+  // NEW: Delete transaction method
+  Future<void> _deleteTransaction(int originalIndex) async {
+    // Find the transaction in the original list
+    final tx = _transactions[originalIndex];
+    final amount = double.tryParse(tx['amount'].toString()) ?? 0.0;
+    final type = tx['type'];
+
+    // Show confirmation dialog
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Transaction'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Are you sure you want to delete this transaction?'),
+            const SizedBox(height: 12),
+            Text(
+              '${tx['title']}',
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            Text('Amount: Ksh ${amount.toStringAsFixed(0)}'),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.orange.shade50,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.orange.shade200),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.warning_amber_rounded,
+                    color: Colors.orange.shade700,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'This will affect your balance and statistics.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.orange.shade900,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: errorColor,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      // Remove transaction from list
+      _transactions.removeAt(originalIndex);
+
+      // Update SharedPreferences
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('recent_transactions', json.encode(_transactions));
+
+      // Update total income if it was an income transaction
+      if (type == 'income') {
+        _totalIncome -= amount;
+        await prefs.setDouble('total_income', _totalIncome);
+      }
+
+      // Update UI
+      setState(() {});
+
+      // Show success message
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Transaction deleted successfully'),
+            backgroundColor: brandGreen,
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    }
   }
 
   List<Map<String, dynamic>> get _filteredTransactions {
@@ -146,9 +249,17 @@ class _AllTransactionsPageState extends State<AllTransactionsPage> {
                                 ),
 
                                 // Transaction Cards
-                                ...txList.map(
-                                  (tx) => _buildTransactionCard(tx, theme),
-                                ),
+                                ...txList.map((tx) {
+                                  // Find original index in _transactions list
+                                  final originalIndex = _transactions.indexOf(
+                                    tx,
+                                  );
+                                  return _buildTransactionCard(
+                                    tx,
+                                    originalIndex,
+                                    theme,
+                                  );
+                                }),
 
                                 const SizedBox(height: 8),
                               ],
@@ -280,7 +391,11 @@ class _AllTransactionsPageState extends State<AllTransactionsPage> {
     );
   }
 
-  Widget _buildTransactionCard(Map<String, dynamic> tx, ThemeData theme) {
+  Widget _buildTransactionCard(
+    Map<String, dynamic> tx,
+    int originalIndex,
+    ThemeData theme,
+  ) {
     final isIncome = tx['type'] == 'income';
     final date = DateTime.parse(tx['date']);
     final time = DateFormat('hh:mm a').format(date);
@@ -309,81 +424,113 @@ class _AllTransactionsPageState extends State<AllTransactionsPage> {
         iconBgColor = errorColor;
     }
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200, width: 1),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
+    return Dismissible(
+      key: Key('${tx['date']}_$originalIndex'),
+      direction: DismissDirection.horizontal,
+      confirmDismiss: (direction) async {
+        // This will be handled by the delete method which shows the dialog
+        await _deleteTransaction(originalIndex);
+        return false; // Always return false because we handle deletion manually
+      },
+      background: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        decoration: BoxDecoration(
+          color: errorColor,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        alignment: Alignment.centerLeft,
+        padding: const EdgeInsets.only(left: 20),
+        child: const Icon(Icons.delete_outline, color: Colors.white, size: 32),
       ),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-        leading: Container(
-          width: 48,
-          height: 48,
-          decoration: BoxDecoration(
-            color: iconBgColor.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(100),
-          ),
-          child: Icon(txIcon, color: iconBgColor, size: 30),
+      secondaryBackground: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        decoration: BoxDecoration(
+          color: errorColor,
+          borderRadius: BorderRadius.circular(12),
         ),
-        title: Text(
-          tx['title'] ?? "Unknown",
-          style: theme.textTheme.bodyLarge?.copyWith(
-            fontWeight: FontWeight.w600,
-          ),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-        subtitle: Row(
-          children: [
-            Icon(
-              Icons.access_time,
-              size: 12,
-              color: Theme.of(context).colorScheme.onSurface.withAlpha(80),
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.only(right: 20),
+        child: const Icon(Icons.delete_outline, color: Colors.white, size: 32),
+      ),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surface,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.grey.shade200, width: 1),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.03),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
             ),
-            const SizedBox(width: 4),
-            Text(
-              time,
-              style: theme.textTheme.bodySmall?.copyWith(
+          ],
+        ),
+        child: ListTile(
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 12,
+            vertical: 4,
+          ),
+          leading: Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: iconBgColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(100),
+            ),
+            child: Icon(txIcon, color: iconBgColor, size: 30),
+          ),
+          title: Text(
+            tx['title'] ?? "Unknown",
+            style: theme.textTheme.bodyLarge?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          subtitle: Row(
+            children: [
+              Icon(
+                Icons.access_time,
+                size: 12,
                 color: Theme.of(context).colorScheme.onSurface.withAlpha(80),
               ),
-            ),
-            const SizedBox(width: 12),
-          ],
-        ),
-        trailing: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-              decoration: BoxDecoration(
-                color: iconBgColor.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(4),
+              const SizedBox(width: 4),
+              Text(
+                time,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurface.withAlpha(80),
+                ),
               ),
-              child: Text(
-                _getTypeLabel(tx['type']),
-                style: Theme.of(
-                  context,
-                ).textTheme.bodySmall?.copyWith(color: iconBgColor),
+              const SizedBox(width: 12),
+            ],
+          ),
+          trailing: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: iconBgColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  _getTypeLabel(tx['type']),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodySmall?.copyWith(color: iconBgColor),
+                ),
               ),
-            ),
-            Text(
-              "${isIncome ? '+' : '-'} Ksh ${amount.toStringAsFixed(0)}",
-              style: theme.textTheme.bodyLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: isIncome ? brandGreen : errorColor,
+              Text(
+                "${isIncome ? '+' : '-'} Ksh ${amount.toStringAsFixed(0)}",
+                style: theme.textTheme.bodyLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: isIncome ? brandGreen : errorColor,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
