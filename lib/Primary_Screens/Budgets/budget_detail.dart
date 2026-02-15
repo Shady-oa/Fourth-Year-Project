@@ -231,7 +231,7 @@ class _BudgetDetailScreenState extends State<BudgetDetailScreen> {
           children: [
             TextField(
               controller: nameCtrl,
-              textCapitalization: TextCapitalization.sentences,
+              textCapitalization: TextCapitalization.words,
               decoration: const InputDecoration(labelText: "What for?"),
             ),
             TextField(

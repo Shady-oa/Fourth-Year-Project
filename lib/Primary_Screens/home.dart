@@ -329,6 +329,7 @@ class _HomePageState extends State<HomePage> {
               decoration: const InputDecoration(
                 hintText: "Source (e.g. Salary)",
               ),
+              textCapitalization: TextCapitalization.words,
             ),
             TextField(
               controller: amountController,
@@ -508,6 +509,7 @@ class _HomePageState extends State<HomePage> {
             TextField(
               controller: titleCtrl,
               decoration: const InputDecoration(hintText: "Title (e.g. Lunch)"),
+              textCapitalization: TextCapitalization.words,
             ),
             TextField(
               controller: amtCtrl,
@@ -557,6 +559,7 @@ class _HomePageState extends State<HomePage> {
             TextField(
               controller: titleCtrl,
               decoration: const InputDecoration(hintText: "What was it for?"),
+              textCapitalization: TextCapitalization.words,
             ),
             TextField(
               controller: amtCtrl,

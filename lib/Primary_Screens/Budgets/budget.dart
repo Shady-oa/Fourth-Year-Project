@@ -276,7 +276,7 @@ class BudgetScreenState extends State<BudgetScreen> {
             ),
             TextField(
               controller: nameCtrl,
-              textCapitalization: TextCapitalization.sentences,
+              textCapitalization: TextCapitalization.words,
               decoration: const InputDecoration(labelText: "Name"),
             ),
             TextField(
