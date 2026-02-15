@@ -129,6 +129,56 @@ class _HomePageState extends State<HomePage> {
     debugPrint('📊 Total transactions: ${_transactions.length}');
     _calculateStats();
     setState(() {});
+
+    // Show informative toast
+    _showTransactionToast(type, amount);
+  }
+
+  // NEW: Show toast notification after adding transaction
+  void _showTransactionToast(String type, double amount) {
+    final isIncome = type == 'income';
+    final icon = isIncome ? '💰' : '💸';
+    final action = isIncome ? 'Income Added' : 'Expense Recorded';
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Text(icon, style: const TextStyle(fontSize: 20)),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    '$action: Ksh ${amount.toStringAsFixed(0)}',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            const Text(
+              '💡 Tip: Swipe left or right to delete transactions',
+              style: TextStyle(fontSize: 12),
+            ),
+          ],
+        ),
+        backgroundColor: isIncome ? brandGreen : Colors.deepOrange,
+        behavior: SnackBarBehavior.floating,
+        margin: EdgeInsets.only(
+          bottom: MediaQuery.of(context).size.height - 150,
+          left: 16,
+          right: 16,
+        ),
+        duration: const Duration(seconds: 4),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+    );
   }
 
   // NEW: Delete transaction method
@@ -146,7 +196,7 @@ class _HomePageState extends State<HomePage> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Are you sure you want to delete this transaction?'),
+            const Text('Are you sure you want to delete this transaction?'),
             const SizedBox(height: 12),
             Text(
               '${tx['title']}',
@@ -749,12 +799,17 @@ class _HomePageState extends State<HomePage> {
         QuickActionCard(
           icon: Icons.receipt_long,
           label: 'All Trans.',
-          onTap: () => Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const AllTransactionsPage(),
-            ),
-          ),
+          onTap: () async {
+            // Navigate and refresh on return
+            await Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const AllTransactionsPage(),
+              ),
+            );
+            // Refresh data when coming back from All Transactions
+            _refreshData();
+          },
         ),
       ],
     );
@@ -762,13 +817,23 @@ class _HomePageState extends State<HomePage> {
 
   Widget _buildRecentTransactions() {
     if (_transactions.isEmpty) {
-      return const Padding(
-        padding: EdgeInsets.symmetric(vertical: 20),
-        child: Center(
-          child: Text(
-            "No transactions yet",
-            style: TextStyle(color: Colors.grey),
-          ),
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.receipt_long_outlined,
+              size: 64,
+              color: Colors.grey.shade400,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'No transactions found',
+              style: Theme.of(
+                context,
+              ).textTheme.bodyLarge?.copyWith(color: Colors.grey.shade600),
+            ),
+          ],
         ),
       );
     }

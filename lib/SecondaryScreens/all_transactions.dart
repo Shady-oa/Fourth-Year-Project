@@ -50,7 +50,7 @@ class _AllTransactionsPageState extends State<AllTransactionsPage> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Are you sure you want to delete this transaction?'),
+            const Text('Are you sure you want to delete this transaction?'),
             const SizedBox(height: 12),
             Text(
               '${tx['title']}',
@@ -125,13 +125,19 @@ class _AllTransactionsPageState extends State<AllTransactionsPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('Transaction deleted successfully'),
+            content: const Text(
+              '✅ Transaction deleted and synced with Home page',
+            ),
             backgroundColor: brandGreen,
             behavior: SnackBarBehavior.floating,
             duration: const Duration(seconds: 2),
           ),
         );
       }
+
+      debugPrint(
+        '🗑️ Transaction deleted from All Transactions: ${tx['title']}',
+      );
     }
   }
 
@@ -170,7 +176,7 @@ class _AllTransactionsPageState extends State<AllTransactionsPage> {
       backgroundColor: theme.colorScheme.surface,
       appBar: AppBar(
         backgroundColor: theme.colorScheme.surface,
-        title: Text("All Transactions"),
+        title: const Text("All Transactions"),
         centerTitle: true,
         elevation: 0,
       ),
@@ -198,6 +204,35 @@ class _AllTransactionsPageState extends State<AllTransactionsPage> {
                 // Summary Card
                 _buildSummaryCard(theme),
 
+                // Info Banner
+                Container(
+                  margin: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: accentColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: accentColor.withOpacity(0.3)),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.swipe, color: accentColor, size: 20),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Swipe left or right on any transaction to delete',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey.shade700,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
                 // Transactions List
                 Expanded(
                   child: _filteredTransactions.isEmpty
@@ -220,51 +255,55 @@ class _AllTransactionsPageState extends State<AllTransactionsPage> {
                             ],
                           ),
                         )
-                      : ListView.builder(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          itemCount: groupedTx.length,
-                          itemBuilder: (context, index) {
-                            final dateKey = groupedTx.keys.elementAt(index);
-                            final txList = groupedTx[dateKey]!;
+                      : RefreshIndicator(
+                          onRefresh: _loadTransactions,
+                          child: ListView.builder(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            itemCount: groupedTx.length,
+                            itemBuilder: (context, index) {
+                              final dateKey = groupedTx.keys.elementAt(index);
+                              final txList = groupedTx[dateKey]!;
 
-                            return Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                // Date Header
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 12.0,
+                              return Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  // Date Header
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 12.0,
+                                    ),
+                                    child: Text(
+                                      _getDateLabel(dateKey),
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodyMedium
+                                          ?.copyWith(
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .onSurface
+                                                .withAlpha(80),
+                                          ),
+                                    ),
                                   ),
-                                  child: Text(
-                                    _getDateLabel(dateKey),
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .bodyMedium
-                                        ?.copyWith(
-                                          color: Theme.of(
-                                            context,
-                                          ).colorScheme.onSurface.withAlpha(80),
-                                        ),
-                                  ),
-                                ),
 
-                                // Transaction Cards
-                                ...txList.map((tx) {
-                                  // Find original index in _transactions list
-                                  final originalIndex = _transactions.indexOf(
-                                    tx,
-                                  );
-                                  return _buildTransactionCard(
-                                    tx,
-                                    originalIndex,
-                                    theme,
-                                  );
-                                }),
+                                  // Transaction Cards
+                                  ...txList.map((tx) {
+                                    // Find original index in _transactions list
+                                    final originalIndex = _transactions.indexOf(
+                                      tx,
+                                    );
+                                    return _buildTransactionCard(
+                                      tx,
+                                      originalIndex,
+                                      theme,
+                                    );
+                                  }),
 
-                                const SizedBox(height: 8),
-                              ],
-                            );
-                          },
+                                  const SizedBox(height: 8),
+                                ],
+                              );
+                            },
+                          ),
                         ),
                 ),
               ],
