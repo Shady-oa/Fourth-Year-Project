@@ -2,9 +2,7 @@ import 'package:final_project/Primary_Screens/Budgets/budget.dart';
 import 'package:final_project/Primary_Screens/Savings/savings.dart';
 import 'package:final_project/Primary_Screens/ai.dart';
 import 'package:final_project/Primary_Screens/home.dart';
-import 'package:final_project/Primary_Screens/profile.dart';
 import 'package:final_project/SecondaryScreens/analytics_page.dart';
-import 'package:final_project/SecondaryScreens/report_page.dart';
 import 'package:flutter/material.dart';
 
 class BottomNav extends StatefulWidget {
@@ -21,7 +19,7 @@ class _BottomNavState extends State<BottomNav> {
     const BudgetPage(),
     const SavingsPage(),
     const AnalyticsPage(),
-    const ReportPage(),
+    const AiPage(),
   ];
 
   void select(int index) {
@@ -58,12 +56,12 @@ class _BottomNavState extends State<BottomNav> {
             label: 'Savings',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.auto_awesome_rounded),
-            label: 'Penny AI',
+            icon: Icon(Icons.analytics_rounded),
+            label: 'Analytics',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.person_rounded),
-            label: 'Profile',
+            icon: Icon(Icons.auto_awesome_rounded),
+            label: 'Penny AI',
           ),
         ],
       ),

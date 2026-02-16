@@ -10,6 +10,7 @@ import 'package:final_project/Constants/spacing.dart';
 import 'package:final_project/Primary_Screens/Budgets/budget.dart';
 import 'package:final_project/Primary_Screens/Savings/savings.dart';
 import 'package:final_project/SecondaryScreens/all_transactions.dart';
+import 'package:final_project/SecondaryScreens/report_page.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -1031,18 +1032,28 @@ class _HomePageState extends State<HomePage> {
         ),
         QuickActionCard(
           icon: Icons.remove,
-          label: 'Expense',
+          label: 'Add Expense',
           onTap: showSmartExpenseDialog,
         ),
         QuickActionCard(
           icon: Icons.receipt_long,
-          label: 'All Trans.',
+          label: 'All Trans',
           onTap: () async {
             await Navigator.push(
               context,
               MaterialPageRoute(builder: (context) => const TransactionsPage()),
             );
             refreshData();
+          },
+        ),
+        QuickActionCard(
+          icon: Icons.receipt_long,
+          label: 'View Reports.',
+          onTap: () async {
+            await Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const ReportPage()),
+            );
           },
         ),
       ],

@@ -30,7 +30,7 @@ class QuickActionCard extends StatelessWidget {
             ).colorScheme.onSurface.withAlpha((255 * 0.6).round()),
           ),
         ),
-        child: Row(
+        child: Column(
           children: [
             Container(
               padding: EdgeInsets.all(3),
