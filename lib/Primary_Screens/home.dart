@@ -766,12 +766,12 @@ class _HomePageState extends State<HomePage> {
                 // Add expense to budget
                 budget.expenses.add(Expense(name: titleCtrl.text, amount: amt));
                 await syncBudgets();
-                
+
                 // DO NOT create a transaction - budget expenses are internal only
                 // This ensures they don't affect the total balance or appear in transactions
-                
+
                 Navigator.pop(context);
-                
+
                 // Show success message
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
@@ -781,7 +781,7 @@ class _HomePageState extends State<HomePage> {
                     duration: const Duration(seconds: 2),
                   ),
                 );
-                
+
                 refreshData();
               }
             },
@@ -1021,84 +1021,29 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget buildQuickActions() {
-    return Column(
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            QuickActionCard(
-              icon: Icons.add,
-              label: 'Add Income',
-              onTap: showAddIncomeDialog,
-            ),
-            QuickActionCard(
-              icon: Icons.remove,
-              label: 'Expense',
-              onTap: showSmartExpenseDialog,
-            ),
-            QuickActionCard(
-              icon: Icons.receipt_long,
-              label: 'All Trans.',
-              onTap: () async {
-                await Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const TransactionsPage(),
-                  ),
-                );
-                refreshData();
-              },
-            ),
-          ],
+        QuickActionCard(
+          icon: Icons.add,
+          label: 'Add Income',
+          onTap: showAddIncomeDialog,
         ),
-        sizedBoxHeightSmall,
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            QuickActionCard(
-              icon: Icons.savings,
-              label: 'Savings',
-              onTap: () async {
-                await Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => SavingsPage(
-                      onTransactionAdded: onSavingsTransactionAdded,
-                    ),
-                  ),
-                );
-                refreshData();
-              },
-            ),
-            QuickActionCard(
-              icon: Icons.account_balance_wallet,
-              label: 'Budgets',
-              onTap: () async {
-                await Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => BudgetPage(
-                      onTransactionAdded: onBudgetTransactionAdded,
-                      onExpenseDeleted: onBudgetExpenseDeleted,
-                    ),
-                  ),
-                );
-                refreshData();
-              },
-            ),
-            QuickActionCard(
-              icon: Icons.analytics,
-              label: 'Analytics',
-              onTap: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Analytics coming soon!'),
-                    duration: Duration(seconds: 2),
-                  ),
-                );
-              },
-            ),
-          ],
+        QuickActionCard(
+          icon: Icons.remove,
+          label: 'Expense',
+          onTap: showSmartExpenseDialog,
+        ),
+        QuickActionCard(
+          icon: Icons.receipt_long,
+          label: 'All Trans.',
+          onTap: () async {
+            await Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const TransactionsPage()),
+            );
+            refreshData();
+          },
         ),
       ],
     );
