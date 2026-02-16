@@ -20,7 +20,7 @@ class NotificationIcon extends StatelessWidget {
           .snapshots(),
       builder: (context, snapshot) {
         int unreadCount = 0;
-
+        
         if (snapshot.hasData && snapshot.data != null) {
           unreadCount = snapshot.data!.docs.length;
         }
