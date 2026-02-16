@@ -1,188 +1,93 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:final_project/Components/Custom_header.dart';
-import 'package:final_project/Components/toast.dart';
+import 'package:final_project/Components/back_button.dart';
 import 'package:final_project/Constants/colors.dart';
-import 'package:final_project/Primary_Screens/Savings/streak_banner.dart';
+import 'package:final_project/Constants/spacing.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:fluttertoast/fluttertoast.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-// Note: The Saving class is defined at the bottom of this file.
-int streakCount = 0;
-int streakLevel = 1;
-String lastSaveDateStr = "";
+class SavingsPage extends StatefulWidget {
+  final Function(String, double, String)? onTransactionAdded;
 
-class SavingsScreen extends StatefulWidget {
-  const SavingsScreen({super.key});
+  const SavingsPage({super.key, this.onTransactionAdded});
 
   @override
-  State<SavingsScreen> createState() => SavingsScreenState();
+  State<SavingsPage> createState() => _SavingsPageState();
 }
 
-enum SavingsFilter { all, active, achieved }
+class _SavingsPageState extends State<SavingsPage> {
+  static const String keySavings = 'savings';
+  static const String keyTransactions = 'transactions';
+  static const String keyTotalIncome = 'total_income';
+  static const String keyStreakCount = 'streak_count';
+  static const String keyLastSaveDate = 'last_save_date';
+  static const String keyStreakLevel = 'streak_level';
 
-class SavingsScreenState extends State<SavingsScreen> {
-  // Public Variables
+  final userUid = FirebaseAuth.instance.currentUser!.uid;
   List<Saving> savings = [];
-  SavingsFilter currentFilter = SavingsFilter.all;
+  String filter = 'all';
   bool isLoading = true;
-  String userUid = FirebaseAuth.instance.currentUser!.uid;
-  final String year = DateTime.now().year.toString();
-  String month = DateFormat('MM').format(DateTime.now());
 
-  // Streak Variables
+  int streakCount = 0;
+  String streakLevel = 'Base';
 
   @override
   void initState() {
     super.initState();
-    loadLocalBackup();
-    listenToFirestore();
-    loadSavings();
-    loadStreakData();
+    loadData();
   }
 
-  Future<void> loadLocalBackup() async {
+  Future<void> loadData() async {
+    setState(() => isLoading = true);
     final prefs = await SharedPreferences.getInstance();
-    final savingsStrings = prefs.getStringList('savings') ?? [];
-    setState(() {
-      savings = savingsStrings
-          .map((str) => Saving.fromMap(json.decode(str)))
-          .toList();
-      isLoading = false;
-    });
+
+    final savingsStrings = prefs.getStringList(keySavings) ?? [];
+    savings = savingsStrings.map((s) => Saving.fromMap(json.decode(s))).toList();
+
+    streakCount = prefs.getInt(keyStreakCount) ?? 0;
+    streakLevel = prefs.getString(keyStreakLevel) ?? 'Base';
+
+    checkStreakExpiry();
+    setState(() => isLoading = false);
   }
 
-  void listenToFirestore() {
-    FirebaseFirestore.instance
-        .collection('statistics')
-        .doc(userUid)
-        .collection(year)
-        .doc(month)
-        .collection('savings')
-        .snapshots() // This is the magic stream
-        .listen((snapshot) {
-          final List<Saving> firestoreSavings = snapshot.docs.map((doc) {
-            final data = doc.data();
-            return Saving(
-              id: doc.id,
-              name: data['gName'] ?? '',
-              // Note: Firestore returns Strings for these based on your createSaving method
-              savedAmount:
-                  double.tryParse(data['savedAmount'].toString()) ?? 0.0,
-              targetAmount: double.tryParse(data['tAmount'].toString()) ?? 0.0,
-              deadline: (data['dueDate'] as Timestamp).toDate(),
-              achieved:
-                  (double.tryParse(data['savedAmount'].toString()) ?? 0.0) >=
-                  (double.tryParse(data['tAmount'].toString()) ?? 0.0),
-            );
-          }).toList();
-
-          setState(() {
-            savings = firestoreSavings;
-            isLoading = false;
-          });
-
-          // Keep SharedPreferences updated as a backup
-          saveSavingsToStorage();
-        });
-  }
-
-  // -------------------- Public Helpers --------------------
-
-  String capitalizeWords(String text) {
-    if (text.isEmpty) return text;
-    return text
-        .trim()
-        .split(' ')
-        .where((w) => w.isNotEmpty)
-        .map((w) => w[0].toUpperCase() + w.substring(1).toLowerCase())
-        .join(' ');
-  }
-
-  String formatCurrency(double amount) {
-    return NumberFormat.currency(
-      symbol: 'Ksh ',
-      decimalDigits: 2,
-    ).format(amount);
-  }
-
-  String calculateDaysRemaining(DateTime deadline) {
+  Future<void> checkStreakExpiry() async {
+    final prefs = await SharedPreferences.getInstance();
     final now = DateTime.now();
-    // Reset time to midnight for accurate day calculation
-    final dateNow = DateTime(now.year, now.month, now.day);
-    final dateDeadline = DateTime(deadline.year, deadline.month, deadline.day);
+    final todayStr = DateFormat('yyyy-MM-dd').format(now);
+    String lastSaveDateStr = prefs.getString(keyLastSaveDate) ?? "";
 
-    final difference = dateDeadline.difference(dateNow).inDays;
+    if (lastSaveDateStr.isEmpty) return;
 
-    if (difference < 0) return "Overdue";
-    if (difference == 0) return "Due today";
-    if (difference == 1) return "1 day to go";
-    return "$difference days to go";
-  }
+    final lastDate = DateFormat('yyyy-MM-dd').parse(lastSaveDateStr);
+    final difference = now.difference(lastDate).inDays;
 
-  List<Saving> get filteredSavings {
-    switch (currentFilter) {
-      case SavingsFilter.active:
-        return savings.where((s) => !s.achieved).toList();
-      case SavingsFilter.achieved:
-        return savings.where((s) => s.achieved).toList();
-      case SavingsFilter.all:
-        return savings;
+    if (difference >= 3) {
+      streakCount = 0;
+      streakLevel = 'Base';
+      await prefs.setInt(keyStreakCount, 0);
+      await prefs.setString(keyStreakLevel, 'Base');
+      setState(() {});
+      
+      await sendNotification(
+        '💔 Streak Lost',
+        'Your savings streak has been reset due to inactivity. Start saving again to rebuild it!',
+      );
     }
   }
 
-  // -------------------- Persistence (Data Saving) --------------------
-
-  Future<void> loadSavings() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      // Changed key from 'budgets' to 'savings'
-      final savingsStrings = prefs.getStringList('savings') ?? [];
-
-      final List<Saving> loadedSavings = [];
-
-      for (var str in savingsStrings) {
-        try {
-          final dynamic decoded = json.decode(str);
-          loadedSavings.add(Saving.fromMap(decoded));
-        } catch (e) {
-          debugPrint("Skipping corrupted saving data: $e");
-        }
-      }
-
-      setState(() {
-        savings = loadedSavings;
-        isLoading = false;
-      });
-    } catch (e) {
-      debugPrint("Error loading savings: $e");
-      setState(() {
-        savings = [];
-        isLoading = false;
-      });
-    }
-  }
-
-  Future<void> saveSavingsToStorage() async {
-    final prefs = await SharedPreferences.getInstance();
-    final data = savings.map((s) => json.encode(s.toMap())).toList();
-    await prefs.setStringList('savings', data);
-  }
-
-  // -------------------- Streak Logic --------------------
-
-  Future<void> loadStreakData() async {
-    final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      streakCount = prefs.getInt('streak_count') ?? 0;
-      lastSaveDateStr = prefs.getString('last_save_date') ?? "";
-      // Simple level logic: Level up every 7 days of streaks
-      streakLevel = (streakCount ~/ 7) + 1;
-    });
+  String getStreakLevel(int count) {
+    if (count == 0) return 'Base';
+    if (count < 7) return 'Bronze';
+    if (count < 30) return 'Silver';
+    if (count < 90) return 'Gold';
+    if (count < 180) return 'Platinum';
+    return 'Diamond';
   }
 
   Future<void> updateStreak() async {
@@ -190,526 +95,196 @@ class SavingsScreenState extends State<SavingsScreen> {
     final now = DateTime.now();
     final todayStr = DateFormat('yyyy-MM-dd').format(now);
 
-    if (lastSaveDateStr == todayStr) {
-      // Already saved today, streak remains the same
-      return;
-    }
+    String lastSaveDateStr = prefs.getString(keyLastSaveDate) ?? "";
+
+    if (lastSaveDateStr == todayStr) return;
 
     if (lastSaveDateStr.isNotEmpty) {
       final lastDate = DateFormat('yyyy-MM-dd').parse(lastSaveDateStr);
       final difference = now.difference(lastDate).inDays;
 
       if (difference == 1) {
-        // Saved yesterday, increment streak
         streakCount++;
+      } else if (difference >= 3) {
+        streakCount = 1;
       } else {
-        // Missed a day, reset streak (but start at 1 for today)
         streakCount = 1;
       }
     } else {
-      // First time ever saving
       streakCount = 1;
     }
 
-    lastSaveDateStr = todayStr;
-    streakLevel = (streakCount ~/ 7) + 1; // Recalculate level
+    streakLevel = getStreakLevel(streakCount);
 
-    await prefs.setInt('streak_count', streakCount);
-    await prefs.setString('last_save_date', lastSaveDateStr);
+    await prefs.setInt(keyStreakCount, streakCount);
+    await prefs.setString(keyStreakLevel, streakLevel);
+    await prefs.setString(keyLastSaveDate, todayStr);
 
     setState(() {});
 
-    Fluttertoast.showToast(
-      msg: "🔥 Streak updated! Day $streakCount",
-      backgroundColor: Colors.orange,
-      textColor: Colors.white,
-    );
+    if (streakCount % 7 == 0 && streakCount > 0) {
+      await sendNotification(
+        '🔥 Streak Milestone!',
+        'Amazing! You\'ve maintained a $streakCount day savings streak at $streakLevel level!',
+      );
+    }
   }
 
-  // -------------------- Actions --------------------
+  Future<void> syncSavings() async {
+    final prefs = await SharedPreferences.getInstance();
+    final data = savings.map((s) => json.encode(s.toMap())).toList();
+    await prefs.setStringList(keySavings, data);
+  }
 
-  void createSaving(String gName, String tAmount, Timestamp dueDate) async {
+  Future<void> sendNotification(String title, String message) async {
     try {
       await FirebaseFirestore.instance
-          .collection('statistics')
+          .collection('users')
           .doc(userUid)
-          .collection(year)
-          .doc(month)
-          .collection('savings')
+          .collection('notifications')
           .add({
-            'createdAt': FieldValue.serverTimestamp(),
-            'gName': gName,
-            'dueDate': dueDate,
-            'tAmount': tAmount,
-            'savedAmount': '0',
-          });
-      showCustomToast(
-        context: context,
-        message: 'Saving Added Successfully!',
-        backgroundColor: Colors.green,
-        icon: Icons.check_circle_outline,
-      );
-    } catch (e) {
-      showCustomToast(
-        context: context,
-        message: 'An error occurred, try again',
-        backgroundColor: Colors.red,
-        icon: Icons.error,
-      );
-    }
-  }
-
-  void addSavingsExpense(String amount) async {
-    try {
-      await FirebaseFirestore.instance
-          .collection('statistics')
-          .doc(userUid)
-          .collection(year)
-          .doc(month)
-          .collection('transactions')
-          .add({
-            'name': 'Savings',
-            'type': 'saving',
-            'description': 'saving goal',
-            'createdAt': FieldValue.serverTimestamp(),
-            'amount': amount,
-          });
-
-      showCustomToast(
-        context: context,
-        message: 'Expense Added Successfully!',
-        backgroundColor: Colors.green,
-        icon: Icons.check_circle_outline,
-      );
-    } catch (e) {
-      showCustomToast(
-        context: context,
-        message: 'An error occurred, try again',
-        backgroundColor: Colors.red,
-        icon: Icons.error_outline,
-      );
-    }
-  }
-
-  void addSaving(
-    String name,
-    double targetAmount,
-    DateTime deadline,
-    String id,
-  ) {
-    setState(() {
-      savings.add(
-        Saving(
-          id: id,
-          name: capitalizeWords(name),
-          savedAmount: 0.0, // Starts at 0
-          targetAmount: targetAmount,
-          deadline: deadline,
-        ),
-      );
-    });
-    saveSavingsToStorage();
-    Fluttertoast.showToast(msg: 'Saving goal for $name created.');
-  }
-
-  void addFunds(int index, double amount) async {
-    // 1. Get the current saving object
-    final saving = savings[index];
-    final double newSavedAmount = saving.savedAmount + amount;
-
-    // 2. Perform the Firestore Update FIRST (Handles offline automatically)
-    if (saving.id != null) {
-      try {
-        await FirebaseFirestore.instance
-            .collection('statistics')
-            .doc(userUid)
-            .collection(year)
-            .doc(month)
-            .collection('savings')
-            .doc(saving.id)
-            .update({
-              'savedAmount': newSavedAmount
-                  .toString(), // Keep as string to match your DB schema
-            });
-      } catch (e) {
-        debugPrint("Firestore update failed: $e");
-      }
-    }
-
-    // 3. Update the Local State to reflect the change immediately
-    setState(() {
-      saving.savedAmount = newSavedAmount;
-
-      // Auto-achieve logic
-      if (saving.savedAmount >= saving.targetAmount && !saving.achieved) {
-        saving.achieved = true;
-        Fluttertoast.showToast(
-          msg:
-              '🎉 Goal Achieved! You saved ${formatCurrency(saving.targetAmount)}',
-          gravity: ToastGravity.CENTER,
-          backgroundColor: Colors.green,
-          textColor: Colors.white,
-        );
-      }
-    });
-
-    // 4. Persistence and Side Effects
-    updateStreak();
-    saveSavingsToStorage();
-
-    if (!saving.achieved) {
-      Fluttertoast.showToast(
-        msg: 'Added ${formatCurrency(amount)} to ${saving.name}',
-      );
-    }
-  }
-
-  void deleteSaving(Saving saving) {
-    setState(() => savings.remove(saving));
-    saveSavingsToStorage();
-    Fluttertoast.showToast(msg: 'Saving for ${saving.name} deleted');
-  }
-
-  void renameSaving(Saving saving, String newName) async {
-    // 1. Check if the ID exists before trying to update Firestore
-    if (saving.id == null || saving.id!.isEmpty) {
-      debugPrint("Error: Saving ID is null or empty");
-      return;
-    }
-
-    try {
-      await FirebaseFirestore.instance
-          .collection('statistics')
-          .doc(userUid)
-          .collection(year)
-          .doc(month)
-          .collection('savings')
-          .doc(saving.id) // Use the ID from the object
-          .update({'gName': newName});
-
-      // 2. Update local state ONLY if Firestore succeeds (or use a try-finally)
-      setState(() {
-        saving.name = capitalizeWords(newName);
+        'title': title,
+        'message': message,
+        'createdAt': FieldValue.serverTimestamp(),
+        'isRead': false,
       });
-
-      saveSavingsToStorage();
-      Fluttertoast.showToast(msg: 'Saving renamed to ${saving.name}');
     } catch (e) {
-      debugPrint("Firestore update failed: $e");
-      Fluttertoast.showToast(msg: 'Failed to rename in database');
+      debugPrint('Error sending notification: $e');
     }
   }
 
-  // -------------------- UI Methods --------------------
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    if (isLoading) {
-      return Scaffold(
-        backgroundColor: theme.colorScheme.surface,
-        body: const Center(child: CircularProgressIndicator()),
-      );
+  List<Saving> get filteredSavings {
+    if (filter == 'all') return savings;
+    if (filter == 'active') {
+      return savings.where((s) => !s.achieved).toList();
     }
-
-    final displayedSavings = filteredSavings;
-
-    return Scaffold(
-      backgroundColor: theme.colorScheme.surface,
-      appBar: AppBar(
-        backgroundColor: theme.colorScheme.surface,
-        title: CustomHeader(headerName: "My Savings"),
-      ),
-      body: Column(
-        children: [
-          // Streak Banner
-          buildStreakBanner(theme),
-
-          // Filter Section
-          if (savings.isNotEmpty) buildFilterBar(theme),
-
-          // Main Content
-          Expanded(
-            child: savings.isEmpty
-                ? buildEmptyState(theme)
-                : displayedSavings.isEmpty
-                ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(
-                          Icons.savings_outlined,
-                          size: 60,
-                          color: Colors.grey,
-                        ),
-                        const SizedBox(height: 16),
-                        Text("No ${currentFilter.name} savings found"),
-                      ],
-                    ),
-                  )
-                : Scrollbar(
-                    thumbVisibility: true,
-                    radius: const Radius.circular(8),
-                    child: ListView.separated(
-                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 80),
-                      itemCount: displayedSavings.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 12),
-                      itemBuilder: (context, index) {
-                        return buildSavingCard(theme, displayedSavings[index]);
-                      },
-                    ),
-                  ),
-          ),
-
-          // Bottom Add Button (Only if list is not empty)
-          if (savings.isNotEmpty) buildAddAnotherButton(theme),
-        ],
-      ),
-    );
+    return savings.where((s) => s.achieved).toList();
   }
 
-  Widget buildFilterBar(ThemeData theme) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 8.0),
-      child: SegmentedButton<SavingsFilter>(
-        segments: const [
-          ButtonSegment(
-            value: SavingsFilter.all,
-            label: Text('All'),
-            icon: Icon(Icons.list),
-          ),
-          ButtonSegment(value: SavingsFilter.active, label: Text('Active')),
-          ButtonSegment(value: SavingsFilter.achieved, label: Text('Achieved')),
-        ],
-        selected: {currentFilter},
-        onSelectionChanged: (Set<SavingsFilter> newSelection) {
-          setState(() {
-            currentFilter = newSelection.first;
-          });
-        },
-        style: const ButtonStyle(
-          visualDensity: VisualDensity.compact,
-          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-        ),
-      ),
-    );
-  }
+  Future<void> createSavingGoal() async {
+    final nameCtrl = TextEditingController();
+    final targetCtrl = TextEditingController();
+    DateTime selectedDate = DateTime.now().add(const Duration(days: 30));
+    String? selectedIcon;
 
-  Widget buildSavingCard(ThemeData theme, Saving saving) {
-    double remainingAmount = saving.targetAmount - saving.savedAmount;
-    if (remainingAmount < 0) remainingAmount = 0;
+    final icons = [
+      {'code': 'phone', 'icon': Icons.phone_android},
+      {'code': 'home', 'icon': Icons.home},
+      {'code': 'car', 'icon': Icons.directions_car},
+      {'code': 'vacation', 'icon': Icons.flight},
+      {'code': 'education', 'icon': Icons.school},
+      {'code': 'emergency', 'icon': Icons.warning_amber_rounded},
+      {'code': 'wedding', 'icon': Icons.favorite},
+      {'code': 'business', 'icon': Icons.business_center},
+    ];
 
-    return Container(
-      decoration: BoxDecoration(
-        color: saving.achieved
-            ? Colors.green.withOpacity(0.1)
-            : theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-        border: Border.all(
-          color: saving.achieved
-              ? Colors.green.withOpacity(0.5)
-              : Colors.transparent,
-          width: 1.5,
-        ),
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(16),
-          onTap: () => showSavingOptions(saving),
-          child: Padding(
-            padding: const EdgeInsets.all(12),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
+    await showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('Create Savings Goal'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                CircleAvatar(
-                  radius: 24,
-                  backgroundColor: saving.achieved
-                      ? Colors.green
-                      : theme.colorScheme.primaryContainer,
-                  child: Icon(
-                    saving.achieved ? Icons.check : Icons.savings,
-                    color: saving.achieved
-                        ? Colors.white
-                        : theme.colorScheme.onPrimaryContainer,
+                TextField(
+                  controller: nameCtrl,
+                  textCapitalization: TextCapitalization.words,
+                  decoration: const InputDecoration(
+                    labelText: 'Goal Name',
+                    hintText: 'e.g. New Phone, Vacation',
+                    prefixIcon: Icon(Icons.edit),
                   ),
                 ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Expanded(
-                            child: Text(
-                              saving.name,
-                              style: theme.textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.w600,
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          if (!saving.achieved)
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 2,
-                              ),
-                              decoration: BoxDecoration(
-                                color: theme.colorScheme.primary.withOpacity(
-                                  0.1,
-                                ),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Text(
-                                calculateDaysRemaining(saving.deadline),
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  color: theme.colorScheme.primary,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      // Progress Text
-                      Text.rich(
-                        TextSpan(
-                          text: formatCurrency(saving.savedAmount),
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: saving.achieved
-                                ? Colors.green
-                                : theme.colorScheme.primary,
-                          ),
-                          children: [
-                            TextSpan(
-                              text: " / ${formatCurrency(saving.targetAmount)}",
-                              style: const TextStyle(
-                                color: Colors.grey,
-                                fontWeight: FontWeight.normal,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      if (!saving.achieved)
-                        Text(
-                          "Remaining: ${formatCurrency(remainingAmount)}",
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: Colors.grey[600],
-                          ),
-                        ),
-                      if (saving.achieved)
-                        Text(
-                          "Goal Reached!",
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: Colors.green,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                    ],
+                const SizedBox(height: 16),
+                TextField(
+                  controller: targetCtrl,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                    labelText: 'Target Amount (Ksh)',
+                    hintText: '0',
+                    prefixIcon: Icon(Icons.attach_money),
                   ),
                 ),
-                IconButton(
-                  icon: const Icon(Icons.more_vert_rounded),
-                  color: Colors.grey,
-                  onPressed: () => showSavingOptions(saving),
+                const SizedBox(height: 16),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.calendar_today),
+                  title: const Text('Due Date'),
+                  subtitle: Text(DateFormat('dd MMM yyyy').format(selectedDate)),
+                  trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                  onTap: () async {
+                    final picked = await showDatePicker(
+                      context: context,
+                      initialDate: selectedDate,
+                      firstDate: DateTime.now(),
+                      lastDate: DateTime.now().add(const Duration(days: 3650)),
+                    );
+                    if (picked != null) {
+                      setDialogState(() => selectedDate = picked);
+                    }
+                  },
+                ),
+                const SizedBox(height: 16),
+                const Text('Choose Icon:', style: TextStyle(fontWeight: FontWeight.bold)),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: icons.map((iconData) {
+                    final isSelected = selectedIcon == iconData['code'];
+                    return GestureDetector(
+                      onTap: () => setDialogState(() => selectedIcon = iconData['code'] as String),
+                      child: Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: isSelected ? brandGreen.withOpacity(0.2) : Colors.grey.shade200,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: isSelected ? brandGreen : Colors.transparent,
+                            width: 2,
+                          ),
+                        ),
+                        child: Icon(
+                          iconData['icon'] as IconData,
+                          color: isSelected ? brandGreen : Colors.grey.shade600,
+                          size: 28,
+                        ),
+                      ),
+                    );
+                  }).toList(),
                 ),
               ],
             ),
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget buildAddAnotherButton(ThemeData theme) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            offset: const Offset(0, -4),
-            blurRadius: 10,
-          ),
-        ],
-      ),
-      child: GestureDetector(
-        onTap: showAddSavingDialog,
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          decoration: BoxDecoration(
-            color: theme.colorScheme.primary,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Text(
-            'Create New Goal',
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-              color: theme.colorScheme.onPrimary,
-              fontWeight: FontWeight.bold,
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
             ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget buildEmptyState(ThemeData theme) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.savings_rounded,
-              size: 80,
-              color: theme.colorScheme.onSurface.withOpacity(0.2),
-            ),
-            const SizedBox(height: 20),
-            Text('No Savings Yet', style: theme.textTheme.headlineSmall),
-            const SizedBox(height: 8),
-            Text(
-              'Create a saving goal to start your journey.',
-              textAlign: TextAlign.center,
-              style: theme.textTheme.bodyMedium?.copyWith(color: Colors.grey),
-            ),
-            const SizedBox(height: 24),
-            GestureDetector(
-              onTap: showAddSavingDialog,
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.primary,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  'Start Saving Now',
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    color: theme.colorScheme.onPrimary,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: brandGreen),
+              onPressed: () async {
+                final target = double.tryParse(targetCtrl.text) ?? 0;
+                if (nameCtrl.text.isNotEmpty && target > 0) {
+                  final newGoal = Saving(
+                    name: nameCtrl.text,
+                    savedAmount: 0,
+                    targetAmount: target,
+                    deadline: selectedDate,
+                    iconCode: selectedIcon ?? 'phone',
+                  );
+                  savings.add(newGoal);
+                  await syncSavings();
+                  await sendNotification(
+                    '🎯 New Goal Created',
+                    'You\'ve set a savings goal: ${nameCtrl.text} - Target: Ksh ${target.toStringAsFixed(0)}',
+                  );
+                  Navigator.pop(context);
+                  setState(() {});
+                }
+              },
+              child: const Text('Create'),
             ),
           ],
         ),
@@ -717,273 +292,931 @@ class SavingsScreenState extends State<SavingsScreen> {
     );
   }
 
-  void showSavingOptions(Saving saving) {
-    showModalBottomSheet(
+  Future<void> addFundsToGoal(Saving saving) async {
+    final amountCtrl = TextEditingController();
+    await showDialog(
       context: context,
-      showDragHandle: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (context) {
-        return Padding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 30),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(saving.name, style: Theme.of(context).textTheme.titleLarge),
-              const Divider(height: 30),
-              if (!saving.achieved)
-                optionTile(Icons.add_circle_outline, 'Add Funds', () {
-                  Navigator.pop(context);
-                  final index = savings.indexOf(saving);
-                  if (index != -1) showAddFundsDialog(index);
-                }),
-              optionTile(Icons.edit_outlined, 'Rename Goal', () {
-                Navigator.pop(context);
-                final index = savings.indexOf(saving);
-                showRenameSavingDialog(saving, index);
-              }),
-              const Divider(),
-              optionTile(Icons.delete_outline, 'Delete Goal', () {
-                Navigator.pop(context);
-                showDeleteConfirmationDialog(saving);
-              }, destructive: true),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Widget optionTile(
-    IconData icon,
-    String label,
-    VoidCallback onTap, {
-    bool destructive = false,
-  }) {
-    final color = destructive ? Colors.red : null;
-    return ListTile(
-      leading: Container(
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: (destructive ? Colors.red : Theme.of(context).primaryColor)
-              .withOpacity(0.1),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Icon(icon, color: color ?? Theme.of(context).primaryColor),
-      ),
-      title: Text(
-        label,
-        style: TextStyle(color: color, fontWeight: FontWeight.w500),
-      ),
-      onTap: onTap,
-    );
-  }
-
-  // -------------------- Dialogs --------------------
-
-  void showAddSavingDialog() {
-    final nameController = TextEditingController();
-    final targetController = TextEditingController();
-    DateTime? selectedDate;
-
-    showDialog(
-      context: context,
-      builder: (ctx) => StatefulBuilder(
-        // StatefulBuilder to update Date text
-        builder: (context, setDialogState) {
-          return AlertDialog(
-            title: const Text('New Saving Goal'),
-            content: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextField(
-                    controller: nameController,
-                    decoration: const InputDecoration(
-                      labelText: 'Goal Name (e.g. Car, Phone)',
-                      prefixIcon: Icon(Icons.label),
-                    ),
-                    textCapitalization: TextCapitalization.words,
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: targetController,
-                    keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(
-                      labelText: 'Target Amount',
-                      prefixIcon: Icon(Icons.flag),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  InkWell(
-                    onTap: () async {
-                      final picked = await showDatePicker(
-                        context: context,
-                        initialDate: DateTime.now().add(
-                          const Duration(days: 30),
-                        ),
-                        firstDate: DateTime.now(),
-                        lastDate: DateTime(2100),
-                      );
-                      if (picked != null) {
-                        setDialogState(() {
-                          selectedDate = picked;
-                        });
-                      }
-                    },
-                    child: InputDecorator(
-                      decoration: const InputDecoration(
-                        labelText: 'Target Date / Deadline',
-                        prefixIcon: Icon(Icons.calendar_today),
-                      ),
-                      child: Text(
-                        selectedDate == null
-                            ? 'Select Date'
-                            : DateFormat('dd MMM yyyy').format(selectedDate!),
-                      ),
-                    ),
-                  ),
-                ],
+      builder: (context) => AlertDialog(
+        title: Text('Add Funds to ${saving.name}'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Current: Ksh ${saving.savedAmount.toStringAsFixed(0)}'),
+            Text('Target: Ksh ${saving.targetAmount.toStringAsFixed(0)}'),
+            Text('Remaining: Ksh ${saving.balance.toStringAsFixed(0)}'),
+            const SizedBox(height: 16),
+            TextField(
+              controller: amountCtrl,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                labelText: 'Amount to Add (Ksh)',
+                hintText: '0',
+                prefixIcon: Icon(Icons.attach_money),
               ),
+              autofocus: true,
             ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Cancel'),
-              ),
-              FilledButton(
-                onPressed: () {
-                  final name = nameController.text;
-                  final target = double.tryParse(targetController.text) ?? 0;
-
-                  if (name.isNotEmpty && target > 0 && selectedDate != null) {
-                    (name, target, selectedDate!);
-                    createSaving(
-                      nameController.text.trim(),
-                      targetController.text.trim(),
-                      Timestamp.fromDate(selectedDate!),
-                    );
-                    Navigator.pop(context);
-                  } else {
-                    Fluttertoast.showToast(msg: 'Please fill all fields');
-                  }
-                },
-                child: const Text('Create Goal'),
-              ),
-            ],
-          );
-        },
-      ),
-    );
-  }
-
-  void showAddFundsDialog(int index) {
-    final controller = TextEditingController();
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Add Funds'),
-        content: TextField(
-          controller: controller,
-          keyboardType: TextInputType.number,
-          decoration: const InputDecoration(
-            labelText: 'Amount to save',
-            prefixIcon: Icon(Icons.add_circle),
-          ),
+          ],
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: const Text('Cancel'),
           ),
-          FilledButton(
-            onPressed: () {
-              final amount = double.tryParse(controller.text) ?? 0;
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: brandGreen),
+            onPressed: () async {
+              final amount = double.tryParse(amountCtrl.text) ?? 0;
               if (amount > 0) {
-                addFunds(index, amount);
-                addSavingsExpense(controller.text.trim());
+                saving.savedAmount += amount;
+                
+                bool wasAchieved = saving.achieved;
+                if (saving.savedAmount >= saving.targetAmount && !wasAchieved) {
+                  saving.achieved = true;
+                  await sendNotification(
+                    '🎉 Goal Achieved!',
+                    'Congratulations! You\'ve reached your ${saving.name} savings goal of Ksh ${saving.targetAmount.toStringAsFixed(0)}!',
+                  );
+                }
+
+                await syncSavings();
+                await saveTransaction('Saved for ${saving.name}', amount, 'savings_deduction');
+                await updateStreak();
+
+                if (widget.onTransactionAdded != null) {
+                  widget.onTransactionAdded!('Saved for ${saving.name}', amount, 'savings_deduction');
+                }
+
                 Navigator.pop(context);
-              } else {
-                Fluttertoast.showToast(msg: 'Invalid amount');
+                setState(() {});
+
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('✅ Added Ksh ${amount.toStringAsFixed(0)} to ${saving.name}'),
+                    backgroundColor: brandGreen,
+                    behavior: SnackBarBehavior.floating,
+                    duration: const Duration(seconds: 2),
+                  ),
+                );
               }
             },
-            child: const Text('Add'),
+            child: const Text('Add Funds'),
           ),
         ],
       ),
     );
   }
 
-  void showDeleteConfirmationDialog(Saving saving) {
-    showDialog(
+  Future<void> editGoal(Saving saving) async {
+    final nameCtrl = TextEditingController(text: saving.name);
+    final targetCtrl = TextEditingController(text: saving.targetAmount.toStringAsFixed(0));
+    DateTime selectedDate = saving.deadline;
+    String? selectedIcon = saving.iconCode;
+
+    final icons = [
+      {'code': 'phone', 'icon': Icons.phone_android},
+      {'code': 'home', 'icon': Icons.home},
+      {'code': 'car', 'icon': Icons.directions_car},
+      {'code': 'vacation', 'icon': Icons.flight},
+      {'code': 'education', 'icon': Icons.school},
+      {'code': 'emergency', 'icon': Icons.warning_amber_rounded},
+      {'code': 'wedding', 'icon': Icons.favorite},
+      {'code': 'business', 'icon': Icons.business_center},
+    ];
+
+    await showDialog(
       context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Delete Goal?'),
-        content: Text('Are you sure you want to delete "${saving.name}"?'),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('Edit Savings Goal'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: nameCtrl,
+                  textCapitalization: TextCapitalization.words,
+                  decoration: const InputDecoration(
+                    labelText: 'Goal Name',
+                    prefixIcon: Icon(Icons.edit),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: targetCtrl,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                    labelText: 'Target Amount (Ksh)',
+                    prefixIcon: Icon(Icons.attach_money),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.calendar_today),
+                  title: const Text('Due Date'),
+                  subtitle: Text(DateFormat('dd MMM yyyy').format(selectedDate)),
+                  trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                  onTap: () async {
+                    final picked = await showDatePicker(
+                      context: context,
+                      initialDate: selectedDate,
+                      firstDate: DateTime.now(),
+                      lastDate: DateTime.now().add(const Duration(days: 3650)),
+                    );
+                    if (picked != null) {
+                      setDialogState(() => selectedDate = picked);
+                    }
+                  },
+                ),
+                const SizedBox(height: 16),
+                const Text('Choose Icon:', style: TextStyle(fontWeight: FontWeight.bold)),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: icons.map((iconData) {
+                    final isSelected = selectedIcon == iconData['code'];
+                    return GestureDetector(
+                      onTap: () => setDialogState(() => selectedIcon = iconData['code'] as String),
+                      child: Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: isSelected ? brandGreen.withOpacity(0.2) : Colors.grey.shade200,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: isSelected ? brandGreen : Colors.transparent,
+                            width: 2,
+                          ),
+                        ),
+                        child: Icon(
+                          iconData['icon'] as IconData,
+                          color: isSelected ? brandGreen : Colors.grey.shade600,
+                          size: 28,
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: brandGreen),
+              onPressed: () async {
+                final target = double.tryParse(targetCtrl.text) ?? 0;
+                if (nameCtrl.text.isNotEmpty && target > 0) {
+                  saving.name = nameCtrl.text;
+                  saving.targetAmount = target;
+                  saving.deadline = selectedDate;
+                  saving.iconCode = selectedIcon;
+                  
+                  if (saving.savedAmount >= saving.targetAmount && !saving.achieved) {
+                    saving.achieved = true;
+                    await sendNotification(
+                      '🎉 Goal Achieved!',
+                      'Congratulations! You\'ve reached your ${saving.name} savings goal!',
+                    );
+                  }
+
+                  await syncSavings();
+                  Navigator.pop(context);
+                  setState(() {});
+                }
+              },
+              child: const Text('Save Changes'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> deleteGoal(Saving saving) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Savings Goal'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Are you sure you want to delete "${saving.name}"?'),
+            const SizedBox(height: 12),
+            if (!saving.achieved && saving.savedAmount > 0) ...[
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.orange.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.orange.shade200),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.warning_amber_rounded, color: Colors.orange.shade700, size: 20),
+                        const SizedBox(width: 8),
+                        const Expanded(
+                          child: Text(
+                            'Important',
+                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'This goal has Ksh ${saving.savedAmount.toStringAsFixed(0)} saved. Deleting will:',
+                      style: const TextStyle(fontSize: 13),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '• Restore the saved amount to your balance',
+                      style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
+                    ),
+                    Text(
+                      '• Remove all related transactions',
+                      style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ],
+        ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(context, false),
             child: const Text('Cancel'),
           ),
-          FilledButton(
-            onPressed: () {
-              deleteSaving(saving);
-              Navigator.pop(context);
-            },
-            style: FilledButton.styleFrom(backgroundColor: errorColor),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: errorColor,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () => Navigator.pop(context, true),
             child: const Text('Delete'),
           ),
         ],
       ),
     );
+
+    if (confirmed == true) {
+      if (!saving.achieved && saving.savedAmount > 0) {
+        await deleteRelatedTransactions(saving.name);
+        await restoreBalanceFromGoal(saving.savedAmount);
+      }
+
+      savings.remove(saving);
+      await syncSavings();
+      await sendNotification(
+        '🗑️ Goal Deleted',
+        'Your ${saving.name} savings goal has been deleted.',
+      );
+      setState(() {});
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('✅ Goal deleted successfully'),
+          backgroundColor: brandGreen,
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
   }
 
-  void showRenameSavingDialog(Saving saving, int index) {
-    final controller = TextEditingController(text: saving.name);
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Rename Goal'),
-        content: TextField(
-          controller: controller,
-          decoration: const InputDecoration(labelText: 'New Name'),
-          textCapitalization: TextCapitalization.words,
+  Future<void> deleteRelatedTransactions(String goalName) async {
+    final prefs = await SharedPreferences.getInstance();
+    final txString = prefs.getString(keyTransactions) ?? '[]';
+    List<Map<String, dynamic>> transactions = List<Map<String, dynamic>>.from(json.decode(txString));
+
+    transactions.removeWhere((tx) =>
+        tx['title'] != null &&
+        tx['title'].toString().contains('Saved for $goalName') &&
+        (tx['type'] == 'savings_deduction' || tx['type'] == 'saving_deposit'));
+
+    await prefs.setString(keyTransactions, json.encode(transactions));
+  }
+
+  Future<void> restoreBalanceFromGoal(double savedAmount) async {
+    final prefs = await SharedPreferences.getInstance();
+    double totalIncome = prefs.getDouble(keyTotalIncome) ?? 0.0;
+    
+    // Since savings deductions reduce balance, we need to add it back
+    // This is effectively reversing the expense
+    // We don't change totalIncome, but we remove the expense transactions
+    // The balance will automatically adjust when transactions are deleted
+  }
+
+  Future<void> saveTransaction(String title, double amount, String type) async {
+    final prefs = await SharedPreferences.getInstance();
+    final txString = prefs.getString(keyTransactions) ?? '[]';
+    List<Map<String, dynamic>> transactions = List<Map<String, dynamic>>.from(json.decode(txString));
+
+    final newTx = {
+      'title': title,
+      'amount': amount,
+      'type': type,
+      'date': DateTime.now().toIso8601String(),
+    };
+    transactions.insert(0, newTx);
+    await prefs.setString(keyTransactions, json.encode(transactions));
+  }
+
+  IconData getIconData(String? code) {
+    switch (code) {
+      case 'phone':
+        return Icons.phone_android;
+      case 'home':
+        return Icons.home;
+      case 'car':
+        return Icons.directions_car;
+      case 'vacation':
+        return Icons.flight;
+      case 'education':
+        return Icons.school;
+      case 'emergency':
+        return Icons.warning_amber_rounded;
+      case 'wedding':
+        return Icons.favorite;
+      case 'business':
+        return Icons.business_center;
+      default:
+        return Icons.savings;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final filteredGoals = filteredSavings;
+
+    return Scaffold(
+      backgroundColor: theme.colorScheme.surface,
+      appBar: AppBar(
+        backgroundColor: theme.colorScheme.surface,
+        leading: const CustomBackButton(),
+        title: const CustomHeader(headerName: "Savings Goals"),
+        elevation: 0,
+      ),
+      body: isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : Column(
+              children: [
+                buildStreakCard(theme),
+                buildFilterChips(theme),
+                buildStatsCard(theme),
+                Expanded(
+                  child: filteredGoals.isEmpty
+                      ? buildEmptyState(theme)
+                      : RefreshIndicator(
+                          onRefresh: loadData,
+                          child: ListView.builder(
+                            padding: paddingAllMedium,
+                            itemCount: filteredGoals.length,
+                            itemBuilder: (context, index) {
+                              return buildSavingGoalCard(filteredGoals[index], theme);
+                            },
+                          ),
+                        ),
+                ),
+              ],
+            ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: createSavingGoal,
+        backgroundColor: brandGreen,
+        icon: const Icon(Icons.add),
+        label: const Text('New Goal'),
+      ),
+    );
+  }
+
+  Widget buildStreakCard(ThemeData theme) {
+    Color levelColor = brandGreen;
+    IconData levelIcon = Icons.local_fire_department;
+
+    if (streakLevel == 'Bronze') {
+      levelColor = Colors.brown;
+    } else if (streakLevel == 'Silver') {
+      levelColor = Colors.grey;
+    } else if (streakLevel == 'Gold') {
+      levelColor = Colors.amber;
+    } else if (streakLevel == 'Platinum') {
+      levelColor = Colors.cyan;
+    } else if (streakLevel == 'Diamond') {
+      levelColor = Colors.blue;
+    }
+
+    return Container(
+      margin: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [levelColor, levelColor.withOpacity(0.7)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+        borderRadius: radiusSmall,
+        boxShadow: [
+          BoxShadow(
+            color: levelColor.withOpacity(0.3),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
           ),
-          FilledButton(
-            onPressed: () {
-              if (controller.text.isNotEmpty) {
-                // Just pass the saving object and the new name
-                renameSaving(saving, controller.text.trim());
-                Navigator.pop(context);
-              }
-            },
-            child: const Text('Update'),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(levelIcon, color: Colors.white, size: 32),
           ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '$streakCount Day Streak',
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                Text(
+                  '$streakLevel Level',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: Colors.white.withOpacity(0.9),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Text(
+              '🔥',
+              style: const TextStyle(fontSize: 24),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget buildFilterChips(ThemeData theme) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+      child: Row(
+        children: [
+          buildFilterChip('All', 'all', theme),
+          const SizedBox(width: 8),
+          buildFilterChip('Active', 'active', theme),
+          const SizedBox(width: 8),
+          buildFilterChip('Achieved', 'achieved', theme),
+        ],
+      ),
+    );
+  }
+
+  Widget buildFilterChip(String label, String value, ThemeData theme) {
+    final isSelected = filter == value;
+    return GestureDetector(
+      onTap: () => setState(() => filter = value),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? brandGreen : theme.colorScheme.surface,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isSelected ? brandGreen : Colors.grey.shade300,
+            width: 1.5,
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: isSelected ? Colors.white : Colors.grey.shade700,
+            fontWeight: FontWeight.w600,
+            fontSize: 14,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget buildStatsCard(ThemeData theme) {
+    double totalTarget = 0;
+    double totalSaved = 0;
+    int activeGoals = 0;
+    int achievedGoals = 0;
+
+    for (var saving in savings) {
+      totalTarget += saving.targetAmount;
+      totalSaved += saving.savedAmount;
+      if (saving.achieved) {
+        achievedGoals++;
+      } else {
+        activeGoals++;
+      }
+    }
+
+    return Container(
+      margin: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: radiusSmall,
+        border: Border.all(color: Colors.grey.shade200),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: buildStatItem(
+                  'Total Target',
+                  'Ksh ${totalTarget.toStringAsFixed(0)}',
+                  Icons.flag,
+                  Colors.blue,
+                  theme,
+                ),
+              ),
+              Container(height: 40, width: 1, color: Colors.grey.shade300),
+              Expanded(
+                child: buildStatItem(
+                  'Total Saved',
+                  'Ksh ${totalSaved.toStringAsFixed(0)}',
+                  Icons.account_balance_wallet,
+                  brandGreen,
+                  theme,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: buildStatItem(
+                  'Active Goals',
+                  activeGoals.toString(),
+                  Icons.trending_up,
+                  Colors.orange,
+                  theme,
+                ),
+              ),
+              Container(height: 40, width: 1, color: Colors.grey.shade300),
+              Expanded(
+                child: buildStatItem(
+                  'Achieved',
+                  achievedGoals.toString(),
+                  Icons.check_circle,
+                  brandGreen,
+                  theme,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget buildStatItem(String label, String value, IconData icon, Color color, ThemeData theme) {
+    return Column(
+      children: [
+        Icon(icon, color: color, size: 20),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey.shade600),
+        ),
+        Text(
+          value,
+          style: theme.textTheme.bodyLarge?.copyWith(
+            fontWeight: FontWeight.bold,
+            color: color,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget buildEmptyState(ThemeData theme) {
+    String message = 'No savings goals yet';
+    String subtitle = 'Create your first goal to start saving!';
+
+    if (filter == 'active') {
+      message = 'No active goals';
+      subtitle = 'All your goals are achieved! Create a new one.';
+    } else if (filter == 'achieved') {
+      message = 'No achieved goals';
+      subtitle = 'Keep saving to achieve your goals!';
+    }
+
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.savings_outlined, size: 64, color: Colors.grey.shade400),
+          const SizedBox(height: 16),
+          Text(
+            message,
+            style: theme.textTheme.titleLarge?.copyWith(color: Colors.grey.shade600),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            subtitle,
+            style: theme.textTheme.bodyMedium?.copyWith(color: Colors.grey.shade500),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget buildSavingGoalCard(Saving saving, ThemeData theme) {
+    final progress = saving.targetAmount > 0 ? (saving.savedAmount / saving.targetAmount).clamp(0.0, 1.0) : 0.0;
+    final daysRemaining = saving.deadline.difference(DateTime.now()).inDays;
+    final isOverdue = daysRemaining < 0;
+    final isUrgent = daysRemaining <= 7 && daysRemaining >= 0;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: radiusSmall,
+        border: Border.all(
+          color: saving.achieved
+              ? brandGreen
+              : isOverdue
+                  ? errorColor
+                  : Colors.grey.shade200,
+          width: saving.achieved ? 2 : 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          ListTile(
+            contentPadding: const EdgeInsets.all(16),
+            leading: Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                color: saving.achieved ? brandGreen.withOpacity(0.1) : accentColor.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                getIconData(saving.iconCode),
+                color: saving.achieved ? brandGreen : accentColor,
+                size: 28,
+              ),
+            ),
+            title: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    saving.name,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                if (saving.achieved)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: brandGreen.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.check_circle, color: brandGreen, size: 16),
+                        const SizedBox(width: 4),
+                        Text(
+                          'Achieved',
+                          style: TextStyle(
+                            color: brandGreen,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Icon(Icons.calendar_today, size: 14, color: Colors.grey.shade600),
+                    const SizedBox(width: 4),
+                    Text(
+                      isOverdue
+                          ? '${daysRemaining.abs()} days overdue'
+                          : '$daysRemaining days remaining',
+                      style: TextStyle(
+                        color: isOverdue
+                            ? errorColor
+                            : isUrgent
+                                ? Colors.orange
+                                : Colors.grey.shade600,
+                        fontSize: 12,
+                        fontWeight: isOverdue || isUrgent ? FontWeight.bold : FontWeight.normal,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Due: ${DateFormat('dd MMM yyyy').format(saving.deadline)}',
+                  style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                ),
+              ],
+            ),
+            trailing: PopupMenuButton(
+              icon: Icon(Icons.more_vert, color: Colors.grey.shade600),
+              itemBuilder: (context) => [
+                if (!saving.achieved)
+                  PopupMenuItem(
+                    child: Row(
+                      children: [
+                        Icon(Icons.add_circle_outline, color: brandGreen, size: 20),
+                        const SizedBox(width: 8),
+                        const Text('Add Funds'),
+                      ],
+                    ),
+                    onTap: () => Future.delayed(Duration.zero, () => addFundsToGoal(saving)),
+                  ),
+                PopupMenuItem(
+                  child: Row(
+                    children: [
+                      Icon(Icons.edit, color: Colors.blue, size: 20),
+                      const SizedBox(width: 8),
+                      const Text('Edit Goal'),
+                    ],
+                  ),
+                  onTap: () => Future.delayed(Duration.zero, () => editGoal(saving)),
+                ),
+                PopupMenuItem(
+                  child: Row(
+                    children: [
+                      Icon(Icons.delete, color: errorColor, size: 20),
+                      const SizedBox(width: 8),
+                      const Text('Delete Goal'),
+                    ],
+                  ),
+                  onTap: () => Future.delayed(Duration.zero, () => deleteGoal(saving)),
+                ),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Column(
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Saved',
+                          style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                        ),
+                        Text(
+                          'Ksh ${saving.savedAmount.toStringAsFixed(0)}',
+                          style: theme.textTheme.bodyLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: brandGreen,
+                          ),
+                        ),
+                      ],
+                    ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(
+                          'Target',
+                          style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                        ),
+                        Text(
+                          'Ksh ${saving.targetAmount.toStringAsFixed(0)}',
+                          style: theme.textTheme.bodyLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: LinearProgressIndicator(
+                    value: progress,
+                    minHeight: 8,
+                    backgroundColor: Colors.grey.shade200,
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      saving.achieved ? brandGreen : accentColor,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      '${(progress * 100).toStringAsFixed(1)}% Complete',
+                      style: TextStyle(
+                        color: Colors.grey.shade600,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    Text(
+                      'Remaining: Ksh ${saving.balance.toStringAsFixed(0)}',
+                      style: TextStyle(
+                        color: Colors.grey.shade600,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          if (!saving.achieved)
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () => addFundsToGoal(saving),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: brandGreen,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  icon: const Icon(Icons.add_circle_outline),
+                  label: const Text('Add Funds'),
+                ),
+              ),
+            ),
         ],
       ),
     );
   }
 }
 
-// -------------------- SAVING MODEL --------------------
-
 class Saving {
   String name;
-  String? id;
-  double savedAmount; // Current funds
-  double targetAmount; // Goal
-  DateTime deadline; // Date goal
+  double savedAmount;
+  double targetAmount;
+  DateTime deadline;
   bool achieved;
   String? iconCode;
 
   Saving({
-    required this.id,
     required this.name,
     required this.savedAmount,
     required this.targetAmount,
@@ -992,9 +1225,10 @@ class Saving {
     this.iconCode,
   });
 
+  double get balance => targetAmount - savedAmount;
+
   Map<String, dynamic> toMap() {
     return {
-      'id': id,
       'name': name,
       'savedAmount': savedAmount,
       'targetAmount': targetAmount,
@@ -1006,7 +1240,6 @@ class Saving {
 
   factory Saving.fromMap(Map<String, dynamic> map) {
     return Saving(
-      id: map['id'] ?? '',
       name: map['name'] ?? 'Unnamed',
       savedAmount: map['savedAmount'] is String
           ? double.tryParse(map['savedAmount']) ?? 0.0

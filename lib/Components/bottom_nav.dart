@@ -1,8 +1,8 @@
 import 'package:final_project/Primary_Screens/Budgets/budget.dart';
+import 'package:final_project/Primary_Screens/Savings/savings.dart';
 import 'package:final_project/Primary_Screens/ai.dart';
 import 'package:final_project/Primary_Screens/home.dart';
 import 'package:final_project/Primary_Screens/profile.dart';
-import 'package:final_project/Primary_Screens/Savings/savings.dart';
 import 'package:flutter/material.dart';
 
 class BottomNav extends StatefulWidget {
@@ -16,8 +16,8 @@ class _BottomNavState extends State<BottomNav> {
   int currentIndex = 0;
   List pages = [
     const HomePage(),
-    const BudgetScreen(),
-    const SavingsScreen(),
+    const BudgetPage(),
+    const SavingsPage(),
     const AiPage(),
     const Profile(),
   ];
