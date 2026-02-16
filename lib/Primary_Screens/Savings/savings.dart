@@ -47,7 +47,9 @@ class _SavingsPageState extends State<SavingsPage> {
     final prefs = await SharedPreferences.getInstance();
 
     final savingsStrings = prefs.getStringList(keySavings) ?? [];
-    savings = savingsStrings.map((s) => Saving.fromMap(json.decode(s))).toList();
+    savings = savingsStrings
+        .map((s) => Saving.fromMap(json.decode(s)))
+        .toList();
 
     streakCount = prefs.getInt(keyStreakCount) ?? 0;
     streakLevel = prefs.getString(keyStreakLevel) ?? 'Base';
@@ -73,7 +75,7 @@ class _SavingsPageState extends State<SavingsPage> {
       await prefs.setInt(keyStreakCount, 0);
       await prefs.setString(keyStreakLevel, 'Base');
       setState(() {});
-      
+
       await sendNotification(
         '💔 Streak Lost',
         'Your savings streak has been reset due to inactivity. Start saving again to rebuild it!',
@@ -143,11 +145,11 @@ class _SavingsPageState extends State<SavingsPage> {
           .doc(userUid)
           .collection('notifications')
           .add({
-        'title': title,
-        'message': message,
-        'createdAt': FieldValue.serverTimestamp(),
-        'isRead': false,
-      });
+            'title': title,
+            'message': message,
+            'createdAt': FieldValue.serverTimestamp(),
+            'isRead': false,
+          });
     } catch (e) {
       debugPrint('Error sending notification: $e');
     }
@@ -211,7 +213,9 @@ class _SavingsPageState extends State<SavingsPage> {
                   contentPadding: EdgeInsets.zero,
                   leading: const Icon(Icons.calendar_today),
                   title: const Text('Due Date'),
-                  subtitle: Text(DateFormat('dd MMM yyyy').format(selectedDate)),
+                  subtitle: Text(
+                    DateFormat('dd MMM yyyy').format(selectedDate),
+                  ),
                   trailing: const Icon(Icons.arrow_forward_ios, size: 16),
                   onTap: () async {
                     final picked = await showDatePicker(
@@ -226,7 +230,10 @@ class _SavingsPageState extends State<SavingsPage> {
                   },
                 ),
                 const SizedBox(height: 16),
-                const Text('Choose Icon:', style: TextStyle(fontWeight: FontWeight.bold)),
+                const Text(
+                  'Choose Icon:',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
                 const SizedBox(height: 8),
                 Wrap(
                   spacing: 8,
@@ -234,11 +241,15 @@ class _SavingsPageState extends State<SavingsPage> {
                   children: icons.map((iconData) {
                     final isSelected = selectedIcon == iconData['code'];
                     return GestureDetector(
-                      onTap: () => setDialogState(() => selectedIcon = iconData['code'] as String),
+                      onTap: () => setDialogState(
+                        () => selectedIcon = iconData['code'] as String,
+                      ),
                       child: Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: isSelected ? brandGreen.withOpacity(0.2) : Colors.grey.shade200,
+                          color: isSelected
+                              ? brandGreen.withOpacity(0.2)
+                              : Colors.grey.shade200,
                           borderRadius: BorderRadius.circular(8),
                           border: Border.all(
                             color: isSelected ? brandGreen : Colors.transparent,
@@ -329,7 +340,7 @@ class _SavingsPageState extends State<SavingsPage> {
               final amount = double.tryParse(amountCtrl.text) ?? 0;
               if (amount > 0) {
                 saving.savedAmount += amount;
-                
+
                 bool wasAchieved = saving.achieved;
                 if (saving.savedAmount >= saving.targetAmount && !wasAchieved) {
                   saving.achieved = true;
@@ -340,11 +351,19 @@ class _SavingsPageState extends State<SavingsPage> {
                 }
 
                 await syncSavings();
-                await saveTransaction('Saved for ${saving.name}', amount, 'savings_deduction');
+                await saveTransaction(
+                  'Saved for ${saving.name}',
+                  amount,
+                  'savings_deduction',
+                );
                 await updateStreak();
 
                 if (widget.onTransactionAdded != null) {
-                  widget.onTransactionAdded!('Saved for ${saving.name}', amount, 'savings_deduction');
+                  widget.onTransactionAdded!(
+                    'Saved for ${saving.name}',
+                    amount,
+                    'savings_deduction',
+                  );
                 }
 
                 Navigator.pop(context);
@@ -352,7 +371,9 @@ class _SavingsPageState extends State<SavingsPage> {
 
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text('✅ Added Ksh ${amount.toStringAsFixed(0)} to ${saving.name}'),
+                    content: Text(
+                      '✅ Added Ksh ${amount.toStringAsFixed(0)} to ${saving.name}',
+                    ),
                     backgroundColor: brandGreen,
                     behavior: SnackBarBehavior.floating,
                     duration: const Duration(seconds: 2),
@@ -369,7 +390,9 @@ class _SavingsPageState extends State<SavingsPage> {
 
   Future<void> editGoal(Saving saving) async {
     final nameCtrl = TextEditingController(text: saving.name);
-    final targetCtrl = TextEditingController(text: saving.targetAmount.toStringAsFixed(0));
+    final targetCtrl = TextEditingController(
+      text: saving.targetAmount.toStringAsFixed(0),
+    );
     DateTime selectedDate = saving.deadline;
     String? selectedIcon = saving.iconCode;
 
@@ -415,7 +438,9 @@ class _SavingsPageState extends State<SavingsPage> {
                   contentPadding: EdgeInsets.zero,
                   leading: const Icon(Icons.calendar_today),
                   title: const Text('Due Date'),
-                  subtitle: Text(DateFormat('dd MMM yyyy').format(selectedDate)),
+                  subtitle: Text(
+                    DateFormat('dd MMM yyyy').format(selectedDate),
+                  ),
                   trailing: const Icon(Icons.arrow_forward_ios, size: 16),
                   onTap: () async {
                     final picked = await showDatePicker(
@@ -430,7 +455,10 @@ class _SavingsPageState extends State<SavingsPage> {
                   },
                 ),
                 const SizedBox(height: 16),
-                const Text('Choose Icon:', style: TextStyle(fontWeight: FontWeight.bold)),
+                const Text(
+                  'Choose Icon:',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
                 const SizedBox(height: 8),
                 Wrap(
                   spacing: 8,
@@ -438,11 +466,15 @@ class _SavingsPageState extends State<SavingsPage> {
                   children: icons.map((iconData) {
                     final isSelected = selectedIcon == iconData['code'];
                     return GestureDetector(
-                      onTap: () => setDialogState(() => selectedIcon = iconData['code'] as String),
+                      onTap: () => setDialogState(
+                        () => selectedIcon = iconData['code'] as String,
+                      ),
                       child: Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: isSelected ? brandGreen.withOpacity(0.2) : Colors.grey.shade200,
+                          color: isSelected
+                              ? brandGreen.withOpacity(0.2)
+                              : Colors.grey.shade200,
                           borderRadius: BorderRadius.circular(8),
                           border: Border.all(
                             color: isSelected ? brandGreen : Colors.transparent,
@@ -475,8 +507,9 @@ class _SavingsPageState extends State<SavingsPage> {
                   saving.targetAmount = target;
                   saving.deadline = selectedDate;
                   saving.iconCode = selectedIcon;
-                  
-                  if (saving.savedAmount >= saving.targetAmount && !saving.achieved) {
+
+                  if (saving.savedAmount >= saving.targetAmount &&
+                      !saving.achieved) {
                     saving.achieved = true;
                     await sendNotification(
                       '🎉 Goal Achieved!',
@@ -521,12 +554,19 @@ class _SavingsPageState extends State<SavingsPage> {
                   children: [
                     Row(
                       children: [
-                        Icon(Icons.warning_amber_rounded, color: Colors.orange.shade700, size: 20),
+                        Icon(
+                          Icons.warning_amber_rounded,
+                          color: Colors.orange.shade700,
+                          size: 20,
+                        ),
                         const SizedBox(width: 8),
                         const Expanded(
                           child: Text(
                             'Important',
-                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                            ),
                           ),
                         ),
                       ],
@@ -539,11 +579,17 @@ class _SavingsPageState extends State<SavingsPage> {
                     const SizedBox(height: 4),
                     Text(
                       '• Restore the saved amount to your balance',
-                      style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey.shade700,
+                      ),
                     ),
                     Text(
                       '• Remove all related transactions',
-                      style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey.shade700,
+                      ),
                     ),
                   ],
                 ),
@@ -596,12 +642,16 @@ class _SavingsPageState extends State<SavingsPage> {
   Future<void> deleteRelatedTransactions(String goalName) async {
     final prefs = await SharedPreferences.getInstance();
     final txString = prefs.getString(keyTransactions) ?? '[]';
-    List<Map<String, dynamic>> transactions = List<Map<String, dynamic>>.from(json.decode(txString));
+    List<Map<String, dynamic>> transactions = List<Map<String, dynamic>>.from(
+      json.decode(txString),
+    );
 
-    transactions.removeWhere((tx) =>
-        tx['title'] != null &&
-        tx['title'].toString().contains('Saved for $goalName') &&
-        (tx['type'] == 'savings_deduction' || tx['type'] == 'saving_deposit'));
+    transactions.removeWhere(
+      (tx) =>
+          tx['title'] != null &&
+          tx['title'].toString().contains('Saved for $goalName') &&
+          (tx['type'] == 'savings_deduction' || tx['type'] == 'saving_deposit'),
+    );
 
     await prefs.setString(keyTransactions, json.encode(transactions));
   }
@@ -609,7 +659,7 @@ class _SavingsPageState extends State<SavingsPage> {
   Future<void> restoreBalanceFromGoal(double savedAmount) async {
     final prefs = await SharedPreferences.getInstance();
     double totalIncome = prefs.getDouble(keyTotalIncome) ?? 0.0;
-    
+
     // Since savings deductions reduce balance, we need to add it back
     // This is effectively reversing the expense
     // We don't change totalIncome, but we remove the expense transactions
@@ -619,7 +669,9 @@ class _SavingsPageState extends State<SavingsPage> {
   Future<void> saveTransaction(String title, double amount, String type) async {
     final prefs = await SharedPreferences.getInstance();
     final txString = prefs.getString(keyTransactions) ?? '[]';
-    List<Map<String, dynamic>> transactions = List<Map<String, dynamic>>.from(json.decode(txString));
+    List<Map<String, dynamic>> transactions = List<Map<String, dynamic>>.from(
+      json.decode(txString),
+    );
 
     final newTx = {
       'title': title,
@@ -683,7 +735,10 @@ class _SavingsPageState extends State<SavingsPage> {
                             padding: paddingAllMedium,
                             itemCount: filteredGoals.length,
                             itemBuilder: (context, index) {
-                              return buildSavingGoalCard(filteredGoals[index], theme);
+                              return buildSavingGoalCard(
+                                filteredGoals[index],
+                                theme,
+                              );
                             },
                           ),
                         ),
@@ -770,10 +825,7 @@ class _SavingsPageState extends State<SavingsPage> {
               color: Colors.white.withOpacity(0.2),
               borderRadius: BorderRadius.circular(20),
             ),
-            child: Text(
-              '🔥',
-              style: const TextStyle(fontSize: 24),
-            ),
+            child: Text('🔥', style: const TextStyle(fontSize: 24)),
           ),
         ],
       ),
@@ -906,14 +958,22 @@ class _SavingsPageState extends State<SavingsPage> {
     );
   }
 
-  Widget buildStatItem(String label, String value, IconData icon, Color color, ThemeData theme) {
+  Widget buildStatItem(
+    String label,
+    String value,
+    IconData icon,
+    Color color,
+    ThemeData theme,
+  ) {
     return Column(
       children: [
         Icon(icon, color: color, size: 20),
         const SizedBox(height: 4),
         Text(
           label,
-          style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey.shade600),
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: Colors.grey.shade600,
+          ),
         ),
         Text(
           value,
@@ -946,12 +1006,16 @@ class _SavingsPageState extends State<SavingsPage> {
           const SizedBox(height: 16),
           Text(
             message,
-            style: theme.textTheme.titleLarge?.copyWith(color: Colors.grey.shade600),
+            style: theme.textTheme.titleLarge?.copyWith(
+              color: Colors.grey.shade600,
+            ),
           ),
           const SizedBox(height: 8),
           Text(
             subtitle,
-            style: theme.textTheme.bodyMedium?.copyWith(color: Colors.grey.shade500),
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: Colors.grey.shade500,
+            ),
             textAlign: TextAlign.center,
           ),
         ],
@@ -960,7 +1024,9 @@ class _SavingsPageState extends State<SavingsPage> {
   }
 
   Widget buildSavingGoalCard(Saving saving, ThemeData theme) {
-    final progress = saving.targetAmount > 0 ? (saving.savedAmount / saving.targetAmount).clamp(0.0, 1.0) : 0.0;
+    final progress = saving.targetAmount > 0
+        ? (saving.savedAmount / saving.targetAmount).clamp(0.0, 1.0)
+        : 0.0;
     final daysRemaining = saving.deadline.difference(DateTime.now()).inDays;
     final isOverdue = daysRemaining < 0;
     final isUrgent = daysRemaining <= 7 && daysRemaining >= 0;
@@ -974,8 +1040,8 @@ class _SavingsPageState extends State<SavingsPage> {
           color: saving.achieved
               ? brandGreen
               : isOverdue
-                  ? errorColor
-                  : Colors.grey.shade200,
+              ? errorColor
+              : Colors.grey.shade200,
           width: saving.achieved ? 2 : 1,
         ),
         boxShadow: [
@@ -994,7 +1060,9 @@ class _SavingsPageState extends State<SavingsPage> {
               width: 56,
               height: 56,
               decoration: BoxDecoration(
-                color: saving.achieved ? brandGreen.withOpacity(0.1) : accentColor.withOpacity(0.1),
+                color: saving.achieved
+                    ? brandGreen.withOpacity(0.1)
+                    : accentColor.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(
@@ -1015,7 +1083,10 @@ class _SavingsPageState extends State<SavingsPage> {
                 ),
                 if (saving.achieved)
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: brandGreen.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(12),
@@ -1044,7 +1115,11 @@ class _SavingsPageState extends State<SavingsPage> {
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    Icon(Icons.calendar_today, size: 14, color: Colors.grey.shade600),
+                    Icon(
+                      Icons.calendar_today,
+                      size: 14,
+                      color: Colors.grey.shade600,
+                    ),
                     const SizedBox(width: 4),
                     Text(
                       isOverdue
@@ -1054,10 +1129,12 @@ class _SavingsPageState extends State<SavingsPage> {
                         color: isOverdue
                             ? errorColor
                             : isUrgent
-                                ? Colors.orange
-                                : Colors.grey.shade600,
+                            ? Colors.orange
+                            : Colors.grey.shade600,
                         fontSize: 12,
-                        fontWeight: isOverdue || isUrgent ? FontWeight.bold : FontWeight.normal,
+                        fontWeight: isOverdue || isUrgent
+                            ? FontWeight.bold
+                            : FontWeight.normal,
                       ),
                     ),
                   ],
@@ -1076,12 +1153,19 @@ class _SavingsPageState extends State<SavingsPage> {
                   PopupMenuItem(
                     child: Row(
                       children: [
-                        Icon(Icons.add_circle_outline, color: brandGreen, size: 20),
+                        Icon(
+                          Icons.add_circle_outline,
+                          color: brandGreen,
+                          size: 20,
+                        ),
                         const SizedBox(width: 8),
                         const Text('Add Funds'),
                       ],
                     ),
-                    onTap: () => Future.delayed(Duration.zero, () => addFundsToGoal(saving)),
+                    onTap: () => Future.delayed(
+                      Duration.zero,
+                      () => addFundsToGoal(saving),
+                    ),
                   ),
                 PopupMenuItem(
                   child: Row(
@@ -1091,7 +1175,8 @@ class _SavingsPageState extends State<SavingsPage> {
                       const Text('Edit Goal'),
                     ],
                   ),
-                  onTap: () => Future.delayed(Duration.zero, () => editGoal(saving)),
+                  onTap: () =>
+                      Future.delayed(Duration.zero, () => editGoal(saving)),
                 ),
                 PopupMenuItem(
                   child: Row(
@@ -1101,7 +1186,8 @@ class _SavingsPageState extends State<SavingsPage> {
                       const Text('Delete Goal'),
                     ],
                   ),
-                  onTap: () => Future.delayed(Duration.zero, () => deleteGoal(saving)),
+                  onTap: () =>
+                      Future.delayed(Duration.zero, () => deleteGoal(saving)),
                 ),
               ],
             ),
@@ -1118,7 +1204,10 @@ class _SavingsPageState extends State<SavingsPage> {
                       children: [
                         Text(
                           'Saved',
-                          style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                          style: TextStyle(
+                            color: Colors.grey.shade600,
+                            fontSize: 12,
+                          ),
                         ),
                         Text(
                           'Ksh ${saving.savedAmount.toStringAsFixed(0)}',
@@ -1134,7 +1223,10 @@ class _SavingsPageState extends State<SavingsPage> {
                       children: [
                         Text(
                           'Target',
-                          style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                          style: TextStyle(
+                            color: Colors.grey.shade600,
+                            fontSize: 12,
+                          ),
                         ),
                         Text(
                           'Ksh ${saving.targetAmount.toStringAsFixed(0)}',

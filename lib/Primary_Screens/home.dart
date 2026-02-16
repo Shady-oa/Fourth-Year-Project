@@ -15,6 +15,12 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+// Currency formatting utility
+class CurrencyFormatter {
+  static final NumberFormat _formatter = NumberFormat('#,##0', 'en_US');
+  static String format(double amount) => 'Ksh ${_formatter.format(amount.round())}';
+}
+
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
@@ -138,7 +144,7 @@ class _HomePageState extends State<HomePage> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    '$action: Ksh ${amount.toStringAsFixed(0)}',
+                    '$action: ${CurrencyFormatter.format(amount)}',
                     style: const TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
@@ -167,10 +173,99 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  /// Check if a transaction belongs to an achieved saving goal
+  bool isTransactionLinkedToAchievedGoal(Map<String, dynamic> tx) {
+    if (tx['type'] != 'savings_deduction' && tx['type'] != 'saving_deposit') {
+      return false;
+    }
+
+    final title = tx['title'] ?? '';
+    
+    for (var saving in savings) {
+      if (title.contains(saving.name) && saving.achieved) {
+        return true;
+      }
+    }
+    
+    return false;
+  }
+
+  /// Recalculate savings goals after transaction deletion (system-level safety)
+  Future<void> recalculateSavingsGoals() async {
+    final prefs = await SharedPreferences.getInstance();
+    
+    final txString = prefs.getString(keyTransactions) ?? '[]';
+    final currentTransactions = List<Map<String, dynamic>>.from(json.decode(txString));
+    
+    bool savingsChanged = false;
+    
+    for (var saving in savings) {
+      double calculatedAmount = 0.0;
+      
+      for (var tx in currentTransactions) {
+        if ((tx['type'] == 'savings_deduction' || tx['type'] == 'saving_deposit') &&
+            tx['title'] != null &&
+            tx['title'].toString().contains('Saved for ${saving.name}')) {
+          calculatedAmount += double.tryParse(tx['amount'].toString()) ?? 0.0;
+        }
+      }
+      
+      if (saving.savedAmount != calculatedAmount) {
+        saving.savedAmount = calculatedAmount;
+        savingsChanged = true;
+      }
+      
+      // Dynamically calculate achieved status
+      bool shouldBeAchieved = saving.savedAmount >= saving.targetAmount;
+      if (saving.achieved != shouldBeAchieved) {
+        saving.achieved = shouldBeAchieved;
+        savingsChanged = true;
+        debugPrint('🔄 Saving goal "${saving.name}" status changed: Achieved=$shouldBeAchieved');
+      }
+    }
+    
+    if (savingsChanged) {
+      final data = savings.map((s) => json.encode(s.toMap())).toList();
+      await prefs.setStringList(keySavings, data);
+      debugPrint('✅ Savings goals recalculated and persisted');
+    }
+  }
+
   Future<void> deleteTransaction(int index) async {
     final tx = transactions[index];
     final amount = double.tryParse(tx['amount'].toString()) ?? 0.0;
     final type = tx['type'];
+
+    // BUSINESS RULE: Check if transaction is linked to an achieved saving goal
+    if (isTransactionLinkedToAchievedGoal(tx)) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                Icon(Icons.lock, color: Colors.white, size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Transactions linked to an achieved saving goal cannot be deleted.',
+                    style: TextStyle(fontSize: 14),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: Colors.orange.shade700,
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 4),
+            action: SnackBarAction(
+              label: 'OK',
+              textColor: Colors.white,
+              onPressed: () {},
+            ),
+          ),
+        );
+      }
+      return; // Prevent deletion
+    }
 
     final confirmed = await showDialog<bool>(
       context: context,
@@ -186,7 +281,7 @@ class _HomePageState extends State<HomePage> {
               '${tx['title']}',
               style: const TextStyle(fontWeight: FontWeight.bold),
             ),
-            Text('Amount: Ksh ${amount.toStringAsFixed(0)}'),
+            Text('Amount: ${CurrencyFormatter.format(amount)}'),
             const SizedBox(height: 12),
             Container(
               padding: const EdgeInsets.all(8),
@@ -243,6 +338,9 @@ class _HomePageState extends State<HomePage> {
         totalIncome -= amount;
         await prefs.setDouble(keyTotalIncome, totalIncome);
       }
+
+      // CRITICAL: Recalculate savings goals after deletion
+      await recalculateSavingsGoals();
 
       calculateStats();
       setState(() {});
@@ -360,12 +458,12 @@ class _HomePageState extends State<HomePage> {
       if (daysRemaining < 0) {
         sendNotification(
           '⚠️ Savings Goal Overdue',
-          'Your ${saving.name} goal is ${daysRemaining.abs()} days overdue. Current: Ksh ${saving.savedAmount.toStringAsFixed(0)} / Ksh ${saving.targetAmount.toStringAsFixed(0)}',
+          'Your ${saving.name} goal is ${daysRemaining.abs()} days overdue. Current: ${CurrencyFormatter.format(saving.savedAmount)} / ${CurrencyFormatter.format(saving.targetAmount)}',
         );
       } else if (daysRemaining <= 3 && daysRemaining > 0) {
         sendNotification(
           '⏰ Savings Deadline Approaching',
-          'Your ${saving.name} goal is due in $daysRemaining days. Current: Ksh ${saving.savedAmount.toStringAsFixed(0)} / Ksh ${saving.targetAmount.toStringAsFixed(0)}',
+          'Your ${saving.name} goal is due in $daysRemaining days. Current: ${CurrencyFormatter.format(saving.savedAmount)} / ${CurrencyFormatter.format(saving.targetAmount)}',
         );
       }
     }
@@ -378,7 +476,7 @@ class _HomePageState extends State<HomePage> {
         final overspent = totalSpent - budget.total;
         sendNotification(
           '💸 Budget Exceeded',
-          'Your ${budget.name} budget is overspent by Ksh ${overspent.toStringAsFixed(0)}',
+          'Your ${budget.name} budget is overspent by ${CurrencyFormatter.format(overspent)}',
         );
       }
     }
@@ -519,7 +617,7 @@ class _HomePageState extends State<HomePage> {
               final s = activeSavings[index];
               return ListTile(
                 title: Text(s.name),
-                subtitle: Text("Balance: Ksh ${s.balance.toStringAsFixed(0)}"),
+                subtitle: Text("Balance: ${CurrencyFormatter.format(s.balance)}"),
                 onTap: () {
                   Navigator.pop(context);
                   showAmountDialog(
@@ -530,7 +628,7 @@ class _HomePageState extends State<HomePage> {
                         s.achieved = true;
                         sendNotification(
                           '🎉 Goal Achieved!',
-                          'Congratulations! You\'ve reached your ${s.name} savings goal of Ksh ${s.targetAmount.toStringAsFixed(0)}!',
+                          'Congratulations! You\'ve reached your ${s.name} savings goal of ${CurrencyFormatter.format(s.targetAmount)}!',
                         );
                       }
                       await syncSavings();
@@ -817,7 +915,7 @@ class _HomePageState extends State<HomePage> {
             ),
           ),
           Text(
-            "Ksh ${balance.toStringAsFixed(0)}",
+            CurrencyFormatter.format(balance),
             style: Theme.of(context).textTheme.displaySmall?.copyWith(
               color: Theme.of(context).colorScheme.onSurface,
             ),
@@ -857,7 +955,7 @@ class _HomePageState extends State<HomePage> {
               ),
             ),
             Text(
-              "Ksh ${amt.toStringAsFixed(0)}",
+              CurrencyFormatter.format(amt),
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 color: Theme.of(context).colorScheme.onSurface,
               ),
@@ -890,9 +988,7 @@ class _HomePageState extends State<HomePage> {
               onTap: () async {
                 await Navigator.push(
                   context,
-                  MaterialPageRoute(
-                    builder: (context) => const TransactionsPage(),
-                  ),
+                  MaterialPageRoute(builder: (context) => const TransactionsPage()),
                 );
                 refreshData();
               },
@@ -995,6 +1091,7 @@ class _HomePageState extends State<HomePage> {
     final date = DateTime.parse(tx['date']);
     final time = DateFormat('hh:mm a').format(date);
     final amount = double.tryParse(tx['amount'].toString()) ?? 0.0;
+    final isLocked = isTransactionLinkedToAchievedGoal(tx);
 
     IconData txIcon;
     Color iconBgColor;
@@ -1020,38 +1117,46 @@ class _HomePageState extends State<HomePage> {
 
     return Dismissible(
       key: Key('${tx['date']}_$index'),
-      direction: DismissDirection.horizontal,
+      direction: isLocked ? DismissDirection.none : DismissDirection.horizontal,
       confirmDismiss: (direction) async {
+        if (isLocked) return false;
         await deleteTransaction(index);
         return false;
       },
-      background: Container(
-        margin: const EdgeInsets.only(bottom: 8),
-        decoration: BoxDecoration(
-          color: errorColor,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        alignment: Alignment.centerLeft,
-        padding: const EdgeInsets.only(left: 20),
-        child: const Icon(Icons.delete_outline, color: Colors.white, size: 32),
-      ),
-      secondaryBackground: Container(
-        margin: const EdgeInsets.only(bottom: 8),
-        decoration: BoxDecoration(
-          color: errorColor,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        alignment: Alignment.centerRight,
-        padding: const EdgeInsets.only(right: 20),
-        child: const Icon(Icons.delete_outline, color: Colors.white, size: 32),
-      ),
+      background: isLocked
+          ? null
+          : Container(
+              margin: const EdgeInsets.only(bottom: 8),
+              decoration: BoxDecoration(
+                color: errorColor,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              alignment: Alignment.centerLeft,
+              padding: const EdgeInsets.only(left: 20),
+              child: const Icon(Icons.delete_outline, color: Colors.white, size: 32),
+            ),
+      secondaryBackground: isLocked
+          ? null
+          : Container(
+              margin: const EdgeInsets.only(bottom: 8),
+              decoration: BoxDecoration(
+                color: errorColor,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              alignment: Alignment.centerRight,
+              padding: const EdgeInsets.only(right: 20),
+              child: const Icon(Icons.delete_outline, color: Colors.white, size: 32),
+            ),
       child: Container(
         margin: const EdgeInsets.only(bottom: 8),
         decoration: BoxDecoration(
           color: theme.colorScheme.surface,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: Theme.of(context).colorScheme.onSurface.withAlpha(10),
+            color: isLocked
+                ? Colors.orange.shade300
+                : Theme.of(context).colorScheme.onSurface.withAlpha(10),
+            width: isLocked ? 2 : 1,
           ),
           boxShadow: [
             BoxShadow(
@@ -1066,14 +1171,31 @@ class _HomePageState extends State<HomePage> {
             horizontal: 12,
             vertical: 4,
           ),
-          leading: Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              color: iconBgColor.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(100),
-            ),
-            child: Icon(txIcon, color: iconBgColor, size: 30),
+          leading: Stack(
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: iconBgColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(100),
+                ),
+                child: Icon(txIcon, color: iconBgColor, size: 30),
+              ),
+              if (isLocked)
+                Positioned(
+                  right: 0,
+                  bottom: 0,
+                  child: Container(
+                    padding: const EdgeInsets.all(2),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.shade700,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(Icons.lock, color: Colors.white, size: 12),
+                  ),
+                ),
+            ],
           ),
           title: Text(
             tx['title'] ?? "Unknown",
@@ -1097,7 +1219,10 @@ class _HomePageState extends State<HomePage> {
                   color: Theme.of(context).colorScheme.onSurface.withAlpha(80),
                 ),
               ),
-              const SizedBox(width: 12),
+              if (isLocked) ...[
+                const SizedBox(width: 12),
+                Icon(Icons.lock, size: 12, color: Colors.orange.shade700),
+              ],
             ],
           ),
           trailing: Column(
@@ -1118,7 +1243,7 @@ class _HomePageState extends State<HomePage> {
                 ),
               ),
               Text(
-                "${isIncome ? '+' : '-'} Ksh ${amount.toStringAsFixed(0)}",
+                "${isIncome ? '+' : '-'} ${CurrencyFormatter.format(amount)}",
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: isIncome ? brandGreen : errorColor,
                   fontWeight: FontWeight.bold,
