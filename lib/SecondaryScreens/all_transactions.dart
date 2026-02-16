@@ -731,19 +731,6 @@ class _TransactionsPageState extends State<TransactionsPage> {
                   color: Theme.of(context).colorScheme.onSurface.withAlpha(80),
                 ),
               ),
-              if (isLocked) ...[
-                const SizedBox(width: 12),
-                Icon(Icons.lock, size: 12, color: Colors.orange.shade700),
-                const SizedBox(width: 4),
-                Text(
-                  'Protected',
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: Colors.orange.shade700,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
             ],
           ),
           trailing: Column(

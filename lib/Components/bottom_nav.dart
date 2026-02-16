@@ -3,6 +3,8 @@ import 'package:final_project/Primary_Screens/Savings/savings.dart';
 import 'package:final_project/Primary_Screens/ai.dart';
 import 'package:final_project/Primary_Screens/home.dart';
 import 'package:final_project/Primary_Screens/profile.dart';
+import 'package:final_project/SecondaryScreens/analytics_page.dart';
+import 'package:final_project/SecondaryScreens/report_page.dart';
 import 'package:flutter/material.dart';
 
 class BottomNav extends StatefulWidget {
@@ -18,8 +20,8 @@ class _BottomNavState extends State<BottomNav> {
     const HomePage(),
     const BudgetPage(),
     const SavingsPage(),
-    const AiPage(),
-    const Profile(),
+    const AnalyticsPage(),
+    const ReportPage(),
   ];
 
   void select(int index) {

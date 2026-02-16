@@ -76,12 +76,14 @@ class _ReportPageState extends State<ReportPage> {
     final prefs = await SharedPreferences.getInstance();
 
     final txString = prefs.getString(keyTransactions) ?? '[]';
-    final newTransactions =
-        List<Map<String, dynamic>>.from(json.decode(txString));
+    final newTransactions = List<Map<String, dynamic>>.from(
+      json.decode(txString),
+    );
 
     final budgetStrings = prefs.getStringList(keyBudgets) ?? [];
-    final newBudgets =
-        budgetStrings.map((s) => Budget.fromMap(json.decode(s))).toList();
+    final newBudgets = budgetStrings
+        .map((s) => Budget.fromMap(json.decode(s)))
+        .toList();
 
     final savingsStrings = prefs.getStringList(keySavings) ?? [];
     final newSavings = savingsStrings
@@ -104,10 +106,12 @@ class _ReportPageState extends State<ReportPage> {
   List<Map<String, dynamic>> get filteredTransactions {
     return transactions.where((tx) {
       final txDate = DateTime.parse(tx['date']);
-      
+
       // Date filter
       if (startDate != null && txDate.isBefore(startDate!)) return false;
-      if (endDate != null && txDate.isAfter(endDate!.add(const Duration(days: 1)))) return false;
+      if (endDate != null &&
+          txDate.isAfter(endDate!.add(const Duration(days: 1))))
+        return false;
 
       // Type filter
       if (selectedType != null && selectedType != 'All') {
@@ -115,7 +119,8 @@ class _ReportPageState extends State<ReportPage> {
         if (selectedType == 'Expense' && tx['type'] == 'income') return false;
         if (selectedType == 'Savings' &&
             tx['type'] != 'savings_deduction' &&
-            tx['type'] != 'saving_deposit') return false;
+            tx['type'] != 'saving_deposit')
+          return false;
       }
 
       // Budget filter
@@ -137,20 +142,32 @@ class _ReportPageState extends State<ReportPage> {
   double get filteredIncome {
     return filteredTransactions
         .where((tx) => tx['type'] == 'income')
-        .fold(0.0, (sum, tx) => sum + (double.tryParse(tx['amount'].toString()) ?? 0.0));
+        .fold(
+          0.0,
+          (sum, tx) => sum + (double.tryParse(tx['amount'].toString()) ?? 0.0),
+        );
   }
 
   double get filteredExpenses {
     return filteredTransactions
         .where((tx) => tx['type'] != 'income')
-        .fold(0.0, (sum, tx) => sum + (double.tryParse(tx['amount'].toString()) ?? 0.0));
+        .fold(
+          0.0,
+          (sum, tx) => sum + (double.tryParse(tx['amount'].toString()) ?? 0.0),
+        );
   }
 
   double get filteredSavings {
     return filteredTransactions
-        .where((tx) =>
-            tx['type'] == 'savings_deduction' || tx['type'] == 'saving_deposit')
-        .fold(0.0, (sum, tx) => sum + (double.tryParse(tx['amount'].toString()) ?? 0.0));
+        .where(
+          (tx) =>
+              tx['type'] == 'savings_deduction' ||
+              tx['type'] == 'saving_deposit',
+        )
+        .fold(
+          0.0,
+          (sum, tx) => sum + (double.tryParse(tx['amount'].toString()) ?? 0.0),
+        );
   }
 
   double get savingsCompletionRate {
@@ -215,11 +232,17 @@ class _ReportPageState extends State<ReportPage> {
                   pw.SizedBox(height: 8),
                   pw.Text(
                     'Period: ${DateFormat('dd MMM yyyy').format(startDate!)} - ${DateFormat('dd MMM yyyy').format(endDate!)}',
-                    style: const pw.TextStyle(fontSize: 12, color: PdfColors.grey700),
+                    style: const pw.TextStyle(
+                      fontSize: 12,
+                      color: PdfColors.grey700,
+                    ),
                   ),
                   pw.Text(
                     'Generated: ${DateFormat('dd MMM yyyy HH:mm').format(DateTime.now())}',
-                    style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey600),
+                    style: const pw.TextStyle(
+                      fontSize: 10,
+                      color: PdfColors.grey600,
+                    ),
                   ),
                 ],
               ),
@@ -240,11 +263,23 @@ class _ReportPageState extends State<ReportPage> {
               ),
               child: pw.Column(
                 children: [
-                  _buildPDFSummaryRow('Total Income', filteredIncome, PdfColors.green),
+                  _buildPDFSummaryRow(
+                    'Total Income',
+                    filteredIncome,
+                    PdfColors.green,
+                  ),
                   pw.SizedBox(height: 8),
-                  _buildPDFSummaryRow('Total Expenses', filteredExpenses, PdfColors.red),
+                  _buildPDFSummaryRow(
+                    'Total Expenses',
+                    filteredExpenses,
+                    PdfColors.red,
+                  ),
                   pw.SizedBox(height: 8),
-                  _buildPDFSummaryRow('Total Savings', filteredSavings, PdfColors.blue),
+                  _buildPDFSummaryRow(
+                    'Total Savings',
+                    filteredSavings,
+                    PdfColors.blue,
+                  ),
                   pw.SizedBox(height: 8),
                   pw.Divider(),
                   pw.SizedBox(height: 8),
@@ -256,7 +291,10 @@ class _ReportPageState extends State<ReportPage> {
                         : PdfColors.red,
                   ),
                   pw.SizedBox(height: 8),
-                  _buildPDFInfoRow('Number of Transactions', '${filteredTransactions.length}'),
+                  _buildPDFInfoRow(
+                    'Number of Transactions',
+                    '${filteredTransactions.length}',
+                  ),
                   pw.SizedBox(height: 4),
                   _buildPDFInfoRow(
                     'Savings Completion Rate',
@@ -289,9 +327,10 @@ class _ReportPageState extends State<ReportPage> {
                 // Transactions
                 ...filteredTransactions.take(50).map((tx) {
                   final date = DateTime.parse(tx['date']);
-                  final amount = double.tryParse(tx['amount'].toString()) ?? 0.0;
+                  final amount =
+                      double.tryParse(tx['amount'].toString()) ?? 0.0;
                   final isIncome = tx['type'] == 'income';
-                  
+
                   return pw.TableRow(
                     children: [
                       _buildPDFTableCell(DateFormat('dd/MM/yy').format(date)),
@@ -310,7 +349,10 @@ class _ReportPageState extends State<ReportPage> {
                 padding: const pw.EdgeInsets.only(top: 8),
                 child: pw.Text(
                   'Showing first 50 transactions. Total: ${filteredTransactions.length}',
-                  style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey600),
+                  style: const pw.TextStyle(
+                    fontSize: 10,
+                    color: PdfColors.grey600,
+                  ),
                 ),
               ),
           ],
@@ -320,7 +362,8 @@ class _ReportPageState extends State<ReportPage> {
       // Save PDF
       final output = await getTemporaryDirectory();
       final file = File(
-          '${output.path}/penny_report_${DateFormat('yyyyMMdd_HHmmss').format(DateTime.now())}.pdf');
+        '${output.path}/penny_report_${DateFormat('yyyyMMdd_HHmmss').format(DateTime.now())}.pdf',
+      );
       await file.writeAsBytes(await pdf.save());
 
       // Move to Downloads (Android)
@@ -328,13 +371,16 @@ class _ReportPageState extends State<ReportPage> {
         final downloadsDir = Directory('/storage/emulated/0/Download');
         if (await downloadsDir.exists()) {
           final newFile = File(
-              '${downloadsDir.path}/penny_report_${DateFormat('yyyyMMdd_HHmmss').format(DateTime.now())}.pdf');
+            '${downloadsDir.path}/penny_report_${DateFormat('yyyyMMdd_HHmmss').format(DateTime.now())}.pdf',
+          );
           await file.copy(newFile.path);
-          
+
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text('Report saved to Downloads: ${newFile.path.split('/').last}'),
+                content: Text(
+                  'Report saved to Downloads: ${newFile.path.split('/').last}',
+                ),
                 backgroundColor: brandGreen,
                 duration: const Duration(seconds: 5),
                 action: SnackBarAction(
@@ -382,7 +428,10 @@ class _ReportPageState extends State<ReportPage> {
     return pw.Row(
       mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
       children: [
-        pw.Text(label, style: const pw.TextStyle(fontSize: 11, color: PdfColors.grey700)),
+        pw.Text(
+          label,
+          style: const pw.TextStyle(fontSize: 11, color: PdfColors.grey700),
+        ),
         pw.Text(value, style: const pw.TextStyle(fontSize: 11)),
       ],
     );
@@ -425,7 +474,7 @@ class _ReportPageState extends State<ReportPage> {
       backgroundColor: theme.colorScheme.surface,
       appBar: AppBar(
         backgroundColor: theme.colorScheme.surface,
-        title: const CustomHeader(headerName: "Financial Report"),
+        title: const CustomHeader(headerName: "Report"),
         elevation: 0,
         actions: [
           IconButton(
@@ -481,13 +530,19 @@ class _ReportPageState extends State<ReportPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Filters',
-              style: theme.textTheme.titleMedium
-                  ?.copyWith(fontWeight: FontWeight.bold)),
+          Text(
+            'Filters',
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+          ),
           sizedBoxHeightMedium,
-          
+
           // Date Range
-          Text('Date Range', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+          Text(
+            'Date Range',
+            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+          ),
           const SizedBox(height: 8),
           Row(
             children: [
@@ -541,7 +596,10 @@ class _ReportPageState extends State<ReportPage> {
           sizedBoxHeightSmall,
 
           // Type Filter
-          Text('Transaction Type', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+          Text(
+            'Transaction Type',
+            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+          ),
           const SizedBox(height: 8),
           DropdownButtonFormField<String>(
             value: selectedType,
@@ -558,16 +616,24 @@ class _ReportPageState extends State<ReportPage> {
 
           // Budget Filter
           if (budgets.isNotEmpty) ...[
-            Text('Budget', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+            Text(
+              'Budget',
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+            ),
             const SizedBox(height: 8),
             DropdownButtonFormField<String>(
               value: selectedBudget,
               decoration: const InputDecoration(
-                contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                contentPadding: EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
                 border: OutlineInputBorder(),
               ),
               items: ['All', ...budgets.map((b) => b.name)]
-                  .map((name) => DropdownMenuItem(value: name, child: Text(name)))
+                  .map(
+                    (name) => DropdownMenuItem(value: name, child: Text(name)),
+                  )
                   .toList(),
               onChanged: (value) => setState(() => selectedBudget = value),
             ),
@@ -576,16 +642,24 @@ class _ReportPageState extends State<ReportPage> {
 
           // Savings Filter
           if (savings.isNotEmpty) ...[
-            Text('Savings Goal', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+            Text(
+              'Savings Goal',
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+            ),
             const SizedBox(height: 8),
             DropdownButtonFormField<String>(
               value: selectedSaving,
               decoration: const InputDecoration(
-                contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                contentPadding: EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
                 border: OutlineInputBorder(),
               ),
               items: ['All', ...savings.map((s) => s.name)]
-                  .map((name) => DropdownMenuItem(value: name, child: Text(name)))
+                  .map(
+                    (name) => DropdownMenuItem(value: name, child: Text(name)),
+                  )
                   .toList(),
               onChanged: (value) => setState(() => selectedSaving = value),
             ),
@@ -638,10 +712,14 @@ class _ReportPageState extends State<ReportPage> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Transactions: ${filteredTransactions.length}',
-                  style: const TextStyle(color: Colors.white70, fontSize: 12)),
-              Text('Savings Rate: ${savingsCompletionRate.toStringAsFixed(1)}%',
-                  style: const TextStyle(color: Colors.white70, fontSize: 12)),
+              Text(
+                'Transactions: ${filteredTransactions.length}',
+                style: const TextStyle(color: Colors.white70, fontSize: 12),
+              ),
+              Text(
+                'Savings Rate: ${savingsCompletionRate.toStringAsFixed(1)}%',
+                style: const TextStyle(color: Colors.white70, fontSize: 12),
+              ),
             ],
           ),
         ],
@@ -649,8 +727,12 @@ class _ReportPageState extends State<ReportPage> {
     );
   }
 
-  Widget buildSummaryRow(String label, double amount, Color color,
-      {bool isBold = false}) {
+  Widget buildSummaryRow(
+    String label,
+    double amount,
+    Color color, {
+    bool isBold = false,
+  }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
@@ -691,11 +773,16 @@ class _ReportPageState extends State<ReportPage> {
         child: Center(
           child: Column(
             children: [
-              Icon(Icons.receipt_long_outlined,
-                  size: 64, color: Colors.grey.shade400),
+              Icon(
+                Icons.receipt_long_outlined,
+                size: 64,
+                color: Colors.grey.shade400,
+              ),
               sizedBoxHeightSmall,
-              Text('No transactions found',
-                  style: TextStyle(color: Colors.grey.shade600)),
+              Text(
+                'No transactions found',
+                style: TextStyle(color: Colors.grey.shade600),
+              ),
             ],
           ),
         ),
@@ -707,7 +794,9 @@ class _ReportPageState extends State<ReportPage> {
       children: [
         Text(
           'Transaction Details',
-          style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
         ),
         sizedBoxHeightMedium,
         ...grouped.entries.map((entry) {
@@ -855,39 +944,38 @@ class Budget {
     this.isChecked = false,
     this.checkedDate,
     DateTime? createdDate,
-  })  : expenses = expenses ?? [],
-        id = id ?? DateTime.now().millisecondsSinceEpoch.toString(),
-        createdDate = createdDate ?? DateTime.now();
+  }) : expenses = expenses ?? [],
+       id = id ?? DateTime.now().millisecondsSinceEpoch.toString(),
+       createdDate = createdDate ?? DateTime.now();
 
   double get totalSpent => expenses.fold(0.0, (sum, e) => sum + e.amount);
   double get amountLeft => total - totalSpent;
 
   Map<String, dynamic> toMap() => {
-        'id': id,
-        'name': name,
-        'total': total,
-        'expenses': expenses.map((e) => e.toMap()).toList(),
-        'isChecked': isChecked,
-        'checkedDate': checkedDate?.toIso8601String(),
-        'createdDate': createdDate.toIso8601String(),
-      };
+    'id': id,
+    'name': name,
+    'total': total,
+    'expenses': expenses.map((e) => e.toMap()).toList(),
+    'isChecked': isChecked,
+    'checkedDate': checkedDate?.toIso8601String(),
+    'createdDate': createdDate.toIso8601String(),
+  };
 
   factory Budget.fromMap(Map<String, dynamic> map) => Budget(
-        id: map['id'] ?? DateTime.now().millisecondsSinceEpoch.toString(),
-        name: map['name'],
-        total: (map['total'] as num).toDouble(),
-        expenses: (map['expenses'] as List?)
-                ?.map((e) => Expense.fromMap(e))
-                .toList() ??
-            [],
-        isChecked: map['isChecked'] ?? map['checked'] ?? false,
-        checkedDate: map['checkedDate'] != null
-            ? DateTime.parse(map['checkedDate'])
-            : null,
-        createdDate: map['createdDate'] != null
-            ? DateTime.parse(map['createdDate'])
-            : DateTime.now(),
-      );
+    id: map['id'] ?? DateTime.now().millisecondsSinceEpoch.toString(),
+    name: map['name'],
+    total: (map['total'] as num).toDouble(),
+    expenses:
+        (map['expenses'] as List?)?.map((e) => Expense.fromMap(e)).toList() ??
+        [],
+    isChecked: map['isChecked'] ?? map['checked'] ?? false,
+    checkedDate: map['checkedDate'] != null
+        ? DateTime.parse(map['checkedDate'])
+        : null,
+    createdDate: map['createdDate'] != null
+        ? DateTime.parse(map['createdDate'])
+        : DateTime.now(),
+  );
 }
 
 class Expense {
@@ -901,24 +989,24 @@ class Expense {
     required this.name,
     required this.amount,
     DateTime? createdDate,
-  })  : id = id ?? DateTime.now().millisecondsSinceEpoch.toString(),
-        createdDate = createdDate ?? DateTime.now();
+  }) : id = id ?? DateTime.now().millisecondsSinceEpoch.toString(),
+       createdDate = createdDate ?? DateTime.now();
 
   Map<String, dynamic> toMap() => {
-        'id': id,
-        'name': name,
-        'amount': amount,
-        'createdDate': createdDate.toIso8601String(),
-      };
+    'id': id,
+    'name': name,
+    'amount': amount,
+    'createdDate': createdDate.toIso8601String(),
+  };
 
   factory Expense.fromMap(Map<String, dynamic> map) => Expense(
-        id: map['id'] ?? DateTime.now().millisecondsSinceEpoch.toString(),
-        name: map['name'],
-        amount: (map['amount'] as num).toDouble(),
-        createdDate: map['createdDate'] != null
-            ? DateTime.parse(map['createdDate'])
-            : DateTime.now(),
-      );
+    id: map['id'] ?? DateTime.now().millisecondsSinceEpoch.toString(),
+    name: map['name'],
+    amount: (map['amount'] as num).toDouble(),
+    createdDate: map['createdDate'] != null
+        ? DateTime.parse(map['createdDate'])
+        : DateTime.now(),
+  );
 }
 
 class Saving {

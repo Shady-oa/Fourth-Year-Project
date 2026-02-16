@@ -1234,10 +1234,6 @@ class _HomePageState extends State<HomePage> {
                   color: Theme.of(context).colorScheme.onSurface.withAlpha(80),
                 ),
               ),
-              if (isLocked) ...[
-                const SizedBox(width: 12),
-                Icon(Icons.lock, size: 12, color: Colors.orange.shade700),
-              ],
             ],
           ),
           trailing: Column(
