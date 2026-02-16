@@ -22,7 +22,6 @@ class SavingsPage extends StatefulWidget {
 class _SavingsPageState extends State<SavingsPage> {
   static const String keySavings = 'savings';
   static const String keyTransactions = 'transactions';
-  static const String keyTotalIncome = 'total_income';
   static const String keyStreakCount = 'streak_count';
   static const String keyLastSaveDate = 'last_save_date';
   static const String keyStreakLevel = 'streak_level';
@@ -60,7 +59,7 @@ class _SavingsPageState extends State<SavingsPage> {
   Future<void> checkStreakExpiry() async {
     final prefs = await SharedPreferences.getInstance();
     final now = DateTime.now();
-    final todayStr = DateFormat('yyyy-MM-dd').format(now);
+    DateFormat('yyyy-MM-dd').format(now);
     String lastSaveDateStr = prefs.getString(keyLastSaveDate) ?? "";
 
     if (lastSaveDateStr.isEmpty) return;
@@ -656,8 +655,7 @@ class _SavingsPageState extends State<SavingsPage> {
   }
 
   Future<void> restoreBalanceFromGoal(double savedAmount) async {
-    final prefs = await SharedPreferences.getInstance();
-    double totalIncome = prefs.getDouble(keyTotalIncome) ?? 0.0;
+    await SharedPreferences.getInstance();
 
     // Since savings deductions reduce balance, we need to add it back
     // This is effectively reversing the expense
