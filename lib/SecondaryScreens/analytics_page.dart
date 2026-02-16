@@ -418,7 +418,12 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
         if (await _needsStoragePermission()) {
           final status = await Permission.storage.request();
           if (!status.isGranted) {
-            throw Exception('Storage permission is required to save files');
+            // Try with manageExternalStorage for Android 11+
+            final manageStatus = await Permission.manageExternalStorage
+                .request();
+            if (!manageStatus.isGranted) {
+              throw Exception('Storage permission is required to save files');
+            }
           }
         }
       }
@@ -556,7 +561,9 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
         );
       }
     } finally {
-      setState(() => isGeneratingPDF = false);
+      if (mounted) {
+        setState(() => isGeneratingPDF = false);
+      }
     }
   }
 
@@ -720,6 +727,7 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
     );
   }
 
+  // FIXED: Actual Pie Chart Implementation for PDF using bar visualization
   pw.Widget _buildPDFPieChart() {
     final categories = expensesByCategory;
     final total = categories.values.fold(0.0, (sum, val) => sum + val);
@@ -749,69 +757,90 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
         border: pw.Border.all(color: PdfColors.grey300),
         borderRadius: const pw.BorderRadius.all(pw.Radius.circular(8)),
       ),
-      child: pw.Row(
+      child: pw.Column(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
         children: [
-          // Pie Chart
-          pw.Container(
-            width: 150,
-            height: 150,
-            decoration: pw.BoxDecoration(
-              border: pw.Border.all(color: PdfColors.grey300),
-              borderRadius: const pw.BorderRadius.all(pw.Radius.circular(8)),
-            ),
-            child: pw.Column(
-              mainAxisAlignment: pw.MainAxisAlignment.center,
-              children: [
-                pw.Text('Pie Chart', style: const pw.TextStyle(fontSize: 12)),
-                pw.SizedBox(height: 8),
-                pw.Text(
-                  '(Visual representation)',
-                  style: const pw.TextStyle(
-                    fontSize: 9,
-                    color: PdfColors.grey600,
-                  ),
-                ),
-              ],
-            ),
+          pw.Text(
+            'Expense Breakdown',
+            style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold),
           ),
-          pw.SizedBox(width: 20),
-          // Legend
-          pw.Expanded(
-            child: pw.Column(
-              crossAxisAlignment: pw.CrossAxisAlignment.start,
-              children: categories.entries.map((entry) {
-                final index = categories.keys.toList().indexOf(entry.key);
-                final color = colors[index % colors.length];
-                final percentage = (entry.value / total) * 100;
+          pw.SizedBox(height: 12),
+          pw.Column(
+            children: categories.entries.map((entry) {
+              final index = categories.keys.toList().indexOf(entry.key);
+              final color = colors[index % colors.length];
+              final percentage = (entry.value / total) * 100;
 
-                return pw.Padding(
-                  padding: const pw.EdgeInsets.only(bottom: 8),
-                  child: pw.Row(
-                    children: [
-                      pw.Container(
-                        width: 12,
-                        height: 12,
-                        decoration: pw.BoxDecoration(
-                          color: color,
-                          shape: pw.BoxShape.circle,
+              return pw.Padding(
+                padding: const pw.EdgeInsets.only(bottom: 10),
+                child: pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    pw.Row(
+                      mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                      children: [
+                        pw.Row(
+                          children: [
+                            pw.Container(
+                              width: 10,
+                              height: 10,
+                              decoration: pw.BoxDecoration(
+                                color: color,
+                                shape: pw.BoxShape.circle,
+                              ),
+                            ),
+                            pw.SizedBox(width: 6),
+                            pw.Text(
+                              entry.key,
+                              style: const pw.TextStyle(fontSize: 10),
+                            ),
+                          ],
+                        ),
+                        pw.Text(
+                          '${percentage.toStringAsFixed(0)}%',
+                          style: pw.TextStyle(
+                            fontSize: 10,
+                            fontWeight: pw.FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                    pw.SizedBox(height: 4),
+                    pw.Container(
+                      height: 8,
+                      decoration: pw.BoxDecoration(
+                        color: PdfColors.grey200,
+                        borderRadius: const pw.BorderRadius.all(
+                          pw.Radius.circular(4),
                         ),
                       ),
-                      pw.SizedBox(width: 8),
-                      pw.Expanded(
-                        child: pw.Text(
-                          '${entry.key} (${percentage.toStringAsFixed(0)}%)',
-                          style: const pw.TextStyle(fontSize: 10),
-                        ),
+                      child: pw.Row(
+                        children: [
+                          pw.Container(
+                            width: (percentage / 100) * 200,
+                            height: 8,
+                            decoration: pw.BoxDecoration(
+                              color: color,
+                              borderRadius: const pw.BorderRadius.all(
+                                pw.Radius.circular(4),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                      pw.Text(
-                        CurrencyFormatter.format(entry.value),
-                        style: const pw.TextStyle(fontSize: 9),
+                    ),
+                    pw.SizedBox(height: 2),
+                    pw.Text(
+                      CurrencyFormatter.format(entry.value),
+                      style: const pw.TextStyle(
+                        fontSize: 8,
+                        color: PdfColors.grey700,
                       ),
-                    ],
-                  ),
-                );
-              }).toList(),
-            ),
+                    ),
+                  ],
+                ),
+              );
+            }).toList(),
           ),
         ],
       ),
@@ -969,7 +998,7 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
   }
 
   pw.Widget _buildPDFTopExpenses() {
-    final medals = ['🥇', '🥈', '🥉'];
+    final medals = ['1st', '2nd', '3rd'];
 
     return pw.Container(
       padding: const pw.EdgeInsets.all(16),
@@ -987,7 +1016,28 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
             padding: const pw.EdgeInsets.only(bottom: 8),
             child: pw.Row(
               children: [
-                pw.Text(medals[index], style: const pw.TextStyle(fontSize: 16)),
+                pw.Container(
+                  width: 24,
+                  height: 24,
+                  decoration: pw.BoxDecoration(
+                    color: index == 0
+                        ? PdfColors.amber
+                        : (index == 1
+                              ? PdfColors.grey400
+                              : PdfColors.orange200),
+                    shape: pw.BoxShape.circle,
+                  ),
+                  child: pw.Center(
+                    child: pw.Text(
+                      medals[index],
+                      style: pw.TextStyle(
+                        fontSize: 8,
+                        fontWeight: pw.FontWeight.bold,
+                        color: PdfColors.white,
+                      ),
+                    ),
+                  ),
+                ),
                 pw.SizedBox(width: 8),
                 pw.Expanded(
                   child: pw.Column(
@@ -1076,7 +1126,7 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
   // Helper methods
   Future<bool> _needsStoragePermission() async {
     if (Platform.isAndroid) {
-      return true; // Simplified - adjust based on Android version
+      return true;
     }
     return false;
   }
@@ -1278,7 +1328,6 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
     );
   }
 
-  // All the existing build methods remain the same...
   Widget buildFilterSection(ThemeData theme) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1628,6 +1677,7 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
     );
   }
 
+  // FIXED: Pie Chart with Overflow Prevention
   Widget buildPieChart(ThemeData theme) {
     final categories = expensesByCategory;
     if (categories.isEmpty) {
@@ -1698,54 +1748,64 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
             ),
           ),
           sizedBoxHeightMedium,
-          Row(
-            children: [
-              Expanded(
-                child: SizedBox(
-                  height: 180,
-                  child: PieChart(
-                    PieChartData(
-                      sections: sections,
-                      sectionsSpace: 2,
-                      centerSpaceRadius: 40,
+          IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(
+                  flex: 1,
+                  child: SizedBox(
+                    height: 180,
+                    child: PieChart(
+                      PieChartData(
+                        sections: sections,
+                        sectionsSpace: 2,
+                        centerSpaceRadius: 40,
+                      ),
                     ),
                   ),
                 ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: categories.entries.map((entry) {
-                    final color =
-                        colors[categories.keys.toList().indexOf(entry.key) %
-                            colors.length];
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 12,
-                            height: 12,
-                            decoration: BoxDecoration(
-                              color: color,
-                              shape: BoxShape.circle,
-                            ),
+                const SizedBox(width: 16),
+                Expanded(
+                  flex: 1,
+                  child: SingleChildScrollView(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: categories.entries.map((entry) {
+                        final color =
+                            colors[categories.keys.toList().indexOf(entry.key) %
+                                colors.length];
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                width: 12,
+                                height: 12,
+                                decoration: BoxDecoration(
+                                  color: color,
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  entry.key,
+                                  style: const TextStyle(fontSize: 12),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
                           ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              entry.key,
-                              style: const TextStyle(fontSize: 12),
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  }).toList(),
+                        );
+                      }).toList(),
+                    ),
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ],
       ),
@@ -2189,7 +2249,7 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
   }
 }
 
-// Model Classes remain exactly the same...
+// Model Classes
 class Budget {
   String name;
   double total;
