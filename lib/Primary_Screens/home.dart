@@ -103,7 +103,6 @@ class _HomePageState extends State<HomePage> {
     double expenses = 0.0;
     for (var tx in transactions) {
       if (tx['type'] == 'expense' ||
-          tx['type'] == 'budget_expense' ||
           tx['type'] == 'budget_finalized' ||
           tx['type'] == 'savings_deduction' ||
           tx['type'] == 'saving_deposit') {
@@ -764,14 +763,25 @@ class _HomePageState extends State<HomePage> {
             onPressed: () async {
               final amt = double.tryParse(amtCtrl.text) ?? 0;
               if (amt > 0 && titleCtrl.text.isNotEmpty) {
+                // Add expense to budget
                 budget.expenses.add(Expense(name: titleCtrl.text, amount: amt));
                 await syncBudgets();
-                await saveTransaction(
-                  "${budget.name}: ${titleCtrl.text}",
-                  amt,
-                  "budget_expense",
-                );
+                
+                // DO NOT create a transaction - budget expenses are internal only
+                // This ensures they don't affect the total balance or appear in transactions
+                
                 Navigator.pop(context);
+                
+                // Show success message
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Budget expense added: ${titleCtrl.text}'),
+                    backgroundColor: brandGreen,
+                    behavior: SnackBarBehavior.floating,
+                    duration: const Duration(seconds: 2),
+                  ),
+                );
+                
                 refreshData();
               }
             },

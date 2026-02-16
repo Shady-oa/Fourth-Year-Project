@@ -9,7 +9,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 // Currency formatting utility
 class CurrencyFormatter {
   static final NumberFormat _formatter = NumberFormat('#,##0', 'en_US');
-  static String format(double amount) => 'Ksh ${_formatter.format(amount.round())}';
+  static String format(double amount) =>
+      'Ksh ${_formatter.format(amount.round())}';
 }
 
 class TransactionsPage extends StatefulWidget {
@@ -21,10 +22,12 @@ class TransactionsPage extends StatefulWidget {
 
 class _TransactionsPageState extends State<TransactionsPage> {
   static const String keyTransactions = 'transactions';
+  static const String keyBudgets = 'budgets';
   static const String keyTotalIncome = 'total_income';
   static const String keySavings = 'savings';
 
   List<Map<String, dynamic>> transactions = [];
+  List<Budget> budgets = [];
   List<Saving> savings = [];
   String filter = 'all';
   bool isLoading = true;
@@ -43,9 +46,15 @@ class _TransactionsPageState extends State<TransactionsPage> {
     transactions = List<Map<String, dynamic>>.from(json.decode(txString));
     totalIncome = prefs.getDouble(keyTotalIncome) ?? 0.0;
 
+    // Load budgets to check for finalized budgets
+    final budgetStrings = prefs.getStringList(keyBudgets) ?? [];
+    budgets = budgetStrings.map((s) => Budget.fromMap(json.decode(s))).toList();
+
     // Load savings to check for achieved goals
     final savingsStrings = prefs.getStringList(keySavings) ?? [];
-    savings = savingsStrings.map((s) => Saving.fromMap(json.decode(s))).toList();
+    savings = savingsStrings
+        .map((s) => Saving.fromMap(json.decode(s)))
+        .toList();
 
     setState(() => isLoading = false);
   }
@@ -57,56 +66,79 @@ class _TransactionsPageState extends State<TransactionsPage> {
     }
 
     final title = tx['title'] ?? '';
-    
+
     // Extract goal name from transaction title (format: "Saved for [GoalName]")
     for (var saving in savings) {
       if (title.contains(saving.name) && saving.achieved) {
         return true;
       }
     }
-    
+
+    return false;
+  }
+
+  /// Check if a transaction belongs to a finalized/checked budget
+  bool isTransactionLinkedToCheckedBudget(Map<String, dynamic> tx) {
+    if (tx['type'] != 'budget_finalized') {
+      return false;
+    }
+
+    final budgetId = tx['budgetId'];
+    if (budgetId == null) return false;
+
+    for (var budget in budgets) {
+      if (budget.id == budgetId && budget.isChecked) {
+        return true;
+      }
+    }
+
     return false;
   }
 
   /// Recalculate savings goals after transaction deletion
   Future<void> recalculateSavingsGoals() async {
     final prefs = await SharedPreferences.getInstance();
-    
+
     // Reload latest transactions
     final txString = prefs.getString(keyTransactions) ?? '[]';
-    final currentTransactions = List<Map<String, dynamic>>.from(json.decode(txString));
-    
+    final currentTransactions = List<Map<String, dynamic>>.from(
+      json.decode(txString),
+    );
+
     bool savingsChanged = false;
-    
+
     // For each saving goal, recalculate saved amount from transactions
     for (var saving in savings) {
       double calculatedAmount = 0.0;
-      
+
       // Find all transactions for this goal
       for (var tx in currentTransactions) {
-        if ((tx['type'] == 'savings_deduction' || tx['type'] == 'saving_deposit') &&
+        if ((tx['type'] == 'savings_deduction' ||
+                tx['type'] == 'saving_deposit') &&
             tx['title'] != null &&
             tx['title'].toString().contains('Saved for ${saving.name}')) {
           calculatedAmount += double.tryParse(tx['amount'].toString()) ?? 0.0;
         }
       }
-      
+
       // Update saved amount
       if (saving.savedAmount != calculatedAmount) {
         saving.savedAmount = calculatedAmount;
         savingsChanged = true;
       }
-      
+
       // Dynamically calculate achieved status
       bool shouldBeAchieved = saving.savedAmount >= saving.targetAmount;
       if (saving.achieved != shouldBeAchieved) {
         saving.achieved = shouldBeAchieved;
         savingsChanged = true;
-        
-        debugPrint('🔄 Saving goal "${saving.name}" status changed: Achieved=$shouldBeAchieved');
+
+        debugPrint(
+          '🔄 Saving goal "${saving.name}" status changed: Achieved=$shouldBeAchieved',
+        );
       }
     }
-    
+
     // If any savings changed, persist to SharedPreferences
     if (savingsChanged) {
       final data = savings.map((s) => json.encode(s.toMap())).toList();
@@ -151,6 +183,37 @@ class _TransactionsPageState extends State<TransactionsPage> {
       return; // Prevent deletion
     }
 
+    // BUSINESS RULE: Check if transaction is linked to a finalized budget
+    if (isTransactionLinkedToCheckedBudget(tx)) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                Icon(Icons.lock, color: Colors.white, size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Transactions from finalized budgets cannot be deleted.',
+                    style: TextStyle(fontSize: 14),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: Colors.orange.shade700,
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 4),
+            action: SnackBarAction(
+              label: 'OK',
+              textColor: Colors.white,
+              onPressed: () {},
+            ),
+          ),
+        );
+      }
+      return; // Prevent deletion
+    }
+
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -161,7 +224,10 @@ class _TransactionsPageState extends State<TransactionsPage> {
           children: [
             const Text('Are you sure you want to delete this transaction?'),
             const SizedBox(height: 12),
-            Text('${tx['title']}', style: const TextStyle(fontWeight: FontWeight.bold)),
+            Text(
+              '${tx['title']}',
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
             Text('Amount: ${CurrencyFormatter.format(amount)}'),
             const SizedBox(height: 12),
             Container(
@@ -173,10 +239,20 @@ class _TransactionsPageState extends State<TransactionsPage> {
               ),
               child: Row(
                 children: [
-                  Icon(Icons.warning_amber_rounded, color: Colors.orange.shade700, size: 20),
+                  Icon(
+                    Icons.warning_amber_rounded,
+                    color: Colors.orange.shade700,
+                    size: 20,
+                  ),
                   const SizedBox(width: 8),
                   Expanded(
-                    child: Text('This will affect your balance and statistics.', style: TextStyle(fontSize: 12, color: Colors.orange.shade900)),
+                    child: Text(
+                      'This will affect your balance and statistics.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.orange.shade900,
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -184,9 +260,15 @@ class _TransactionsPageState extends State<TransactionsPage> {
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: errorColor, foregroundColor: Colors.white),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: errorColor,
+              foregroundColor: Colors.white,
+            ),
             onPressed: () => Navigator.pop(context, true),
             child: const Text('Delete'),
           ),
@@ -206,14 +288,16 @@ class _TransactionsPageState extends State<TransactionsPage> {
 
       // CRITICAL: Recalculate savings goals after deletion (system-level safety)
       await recalculateSavingsGoals();
-      
+
       // Reload data to reflect changes
       await loadTransactions();
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('✅ Transaction deleted and synced with Home page'),
+            content: const Text(
+              '✅ Transaction deleted and synced with Home page',
+            ),
             backgroundColor: brandGreen,
             behavior: SnackBarBehavior.floating,
             duration: const Duration(seconds: 2),
@@ -265,7 +349,10 @@ class _TransactionsPageState extends State<TransactionsPage> {
           : Column(
               children: [
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16.0,
+                    vertical: 8.0,
+                  ),
                   child: Row(
                     children: [
                       buildFilterChip('All', 'all', theme),
@@ -278,7 +365,10 @@ class _TransactionsPageState extends State<TransactionsPage> {
                 ),
                 buildSummaryCard(theme),
                 Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  margin: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     color: accentColor.withOpacity(0.1),
@@ -290,7 +380,13 @@ class _TransactionsPageState extends State<TransactionsPage> {
                       Icon(Icons.swipe, color: accentColor, size: 20),
                       const SizedBox(width: 8),
                       Expanded(
-                        child: Text('Swipe to delete. 🔒 Achieved goal transactions are protected.', style: TextStyle(fontSize: 12, color: Colors.grey.shade700)),
+                        child: Text(
+                          'Swipe to delete. 🔒 Achieved goals & finalized budgets are protected.',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey.shade700,
+                          ),
+                        ),
                       ),
                     ],
                   ),
@@ -301,9 +397,18 @@ class _TransactionsPageState extends State<TransactionsPage> {
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Icon(Icons.receipt_long_outlined, size: 64, color: Colors.grey.shade400),
+                              Icon(
+                                Icons.receipt_long_outlined,
+                                size: 64,
+                                color: Colors.grey.shade400,
+                              ),
                               const SizedBox(height: 16),
-                              Text('No transactions found', style: theme.textTheme.bodyLarge?.copyWith(color: Colors.grey.shade600)),
+                              Text(
+                                'No transactions found',
+                                style: theme.textTheme.bodyLarge?.copyWith(
+                                  color: Colors.grey.shade600,
+                                ),
+                              ),
                             ],
                           ),
                         )
@@ -320,12 +425,31 @@ class _TransactionsPageState extends State<TransactionsPage> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Padding(
-                                    padding: const EdgeInsets.symmetric(vertical: 12.0),
-                                    child: Text(getDateLabel(dateKey), style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.onSurface.withAlpha(80))),
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 12.0,
+                                    ),
+                                    child: Text(
+                                      getDateLabel(dateKey),
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodyMedium
+                                          ?.copyWith(
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .onSurface
+                                                .withAlpha(80),
+                                          ),
+                                    ),
                                   ),
                                   ...txList.map((tx) {
-                                    final originalIndex = transactions.indexOf(tx);
-                                    return buildTransactionCard(tx, originalIndex, theme);
+                                    final originalIndex = transactions.indexOf(
+                                      tx,
+                                    );
+                                    return buildTransactionCard(
+                                      tx,
+                                      originalIndex,
+                                      theme,
+                                    );
                                   }),
                                   const SizedBox(height: 8),
                                 ],
@@ -346,13 +470,26 @@ class _TransactionsPageState extends State<TransactionsPage> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected ? theme.colorScheme.primary : theme.colorScheme.surface,
+          color: isSelected
+              ? theme.colorScheme.primary
+              : theme.colorScheme.surface,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: isSelected ? theme.colorScheme.primary : Theme.of(context).colorScheme.onSurface.withAlpha(80), width: 1.5),
+          border: Border.all(
+            color: isSelected
+                ? theme.colorScheme.primary
+                : Theme.of(context).colorScheme.onSurface.withAlpha(80),
+            width: 1.5,
+          ),
         ),
         child: Text(
           label,
-          style: TextStyle(color: isSelected ? theme.colorScheme.onPrimary : Colors.grey.shade700, fontWeight: FontWeight.w600, fontSize: 14),
+          style: TextStyle(
+            color: isSelected
+                ? theme.colorScheme.onPrimary
+                : Colors.grey.shade700,
+            fontWeight: FontWeight.w600,
+            fontSize: 14,
+          ),
         ),
       ),
     );
@@ -375,22 +512,50 @@ class _TransactionsPageState extends State<TransactionsPage> {
       margin: const EdgeInsets.all(16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        gradient: LinearGradient(colors: [theme.colorScheme.primary, theme.colorScheme.primary.withOpacity(0.8)], begin: Alignment.topLeft, end: Alignment.bottomRight),
+        gradient: LinearGradient(
+          colors: [
+            theme.colorScheme.primary,
+            theme.colorScheme.primary.withOpacity(0.8),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
         borderRadius: radiusSmall,
-        boxShadow: [BoxShadow(color: theme.colorScheme.primary.withOpacity(0.3), blurRadius: 12, offset: const Offset(0, 4))],
+        boxShadow: [
+          BoxShadow(
+            color: theme.colorScheme.primary.withOpacity(0.3),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          buildSummaryStat('Income', totalIncomeFiltered, Icons.arrow_circle_down_rounded, theme.colorScheme.onSurface),
+          buildSummaryStat(
+            'Income',
+            totalIncomeFiltered,
+            Icons.arrow_circle_down_rounded,
+            theme.colorScheme.onSurface,
+          ),
           Container(height: 40, width: 1, color: Colors.white.withOpacity(0.3)),
-          buildSummaryStat('Expenses', totalExpenseFiltered, Icons.arrow_circle_up_rounded, theme.colorScheme.onSurface),
+          buildSummaryStat(
+            'Expenses',
+            totalExpenseFiltered,
+            Icons.arrow_circle_up_rounded,
+            theme.colorScheme.onSurface,
+          ),
         ],
       ),
     );
   }
 
-  Widget buildSummaryStat(String label, double amount, IconData icon, Color color) {
+  Widget buildSummaryStat(
+    String label,
+    double amount,
+    IconData icon,
+    Color color,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -398,21 +563,37 @@ class _TransactionsPageState extends State<TransactionsPage> {
           children: [
             Icon(icon, color: color, size: 16),
             const SizedBox(width: 4),
-            Text(label, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurface)),
+            Text(
+              label,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
+            ),
           ],
         ),
         const SizedBox(height: 4),
-        Text(CurrencyFormatter.format(amount), style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: Theme.of(context).colorScheme.onSurface)),
+        Text(
+          CurrencyFormatter.format(amount),
+          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+            color: Theme.of(context).colorScheme.onSurface,
+          ),
+        ),
       ],
     );
   }
 
-  Widget buildTransactionCard(Map<String, dynamic> tx, int originalIndex, ThemeData theme) {
+  Widget buildTransactionCard(
+    Map<String, dynamic> tx,
+    int originalIndex,
+    ThemeData theme,
+  ) {
     final isIncome = tx['type'] == 'income';
     final date = DateTime.parse(tx['date']);
     final time = DateFormat('hh:mm a').format(date);
     final amount = double.tryParse(tx['amount'].toString()) ?? 0.0;
-    final isLocked = isTransactionLinkedToAchievedGoal(tx);
+    final isLocked =
+        isTransactionLinkedToAchievedGoal(tx) ||
+        isTransactionLinkedToCheckedBudget(tx);
 
     IconData txIcon;
     Color iconBgColor;
@@ -425,6 +606,10 @@ class _TransactionsPageState extends State<TransactionsPage> {
       case 'budget_expense':
         txIcon = Icons.receipt_rounded;
         iconBgColor = Colors.orange;
+        break;
+      case 'budget_finalized':
+        txIcon = Icons.check_circle;
+        iconBgColor = brandGreen;
         break;
       case 'savings_deduction':
       case 'saving_deposit':
@@ -448,19 +633,33 @@ class _TransactionsPageState extends State<TransactionsPage> {
           ? null
           : Container(
               margin: const EdgeInsets.only(bottom: 8),
-              decoration: BoxDecoration(color: errorColor, borderRadius: BorderRadius.circular(12)),
+              decoration: BoxDecoration(
+                color: errorColor,
+                borderRadius: BorderRadius.circular(12),
+              ),
               alignment: Alignment.centerLeft,
               padding: const EdgeInsets.only(left: 20),
-              child: const Icon(Icons.delete_outline, color: Colors.white, size: 32),
+              child: const Icon(
+                Icons.delete_outline,
+                color: Colors.white,
+                size: 32,
+              ),
             ),
       secondaryBackground: isLocked
           ? null
           : Container(
               margin: const EdgeInsets.only(bottom: 8),
-              decoration: BoxDecoration(color: errorColor, borderRadius: BorderRadius.circular(12)),
+              decoration: BoxDecoration(
+                color: errorColor,
+                borderRadius: BorderRadius.circular(12),
+              ),
               alignment: Alignment.centerRight,
               padding: const EdgeInsets.only(right: 20),
-              child: const Icon(Icons.delete_outline, color: Colors.white, size: 32),
+              child: const Icon(
+                Icons.delete_outline,
+                color: Colors.white,
+                size: 32,
+              ),
             ),
       child: Container(
         margin: const EdgeInsets.only(bottom: 8),
@@ -471,16 +670,28 @@ class _TransactionsPageState extends State<TransactionsPage> {
             color: isLocked ? Colors.orange.shade300 : Colors.grey.shade200,
             width: isLocked ? 2 : 1,
           ),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 8, offset: const Offset(0, 2))],
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.03),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
         child: ListTile(
-          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 12,
+            vertical: 4,
+          ),
           leading: Stack(
             children: [
               Container(
                 width: 48,
                 height: 48,
-                decoration: BoxDecoration(color: iconBgColor.withOpacity(0.1), borderRadius: BorderRadius.circular(100)),
+                decoration: BoxDecoration(
+                  color: iconBgColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(100),
+                ),
                 child: Icon(txIcon, color: iconBgColor, size: 30),
               ),
               if (isLocked)
@@ -498,17 +709,40 @@ class _TransactionsPageState extends State<TransactionsPage> {
                 ),
             ],
           ),
-          title: Text(tx['title'] ?? "Unknown", style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600), maxLines: 1, overflow: TextOverflow.ellipsis),
+          title: Text(
+            tx['title'] ?? "Unknown",
+            style: theme.textTheme.bodyLarge?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
           subtitle: Row(
             children: [
-              Icon(Icons.access_time, size: 12, color: Theme.of(context).colorScheme.onSurface.withAlpha(80)),
+              Icon(
+                Icons.access_time,
+                size: 12,
+                color: Theme.of(context).colorScheme.onSurface.withAlpha(80),
+              ),
               const SizedBox(width: 4),
-              Text(time, style: theme.textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurface.withAlpha(80))),
+              Text(
+                time,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurface.withAlpha(80),
+                ),
+              ),
               if (isLocked) ...[
                 const SizedBox(width: 12),
                 Icon(Icons.lock, size: 12, color: Colors.orange.shade700),
                 const SizedBox(width: 4),
-                Text('Protected', style: TextStyle(fontSize: 11, color: Colors.orange.shade700, fontWeight: FontWeight.bold)),
+                Text(
+                  'Protected',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Colors.orange.shade700,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ],
             ],
           ),
@@ -518,10 +752,24 @@ class _TransactionsPageState extends State<TransactionsPage> {
             children: [
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(color: iconBgColor.withOpacity(0.1), borderRadius: BorderRadius.circular(4)),
-                child: Text(getTypeLabel(tx['type']), style: Theme.of(context).textTheme.bodySmall?.copyWith(color: iconBgColor)),
+                decoration: BoxDecoration(
+                  color: iconBgColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  getTypeLabel(tx['type']),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodySmall?.copyWith(color: iconBgColor),
+                ),
               ),
-              Text("${isIncome ? '+' : '-'} ${CurrencyFormatter.format(amount)}", style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold, color: isIncome ? brandGreen : errorColor)),
+              Text(
+                "${isIncome ? '+' : '-'} ${CurrencyFormatter.format(amount)}",
+                style: theme.textTheme.bodyLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: isIncome ? brandGreen : errorColor,
+                ),
+              ),
             ],
           ),
         ),
@@ -547,6 +795,8 @@ class _TransactionsPageState extends State<TransactionsPage> {
         return 'Income';
       case 'budget_expense':
         return 'Budget';
+      case 'budget_finalized':
+        return 'Budget';
       case 'savings_deduction':
       case 'saving_deposit':
         return 'Savings';
@@ -556,6 +806,88 @@ class _TransactionsPageState extends State<TransactionsPage> {
         return 'Other';
     }
   }
+}
+
+class Budget {
+  String name;
+  double total;
+  List<Expense> expenses;
+  String id;
+  bool isChecked;
+  DateTime? checkedDate;
+  DateTime createdDate;
+
+  Budget({
+    String? id,
+    required this.name,
+    required this.total,
+    List<Expense>? expenses,
+    this.isChecked = false,
+    this.checkedDate,
+    DateTime? createdDate,
+  }) : expenses = expenses ?? [],
+       id = id ?? DateTime.now().millisecondsSinceEpoch.toString(),
+       createdDate = createdDate ?? DateTime.now();
+
+  double get totalSpent => expenses.fold(0.0, (sum, e) => sum + e.amount);
+  double get amountLeft => total - totalSpent;
+
+  Map<String, dynamic> toMap() => {
+    'id': id,
+    'name': name,
+    'total': total,
+    'expenses': expenses.map((e) => e.toMap()).toList(),
+    'isChecked': isChecked,
+    'checkedDate': checkedDate?.toIso8601String(),
+    'createdDate': createdDate.toIso8601String(),
+  };
+
+  factory Budget.fromMap(Map<String, dynamic> map) => Budget(
+    id: map['id'] ?? DateTime.now().millisecondsSinceEpoch.toString(),
+    name: map['name'],
+    total: (map['total'] as num).toDouble(),
+    expenses:
+        (map['expenses'] as List?)?.map((e) => Expense.fromMap(e)).toList() ??
+        [],
+    isChecked: map['isChecked'] ?? map['checked'] ?? false,
+    checkedDate: map['checkedDate'] != null
+        ? DateTime.parse(map['checkedDate'])
+        : null,
+    createdDate: map['createdDate'] != null
+        ? DateTime.parse(map['createdDate'])
+        : DateTime.now(),
+  );
+}
+
+class Expense {
+  String name;
+  double amount;
+  String id;
+  DateTime createdDate;
+
+  Expense({
+    String? id,
+    required this.name,
+    required this.amount,
+    DateTime? createdDate,
+  }) : id = id ?? DateTime.now().millisecondsSinceEpoch.toString(),
+       createdDate = createdDate ?? DateTime.now();
+
+  Map<String, dynamic> toMap() => {
+    'id': id,
+    'name': name,
+    'amount': amount,
+    'createdDate': createdDate.toIso8601String(),
+  };
+
+  factory Expense.fromMap(Map<String, dynamic> map) => Expense(
+    id: map['id'] ?? DateTime.now().millisecondsSinceEpoch.toString(),
+    name: map['name'],
+    amount: (map['amount'] as num).toDouble(),
+    createdDate: map['createdDate'] != null
+        ? DateTime.parse(map['createdDate'])
+        : DateTime.now(),
+  );
 }
 
 class Saving {
