@@ -18,7 +18,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 // Currency formatting utility
 class CurrencyFormatter {
   static final NumberFormat _formatter = NumberFormat('#,##0', 'en_US');
-  static String format(double amount) => 'Ksh ${_formatter.format(amount.round())}';
+  static String format(double amount) =>
+      'Ksh ${_formatter.format(amount.round())}';
 }
 
 class HomePage extends StatefulWidget {
@@ -94,7 +95,6 @@ class _HomePageState extends State<HomePage> {
     totalIncome = prefs.getDouble(keyTotalIncome) ?? 0.0;
 
     checkSavingsDeadlines();
-    checkBudgetLimits();
     calculateStats();
     setState(() => isLoading = false);
   }
@@ -104,6 +104,7 @@ class _HomePageState extends State<HomePage> {
     for (var tx in transactions) {
       if (tx['type'] == 'expense' ||
           tx['type'] == 'budget_expense' ||
+          tx['type'] == 'budget_finalized' ||
           tx['type'] == 'savings_deduction' ||
           tx['type'] == 'saving_deposit') {
         expenses += double.tryParse(tx['amount'].toString()) ?? 0.0;
@@ -180,50 +181,73 @@ class _HomePageState extends State<HomePage> {
     }
 
     final title = tx['title'] ?? '';
-    
+
     for (var saving in savings) {
       if (title.contains(saving.name) && saving.achieved) {
         return true;
       }
     }
-    
+
+    return false;
+  }
+
+  /// Check if a transaction belongs to a finalized/checked budget
+  bool isTransactionLinkedToCheckedBudget(Map<String, dynamic> tx) {
+    if (tx['type'] != 'budget_finalized') {
+      return false;
+    }
+
+    final budgetId = tx['budgetId'];
+    if (budgetId == null) return false;
+
+    for (var budget in budgets) {
+      if (budget.id == budgetId && budget.isChecked) {
+        return true;
+      }
+    }
+
     return false;
   }
 
   /// Recalculate savings goals after transaction deletion (system-level safety)
   Future<void> recalculateSavingsGoals() async {
     final prefs = await SharedPreferences.getInstance();
-    
+
     final txString = prefs.getString(keyTransactions) ?? '[]';
-    final currentTransactions = List<Map<String, dynamic>>.from(json.decode(txString));
-    
+    final currentTransactions = List<Map<String, dynamic>>.from(
+      json.decode(txString),
+    );
+
     bool savingsChanged = false;
-    
+
     for (var saving in savings) {
       double calculatedAmount = 0.0;
-      
+
       for (var tx in currentTransactions) {
-        if ((tx['type'] == 'savings_deduction' || tx['type'] == 'saving_deposit') &&
+        if ((tx['type'] == 'savings_deduction' ||
+                tx['type'] == 'saving_deposit') &&
             tx['title'] != null &&
             tx['title'].toString().contains('Saved for ${saving.name}')) {
           calculatedAmount += double.tryParse(tx['amount'].toString()) ?? 0.0;
         }
       }
-      
+
       if (saving.savedAmount != calculatedAmount) {
         saving.savedAmount = calculatedAmount;
         savingsChanged = true;
       }
-      
+
       // Dynamically calculate achieved status
       bool shouldBeAchieved = saving.savedAmount >= saving.targetAmount;
       if (saving.achieved != shouldBeAchieved) {
         saving.achieved = shouldBeAchieved;
         savingsChanged = true;
-        debugPrint('🔄 Saving goal "${saving.name}" status changed: Achieved=$shouldBeAchieved');
+        debugPrint(
+          '🔄 Saving goal "${saving.name}" status changed: Achieved=$shouldBeAchieved',
+        );
       }
     }
-    
+
     if (savingsChanged) {
       final data = savings.map((s) => json.encode(s.toMap())).toList();
       await prefs.setStringList(keySavings, data);
@@ -248,6 +272,37 @@ class _HomePageState extends State<HomePage> {
                 Expanded(
                   child: Text(
                     'Transactions linked to an achieved saving goal cannot be deleted.',
+                    style: TextStyle(fontSize: 14),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: Colors.orange.shade700,
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 4),
+            action: SnackBarAction(
+              label: 'OK',
+              textColor: Colors.white,
+              onPressed: () {},
+            ),
+          ),
+        );
+      }
+      return; // Prevent deletion
+    }
+
+    // BUSINESS RULE: Check if transaction is linked to a finalized budget
+    if (isTransactionLinkedToCheckedBudget(tx)) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                Icon(Icons.lock, color: Colors.white, size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Transactions from finalized budgets cannot be deleted.',
                     style: TextStyle(fontSize: 14),
                   ),
                 ),
@@ -469,19 +524,6 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  void checkBudgetLimits() {
-    for (var budget in budgets) {
-      final totalSpent = budget.expenses.fold(0.0, (sum, e) => sum + e.amount);
-      if (totalSpent > budget.total) {
-        final overspent = totalSpent - budget.total;
-        sendNotification(
-          '💸 Budget Exceeded',
-          'Your ${budget.name} budget is overspent by ${CurrencyFormatter.format(overspent)}',
-        );
-      }
-    }
-  }
-
   Future<void> sendNotification(String title, String message) async {
     try {
       await FirebaseFirestore.instance
@@ -617,7 +659,9 @@ class _HomePageState extends State<HomePage> {
               final s = activeSavings[index];
               return ListTile(
                 title: Text(s.name),
-                subtitle: Text("Balance: ${CurrencyFormatter.format(s.balance)}"),
+                subtitle: Text(
+                  "Balance: ${CurrencyFormatter.format(s.balance)}",
+                ),
                 onTap: () {
                   Navigator.pop(context);
                   showAmountDialog(
@@ -988,7 +1032,9 @@ class _HomePageState extends State<HomePage> {
               onTap: () async {
                 await Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const TransactionsPage()),
+                  MaterialPageRoute(
+                    builder: (context) => const TransactionsPage(),
+                  ),
                 );
                 refreshData();
               },
@@ -1091,7 +1137,9 @@ class _HomePageState extends State<HomePage> {
     final date = DateTime.parse(tx['date']);
     final time = DateFormat('hh:mm a').format(date);
     final amount = double.tryParse(tx['amount'].toString()) ?? 0.0;
-    final isLocked = isTransactionLinkedToAchievedGoal(tx);
+    final isLocked =
+        isTransactionLinkedToAchievedGoal(tx) ||
+        isTransactionLinkedToCheckedBudget(tx);
 
     IconData txIcon;
     Color iconBgColor;
@@ -1104,6 +1152,10 @@ class _HomePageState extends State<HomePage> {
       case 'budget_expense':
         txIcon = Icons.receipt_rounded;
         iconBgColor = Colors.orange;
+        break;
+      case 'budget_finalized':
+        txIcon = Icons.check_circle;
+        iconBgColor = brandGreen;
         break;
       case 'savings_deduction':
       case 'saving_deposit':
@@ -1133,7 +1185,11 @@ class _HomePageState extends State<HomePage> {
               ),
               alignment: Alignment.centerLeft,
               padding: const EdgeInsets.only(left: 20),
-              child: const Icon(Icons.delete_outline, color: Colors.white, size: 32),
+              child: const Icon(
+                Icons.delete_outline,
+                color: Colors.white,
+                size: 32,
+              ),
             ),
       secondaryBackground: isLocked
           ? null
@@ -1145,7 +1201,11 @@ class _HomePageState extends State<HomePage> {
               ),
               alignment: Alignment.centerRight,
               padding: const EdgeInsets.only(right: 20),
-              child: const Icon(Icons.delete_outline, color: Colors.white, size: 32),
+              child: const Icon(
+                Icons.delete_outline,
+                color: Colors.white,
+                size: 32,
+              ),
             ),
       child: Container(
         margin: const EdgeInsets.only(bottom: 8),
@@ -1262,6 +1322,8 @@ class _HomePageState extends State<HomePage> {
         return 'Income';
       case 'budget_expense':
         return 'Budget';
+      case 'budget_finalized':
+        return 'Budget';
       case 'savings_deduction':
       case 'saving_deposit':
         return 'Savings';
@@ -1277,32 +1339,82 @@ class Budget {
   String name;
   double total;
   List<Expense> expenses;
+  String id;
+  bool isChecked;
+  DateTime? checkedDate;
+  DateTime createdDate;
 
-  Budget({required this.name, required this.total, List<Expense>? expenses})
-    : expenses = expenses ?? [];
+  Budget({
+    String? id,
+    required this.name,
+    required this.total,
+    List<Expense>? expenses,
+    this.isChecked = false,
+    this.checkedDate,
+    DateTime? createdDate,
+  }) : expenses = expenses ?? [],
+       id = id ?? DateTime.now().millisecondsSinceEpoch.toString(),
+       createdDate = createdDate ?? DateTime.now();
+
+  double get totalSpent => expenses.fold(0.0, (sum, e) => sum + e.amount);
+  double get amountLeft => total - totalSpent;
 
   Map<String, dynamic> toMap() => {
+    'id': id,
     'name': name,
     'total': total,
     'expenses': expenses.map((e) => e.toMap()).toList(),
+    'isChecked': isChecked,
+    'checkedDate': checkedDate?.toIso8601String(),
+    'createdDate': createdDate.toIso8601String(),
   };
 
   factory Budget.fromMap(Map<String, dynamic> map) => Budget(
+    id: map['id'] ?? DateTime.now().millisecondsSinceEpoch.toString(),
     name: map['name'],
     total: (map['total'] as num).toDouble(),
     expenses:
         (map['expenses'] as List?)?.map((e) => Expense.fromMap(e)).toList() ??
         [],
+    isChecked: map['isChecked'] ?? map['checked'] ?? false,
+    checkedDate: map['checkedDate'] != null
+        ? DateTime.parse(map['checkedDate'])
+        : null,
+    createdDate: map['createdDate'] != null
+        ? DateTime.parse(map['createdDate'])
+        : DateTime.now(),
   );
 }
 
 class Expense {
   String name;
   double amount;
-  Expense({required this.name, required this.amount});
-  Map<String, dynamic> toMap() => {'name': name, 'amount': amount};
-  factory Expense.fromMap(Map<String, dynamic> map) =>
-      Expense(name: map['name'], amount: (map['amount'] as num).toDouble());
+  String id;
+  DateTime createdDate;
+
+  Expense({
+    String? id,
+    required this.name,
+    required this.amount,
+    DateTime? createdDate,
+  }) : id = id ?? DateTime.now().millisecondsSinceEpoch.toString(),
+       createdDate = createdDate ?? DateTime.now();
+
+  Map<String, dynamic> toMap() => {
+    'id': id,
+    'name': name,
+    'amount': amount,
+    'createdDate': createdDate.toIso8601String(),
+  };
+
+  factory Expense.fromMap(Map<String, dynamic> map) => Expense(
+    id: map['id'] ?? DateTime.now().millisecondsSinceEpoch.toString(),
+    name: map['name'],
+    amount: (map['amount'] as num).toDouble(),
+    createdDate: map['createdDate'] != null
+        ? DateTime.parse(map['createdDate'])
+        : DateTime.now(),
+  );
 }
 
 class Saving {

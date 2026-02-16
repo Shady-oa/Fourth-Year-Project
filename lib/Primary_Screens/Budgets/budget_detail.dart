@@ -10,14 +10,14 @@ import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
-
 import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 // Currency formatting utility
 class CurrencyFormatter {
   static final NumberFormat _formatter = NumberFormat('#,##0', 'en_US');
-  static String format(double amount) => 'Ksh ${_formatter.format(amount.round())}';
+  static String format(double amount) =>
+      'Ksh ${_formatter.format(amount.round())}';
 }
 
 class BudgetDetailPage extends StatefulWidget {
@@ -52,8 +52,9 @@ class _BudgetDetailPageState extends State<BudgetDetailPage> {
     setState(() => isLoading = true);
     final prefs = await SharedPreferences.getInstance();
     final budgetStrings = prefs.getStringList(keyBudgets) ?? [];
-    final budgets =
-        budgetStrings.map((s) => Budget.fromMap(json.decode(s))).toList();
+    final budgets = budgetStrings
+        .map((s) => Budget.fromMap(json.decode(s)))
+        .toList();
 
     budget = budgets.firstWhere(
       (b) => b.id == widget.budgetId,
@@ -65,8 +66,9 @@ class _BudgetDetailPageState extends State<BudgetDetailPage> {
   Future<void> saveBudgets() async {
     final prefs = await SharedPreferences.getInstance();
     final budgetStrings = prefs.getStringList(keyBudgets) ?? [];
-    final budgets =
-        budgetStrings.map((s) => Budget.fromMap(json.decode(s))).toList();
+    final budgets = budgetStrings
+        .map((s) => Budget.fromMap(json.decode(s)))
+        .toList();
 
     final index = budgets.indexWhere((b) => b.id == widget.budgetId);
     if (index != -1 && budget != null) {
@@ -85,11 +87,11 @@ class _BudgetDetailPageState extends State<BudgetDetailPage> {
           .doc(userUid)
           .collection('notifications')
           .add({
-        'title': title,
-        'message': message,
-        'createdAt': FieldValue.serverTimestamp(),
-        'isRead': false,
-      });
+            'title': title,
+            'message': message,
+            'createdAt': FieldValue.serverTimestamp(),
+            'isRead': false,
+          });
     } catch (e) {
       debugPrint('Error sending notification: $e');
     }
@@ -336,41 +338,71 @@ class _BudgetDetailPageState extends State<BudgetDetailPage> {
               children: [
                 pw.Text(
                   'BUDGET REPORT',
-                  style: pw.TextStyle(fontSize: 24, fontWeight: pw.FontWeight.bold),
+                  style: pw.TextStyle(
+                    fontSize: 24,
+                    fontWeight: pw.FontWeight.bold,
+                  ),
                 ),
                 pw.SizedBox(height: 20),
                 pw.Divider(),
                 pw.SizedBox(height: 10),
-                
-                pw.Text('Budget Name: ${budget!.name}', style: pw.TextStyle(fontSize: 16)),
-                pw.Text('Generated: ${dateFormat.format(now)}', style: pw.TextStyle(fontSize: 12)),
+
+                pw.Text(
+                  'Budget Name: ${budget!.name}',
+                  style: pw.TextStyle(fontSize: 16),
+                ),
+                pw.Text(
+                  'Generated: ${dateFormat.format(now)}',
+                  style: pw.TextStyle(fontSize: 12),
+                ),
                 pw.SizedBox(height: 20),
-                
+
                 pw.Container(
                   padding: const pw.EdgeInsets.all(10),
                   decoration: pw.BoxDecoration(
                     border: pw.Border.all(color: PdfColors.grey),
-                    borderRadius: const pw.BorderRadius.all(pw.Radius.circular(5)),
+                    borderRadius: const pw.BorderRadius.all(
+                      pw.Radius.circular(5),
+                    ),
                   ),
                   child: pw.Column(
                     crossAxisAlignment: pw.CrossAxisAlignment.start,
                     children: [
-                      pw.Text('BUDGET SUMMARY', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+                      pw.Text(
+                        'BUDGET SUMMARY',
+                        style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+                      ),
                       pw.SizedBox(height: 10),
-                      pw.Text('Budget Amount: ${CurrencyFormatter.format(budget!.total)}'),
-                      pw.Text('Amount Spent: ${CurrencyFormatter.format(budget!.totalSpent)}'),
-                      pw.Text('Remaining Balance: ${CurrencyFormatter.format(budget!.amountLeft)}'),
-                      pw.Text('Status: ${budget!.isChecked ? "FINALIZED" : "ACTIVE"}'),
+                      pw.Text(
+                        'Budget Amount: ${CurrencyFormatter.format(budget!.total)}',
+                      ),
+                      pw.Text(
+                        'Amount Spent: ${CurrencyFormatter.format(budget!.totalSpent)}',
+                      ),
+                      pw.Text(
+                        'Remaining Balance: ${CurrencyFormatter.format(budget!.amountLeft)}',
+                      ),
+                      pw.Text(
+                        'Status: ${budget!.isChecked ? "FINALIZED" : "ACTIVE"}',
+                      ),
                       if (budget!.isChecked && budget!.checkedDate != null)
-                        pw.Text('Finalized on: ${dateFormat.format(budget!.checkedDate!)}'),
+                        pw.Text(
+                          'Finalized on: ${dateFormat.format(budget!.checkedDate!)}',
+                        ),
                     ],
                   ),
                 ),
-                
+
                 pw.SizedBox(height: 20),
-                pw.Text('EXPENSE BREAKDOWN', style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold)),
+                pw.Text(
+                  'EXPENSE BREAKDOWN',
+                  style: pw.TextStyle(
+                    fontSize: 16,
+                    fontWeight: pw.FontWeight.bold,
+                  ),
+                ),
                 pw.SizedBox(height: 10),
-                
+
                 if (budget!.expenses.isEmpty)
                   pw.Text('No expenses recorded')
                 else
@@ -378,45 +410,73 @@ class _BudgetDetailPageState extends State<BudgetDetailPage> {
                     border: pw.TableBorder.all(color: PdfColors.grey),
                     children: [
                       pw.TableRow(
-                        decoration: const pw.BoxDecoration(color: PdfColors.grey300),
+                        decoration: const pw.BoxDecoration(
+                          color: PdfColors.grey300,
+                        ),
                         children: [
                           pw.Padding(
                             padding: const pw.EdgeInsets.all(8),
-                            child: pw.Text('Expense', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+                            child: pw.Text(
+                              'Expense',
+                              style: pw.TextStyle(
+                                fontWeight: pw.FontWeight.bold,
+                              ),
+                            ),
                           ),
                           pw.Padding(
                             padding: const pw.EdgeInsets.all(8),
-                            child: pw.Text('Amount', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+                            child: pw.Text(
+                              'Amount',
+                              style: pw.TextStyle(
+                                fontWeight: pw.FontWeight.bold,
+                              ),
+                            ),
                           ),
                           pw.Padding(
                             padding: const pw.EdgeInsets.all(8),
-                            child: pw.Text('Date', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+                            child: pw.Text(
+                              'Date',
+                              style: pw.TextStyle(
+                                fontWeight: pw.FontWeight.bold,
+                              ),
+                            ),
                           ),
                         ],
                       ),
-                      ...budget!.expenses.map((exp) => pw.TableRow(
-                            children: [
-                              pw.Padding(
-                                padding: const pw.EdgeInsets.all(8),
-                                child: pw.Text(exp.name),
+                      ...budget!.expenses.map(
+                        (exp) => pw.TableRow(
+                          children: [
+                            pw.Padding(
+                              padding: const pw.EdgeInsets.all(8),
+                              child: pw.Text(exp.name),
+                            ),
+                            pw.Padding(
+                              padding: const pw.EdgeInsets.all(8),
+                              child: pw.Text(
+                                CurrencyFormatter.format(exp.amount),
                               ),
-                              pw.Padding(
-                                padding: const pw.EdgeInsets.all(8),
-                                child: pw.Text(CurrencyFormatter.format(exp.amount)),
+                            ),
+                            pw.Padding(
+                              padding: const pw.EdgeInsets.all(8),
+                              child: pw.Text(
+                                dateFormat.format(exp.createdDate),
                               ),
-                              pw.Padding(
-                                padding: const pw.EdgeInsets.all(8),
-                                child: pw.Text(dateFormat.format(exp.createdDate)),
-                              ),
-                            ],
-                          )),
+                            ),
+                          ],
+                        ),
+                      ),
                     ],
                   ),
-                
+
                 pw.SizedBox(height: 20),
                 pw.Divider(),
-                pw.Text('Total Expenses: ${CurrencyFormatter.format(budget!.totalSpent)}', 
-                  style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold)),
+                pw.Text(
+                  'Total Expenses: ${CurrencyFormatter.format(budget!.totalSpent)}',
+                  style: pw.TextStyle(
+                    fontSize: 14,
+                    fontWeight: pw.FontWeight.bold,
+                  ),
+                ),
               ],
             );
           },
@@ -427,10 +487,9 @@ class _BudgetDetailPageState extends State<BudgetDetailPage> {
       final file = File('${directory.path}/budget_${budget!.id}.pdf');
       await file.writeAsBytes(await pdf.save());
 
-      await Share.shareXFiles(
-        [XFile(file.path)],
-        text: 'Budget Report: ${budget!.name}',
-      );
+      await Share.shareXFiles([
+        XFile(file.path),
+      ], text: 'Budget Report: ${budget!.name}');
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -451,115 +510,6 @@ class _BudgetDetailPageState extends State<BudgetDetailPage> {
         );
       }
     }
-  }
-
-  Future<void> exportAsWord() async {
-    if (budget == null) return;
-
-    try {
-      final dateFormat = DateFormat('dd MMM yyyy');
-      final now = DateTime.now();
-      
-      final wordContent = '''
-═══════════════════════════════════════════════════════════════
-                          BUDGET REPORT
-═══════════════════════════════════════════════════════════════
-
-Budget Name: ${budget!.name}
-Generated: ${dateFormat.format(now)}
-
-───────────────────────────────────────────────────────────────
-BUDGET SUMMARY
-───────────────────────────────────────────────────────────────
-
-Budget Amount:     ${CurrencyFormatter.format(budget!.total)}
-Amount Spent:      ${CurrencyFormatter.format(budget!.totalSpent)}
-Remaining Balance: ${CurrencyFormatter.format(budget!.amountLeft)}
-
-Status: ${budget!.isChecked ? '✓ FINALIZED' : '○ ACTIVE'}
-${budget!.isChecked && budget!.checkedDate != null ? 'Finalized on: ${dateFormat.format(budget!.checkedDate!)}' : ''}
-
-───────────────────────────────────────────────────────────────
-EXPENSE BREAKDOWN
-───────────────────────────────────────────────────────────────
-
-${budget!.expenses.isEmpty ? 'No expenses recorded' : budget!.expenses.map((e) => '• ${e.name}\n  Amount: ${CurrencyFormatter.format(e.amount)}\n  Date: ${dateFormat.format(e.createdDate)}').join('\n\n')}
-
-───────────────────────────────────────────────────────────────
-TOTAL EXPENSES: ${CurrencyFormatter.format(budget!.totalSpent)}
-───────────────────────────────────────────────────────────────
-
-Generated on: ${DateFormat('dd MMM yyyy, hh:mm a').format(now)}
-
-═══════════════════════════════════════════════════════════════
-''';
-
-      final directory = await getApplicationDocumentsDirectory();
-      final file = File('${directory.path}/budget_${budget!.id}.txt');
-      await file.writeAsString(wordContent);
-
-      await Share.shareXFiles(
-        [XFile(file.path)],
-        text: 'Budget Report: ${budget!.name}',
-      );
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Document exported successfully'),
-            backgroundColor: brandGreen,
-          ),
-        );
-      }
-    } catch (e) {
-      debugPrint('Error exporting document: $e');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error exporting document: $e'),
-            backgroundColor: errorColor,
-          ),
-        );
-      }
-    }
-  }
-
-  void showExportOptions() {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'Export Budget',
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
-            const SizedBox(height: 20),
-            ListTile(
-              leading: const Icon(Icons.picture_as_pdf, color: Colors.red),
-              title: const Text('Export as PDF'),
-              onTap: () {
-                Navigator.pop(context);
-                exportAsPDF();
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.description, color: Colors.blue),
-              title: const Text('Export as Document'),
-              onTap: () {
-                Navigator.pop(context);
-                exportAsWord();
-              },
-            ),
-          ],
-        ),
-      ),
-    );
   }
 
   Future<void> toggleCheckBudget() async {
@@ -644,8 +594,9 @@ Generated on: ${DateFormat('dd MMM yyyy, hh:mm a').format(now)}
 
         // Create collective transaction
         final txString = prefs.getString(keyTransactions) ?? '[]';
-        final transactions =
-            List<Map<String, dynamic>>.from(json.decode(txString));
+        final transactions = List<Map<String, dynamic>>.from(
+          json.decode(txString),
+        );
 
         final collectiveTransaction = {
           'title': 'Budget: ${budget!.name} (Finalized)',
@@ -654,7 +605,7 @@ Generated on: ${DateFormat('dd MMM yyyy, hh:mm a').format(now)}
           'date': DateTime.now().toIso8601String(),
           'budgetId': budget!.id,
         };
-        
+
         transactions.insert(0, collectiveTransaction);
         await prefs.setString(keyTransactions, json.encode(transactions));
 
@@ -749,8 +700,9 @@ Generated on: ${DateFormat('dd MMM yyyy, hh:mm a').format(now)}
 
         // Remove the collective transaction
         final txString = prefs.getString(keyTransactions) ?? '[]';
-        final transactions =
-            List<Map<String, dynamic>>.from(json.decode(txString));
+        final transactions = List<Map<String, dynamic>>.from(
+          json.decode(txString),
+        );
 
         transactions.removeWhere(
           (tx) =>
@@ -809,20 +761,26 @@ Generated on: ${DateFormat('dd MMM yyyy, hh:mm a').format(now)}
           style: const TextStyle(fontWeight: FontWeight.bold),
         ),
         actions: [
-          // Export Button
+          // Export PDF Button
           IconButton(
-            icon: const Icon(Icons.download),
-            onPressed: showExportOptions,
-            tooltip: 'Export Budget',
+            icon: const Icon(Icons.picture_as_pdf),
+            onPressed: exportAsPDF,
+            tooltip: 'Export as PDF',
           ),
           // Check Budget Toggle
           IconButton(
             icon: Icon(
-              budget!.isChecked ? Icons.check_circle : Icons.check_circle_outline,
-              color: budget!.isChecked ? brandGreen : theme.colorScheme.onSurface,
+              budget!.isChecked
+                  ? Icons.check_circle
+                  : Icons.check_circle_outline,
+              color: budget!.isChecked
+                  ? brandGreen
+                  : theme.colorScheme.onSurface,
             ),
             onPressed: toggleCheckBudget,
-            tooltip: budget!.isChecked ? 'Unfinalize Budget' : 'Finalize Budget',
+            tooltip: budget!.isChecked
+                ? 'Unfinalize Budget'
+                : 'Finalize Budget',
           ),
         ],
       ),
@@ -834,10 +792,7 @@ Generated on: ${DateFormat('dd MMM yyyy, hh:mm a').format(now)}
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [
-                  accentColor,
-                  accentColor.withOpacity(0.8),
-                ],
+                colors: [accentColor, accentColor.withOpacity(0.8)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -1024,15 +979,17 @@ Generated on: ${DateFormat('dd MMM yyyy, hh:mm a').format(now)}
                         const SizedBox(height: 16),
                         Text(
                           'No expenses yet',
-                          style: theme.textTheme.bodyLarge
-                              ?.copyWith(color: Colors.grey.shade600),
+                          style: theme.textTheme.bodyLarge?.copyWith(
+                            color: Colors.grey.shade600,
+                          ),
                         ),
                         const SizedBox(height: 8),
                         if (!budget!.isChecked)
                           Text(
                             'Tap + to add an expense',
-                            style: theme.textTheme.bodySmall
-                                ?.copyWith(color: Colors.grey.shade500),
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: Colors.grey.shade500,
+                            ),
                           ),
                       ],
                     ),
@@ -1136,7 +1093,11 @@ Generated on: ${DateFormat('dd MMM yyyy, hh:mm a').format(now)}
                     ),
                     const SizedBox(width: 4),
                     IconButton(
-                      icon: const Icon(Icons.delete, size: 18, color: errorColor),
+                      icon: const Icon(
+                        Icons.delete,
+                        size: 18,
+                        color: errorColor,
+                      ),
                       onPressed: () => deleteExpense(expense),
                       padding: EdgeInsets.zero,
                       constraints: const BoxConstraints(),
@@ -1169,39 +1130,38 @@ class Budget {
     this.isChecked = false,
     this.checkedDate,
     DateTime? createdDate,
-  })  : expenses = expenses ?? [],
-        id = id ?? DateTime.now().millisecondsSinceEpoch.toString(),
-        createdDate = createdDate ?? DateTime.now();
+  }) : expenses = expenses ?? [],
+       id = id ?? DateTime.now().millisecondsSinceEpoch.toString(),
+       createdDate = createdDate ?? DateTime.now();
 
   double get totalSpent => expenses.fold(0.0, (sum, e) => sum + e.amount);
   double get amountLeft => total - totalSpent;
 
   Map<String, dynamic> toMap() => {
-        'id': id,
-        'name': name,
-        'total': total,
-        'expenses': expenses.map((e) => e.toMap()).toList(),
-        'isChecked': isChecked,
-        'checkedDate': checkedDate?.toIso8601String(),
-        'createdDate': createdDate.toIso8601String(),
-      };
+    'id': id,
+    'name': name,
+    'total': total,
+    'expenses': expenses.map((e) => e.toMap()).toList(),
+    'isChecked': isChecked,
+    'checkedDate': checkedDate?.toIso8601String(),
+    'createdDate': createdDate.toIso8601String(),
+  };
 
   factory Budget.fromMap(Map<String, dynamic> map) => Budget(
-        id: map['id'] ?? DateTime.now().millisecondsSinceEpoch.toString(),
-        name: map['name'],
-        total: (map['total'] as num).toDouble(),
-        expenses: (map['expenses'] as List?)
-                ?.map((e) => Expense.fromMap(e))
-                .toList() ??
-            [],
-        isChecked: map['isChecked'] ?? map['checked'] ?? false,
-        checkedDate: map['checkedDate'] != null
-            ? DateTime.parse(map['checkedDate'])
-            : null,
-        createdDate: map['createdDate'] != null
-            ? DateTime.parse(map['createdDate'])
-            : DateTime.now(),
-      );
+    id: map['id'] ?? DateTime.now().millisecondsSinceEpoch.toString(),
+    name: map['name'],
+    total: (map['total'] as num).toDouble(),
+    expenses:
+        (map['expenses'] as List?)?.map((e) => Expense.fromMap(e)).toList() ??
+        [],
+    isChecked: map['isChecked'] ?? map['checked'] ?? false,
+    checkedDate: map['checkedDate'] != null
+        ? DateTime.parse(map['checkedDate'])
+        : null,
+    createdDate: map['createdDate'] != null
+        ? DateTime.parse(map['createdDate'])
+        : DateTime.now(),
+  );
 }
 
 class Expense {
@@ -1215,22 +1175,22 @@ class Expense {
     required this.name,
     required this.amount,
     DateTime? createdDate,
-  })  : id = id ?? DateTime.now().millisecondsSinceEpoch.toString(),
-        createdDate = createdDate ?? DateTime.now();
+  }) : id = id ?? DateTime.now().millisecondsSinceEpoch.toString(),
+       createdDate = createdDate ?? DateTime.now();
 
   Map<String, dynamic> toMap() => {
-        'id': id,
-        'name': name,
-        'amount': amount,
-        'createdDate': createdDate.toIso8601String(),
-      };
+    'id': id,
+    'name': name,
+    'amount': amount,
+    'createdDate': createdDate.toIso8601String(),
+  };
 
   factory Expense.fromMap(Map<String, dynamic> map) => Expense(
-        id: map['id'] ?? DateTime.now().millisecondsSinceEpoch.toString(),
-        name: map['name'],
-        amount: (map['amount'] as num).toDouble(),
-        createdDate: map['createdDate'] != null
-            ? DateTime.parse(map['createdDate'])
-            : DateTime.now(),
-      );
+    id: map['id'] ?? DateTime.now().millisecondsSinceEpoch.toString(),
+    name: map['name'],
+    amount: (map['amount'] as num).toDouble(),
+    createdDate: map['createdDate'] != null
+        ? DateTime.parse(map['createdDate'])
+        : DateTime.now(),
+  );
 }
