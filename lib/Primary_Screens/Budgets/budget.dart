@@ -10,7 +10,6 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-// Import the budget detail page
 
 // Currency formatting utility
 class CurrencyFormatter {
@@ -34,8 +33,6 @@ class BudgetPage extends StatefulWidget {
 
 class _BudgetPageState extends State<BudgetPage> {
   static const String keyBudgets = 'budgets';
-  static const String keyTransactions = 'transactions';
-  static const String keyTotalIncome = 'total_income';
 
   List<Budget> budgets = [];
   String filter = 'all'; // all, checked, unchecked
@@ -300,9 +297,9 @@ class _BudgetPageState extends State<BudgetPage> {
   List<Budget> get filteredBudgets {
     if (filter == 'all') return budgets;
     if (filter == 'checked') {
-      return budgets.where((b) => b.checked).toList();
+      return budgets.where((b) => b.isChecked).toList();
     }
-    return budgets.where((b) => !b.checked).toList();
+    return budgets.where((b) => !b.isChecked).toList();
   }
 
   @override
@@ -442,10 +439,10 @@ class _BudgetPageState extends State<BudgetPage> {
           color: theme.colorScheme.surface,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: budget.checked
+            color: budget.isChecked
                 ? accentColor.withOpacity(0.5)
                 : theme.colorScheme.onSurface.withAlpha(20),
-            width: budget.checked ? 2 : 1,
+            width: budget.isChecked ? 2 : 1,
           ),
           boxShadow: [
             BoxShadow(
@@ -489,7 +486,7 @@ class _BudgetPageState extends State<BudgetPage> {
                               ),
                               overflow: TextOverflow.ellipsis,
                             ),
-                            if (budget.checked)
+                            if (budget.isChecked)
                               Row(
                                 children: [
                                   Icon(
@@ -499,7 +496,7 @@ class _BudgetPageState extends State<BudgetPage> {
                                   ),
                                   const SizedBox(width: 4),
                                   Text(
-                                    'Checked',
+                                    'Finalized',
                                     style: TextStyle(
                                       fontSize: 12,
                                       color: brandGreen,
@@ -643,7 +640,7 @@ class Budget {
   String name;
   double total;
   List<Expense> expenses;
-  bool checked;
+  bool isChecked;
   DateTime? checkedDate;
   DateTime createdDate;
 
@@ -652,7 +649,7 @@ class Budget {
     required this.name,
     required this.total,
     List<Expense>? expenses,
-    this.checked = false,
+    this.isChecked = false,
     this.checkedDate,
     DateTime? createdDate,
   })  : expenses = expenses ?? [],
@@ -667,20 +664,20 @@ class Budget {
         'name': name,
         'total': total,
         'expenses': expenses.map((e) => e.toMap()).toList(),
-        'checked': checked,
+        'isChecked': isChecked,
         'checkedDate': checkedDate?.toIso8601String(),
         'createdDate': createdDate.toIso8601String(),
       };
 
   factory Budget.fromMap(Map<String, dynamic> map) => Budget(
-        id: map['id'],
+        id: map['id'] ?? DateTime.now().millisecondsSinceEpoch.toString(),
         name: map['name'],
         total: (map['total'] as num).toDouble(),
         expenses: (map['expenses'] as List?)
                 ?.map((e) => Expense.fromMap(e))
                 .toList() ??
             [],
-        checked: map['checked'] ?? false,
+        isChecked: map['isChecked'] ?? map['checked'] ?? false,
         checkedDate: map['checkedDate'] != null
             ? DateTime.parse(map['checkedDate'])
             : null,
@@ -712,7 +709,7 @@ class Expense {
       };
 
   factory Expense.fromMap(Map<String, dynamic> map) => Expense(
-        id: map['id'],
+        id: map['id'] ?? DateTime.now().millisecondsSinceEpoch.toString(),
         name: map['name'],
         amount: (map['amount'] as num).toDouble(),
         createdDate: map['createdDate'] != null

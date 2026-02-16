@@ -8,14 +8,16 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+
 import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 // Currency formatting utility
 class CurrencyFormatter {
   static final NumberFormat _formatter = NumberFormat('#,##0', 'en_US');
-  static String format(double amount) =>
-      'Ksh ${_formatter.format(amount.round())}';
+  static String format(double amount) => 'Ksh ${_formatter.format(amount.round())}';
 }
 
 class BudgetDetailPage extends StatefulWidget {
@@ -35,7 +37,6 @@ class BudgetDetailPage extends StatefulWidget {
 class _BudgetDetailPageState extends State<BudgetDetailPage> {
   static const String keyBudgets = 'budgets';
   static const String keyTransactions = 'transactions';
-  static const String keyTotalIncome = 'total_income';
 
   Budget? budget;
   bool isLoading = true;
@@ -51,22 +52,22 @@ class _BudgetDetailPageState extends State<BudgetDetailPage> {
     setState(() => isLoading = true);
     final prefs = await SharedPreferences.getInstance();
     final budgetStrings = prefs.getStringList(keyBudgets) ?? [];
-    final budgets = budgetStrings
-        .map((s) => Budget.fromMap(json.decode(s)))
-        .toList();
+    final budgets =
+        budgetStrings.map((s) => Budget.fromMap(json.decode(s))).toList();
 
-    budget = budgets.firstWhere((b) => b.id == widget.budgetId);
+    budget = budgets.firstWhere(
+      (b) => b.id == widget.budgetId,
+      orElse: () => throw Exception('Budget not found'),
+    );
     setState(() => isLoading = false);
   }
 
   Future<void> saveBudgets() async {
     final prefs = await SharedPreferences.getInstance();
     final budgetStrings = prefs.getStringList(keyBudgets) ?? [];
-    final budgets = budgetStrings
-        .map((s) => Budget.fromMap(json.decode(s)))
-        .toList();
+    final budgets =
+        budgetStrings.map((s) => Budget.fromMap(json.decode(s))).toList();
 
-    // Update the budget in the list
     final index = budgets.indexWhere((b) => b.id == widget.budgetId);
     if (index != -1 && budget != null) {
       budgets[index] = budget!;
@@ -84,18 +85,18 @@ class _BudgetDetailPageState extends State<BudgetDetailPage> {
           .doc(userUid)
           .collection('notifications')
           .add({
-            'title': title,
-            'message': message,
-            'createdAt': FieldValue.serverTimestamp(),
-            'isRead': false,
-          });
+        'title': title,
+        'message': message,
+        'createdAt': FieldValue.serverTimestamp(),
+        'isRead': false,
+      });
     } catch (e) {
       debugPrint('Error sending notification: $e');
     }
   }
 
   void showAddExpenseDialog() {
-    if (budget == null || budget!.checked) {
+    if (budget == null || budget!.isChecked) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Row(
@@ -104,7 +105,7 @@ class _BudgetDetailPageState extends State<BudgetDetailPage> {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  'Cannot add expenses to a checked budget',
+                  'This budget is finalized and locked. Uncheck to modify.',
                   style: TextStyle(fontSize: 14),
                 ),
               ),
@@ -178,7 +179,7 @@ class _BudgetDetailPageState extends State<BudgetDetailPage> {
   }
 
   void showEditExpenseDialog(Expense expense) {
-    if (budget == null || budget!.checked) {
+    if (budget == null || budget!.isChecked) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Row(
@@ -187,7 +188,7 @@ class _BudgetDetailPageState extends State<BudgetDetailPage> {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  'Cannot edit expenses in a checked budget',
+                  'This budget is finalized and locked. Uncheck to modify.',
                   style: TextStyle(fontSize: 14),
                 ),
               ),
@@ -261,7 +262,7 @@ class _BudgetDetailPageState extends State<BudgetDetailPage> {
   }
 
   Future<void> deleteExpense(Expense expense) async {
-    if (budget == null || budget!.checked) {
+    if (budget == null || budget!.isChecked) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Row(
@@ -270,7 +271,7 @@ class _BudgetDetailPageState extends State<BudgetDetailPage> {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  'Cannot delete expenses from a checked budget',
+                  'This budget is finalized and locked. Uncheck to modify.',
                   style: TextStyle(fontSize: 14),
                 ),
               ),
@@ -318,70 +319,133 @@ class _BudgetDetailPageState extends State<BudgetDetailPage> {
     }
   }
 
-  Future<void> downloadReceipt() async {
+  Future<void> exportAsPDF() async {
     if (budget == null) return;
 
     try {
+      final pdf = pw.Document();
       final dateFormat = DateFormat('dd MMM yyyy');
       final now = DateTime.now();
 
-      final receiptContent =
-          '''
-══════════════════════════════════════
-        BUDGET RECEIPT
-══════════════════════════════════════
-
-Budget Name: ${budget!.name}
-Date: ${dateFormat.format(now)}
-
-──────────────────────────────────────
-BUDGET SUMMARY
-──────────────────────────────────────
-
-Budget Amount:     ${CurrencyFormatter.format(budget!.total)}
-Amount Spent:      ${CurrencyFormatter.format(budget!.totalSpent)}
-Remaining Balance: ${CurrencyFormatter.format(budget!.amountLeft)}
-
-Status: ${budget!.checked ? '✓ CHECKED' : '○ UNCHECKED'}
-${budget!.checked && budget!.checkedDate != null ? 'Checked on: ${dateFormat.format(budget!.checkedDate!)}' : ''}
-
-──────────────────────────────────────
-EXPENSE BREAKDOWN
-──────────────────────────────────────
-
-${budget!.expenses.isEmpty ? 'No expenses recorded' : budget!.expenses.map((e) => '• ${e.name}\n  ${CurrencyFormatter.format(e.amount)}\n  ${dateFormat.format(e.createdDate)}').join('\n\n')}
-
-──────────────────────────────────────
-TOTAL EXPENSES: ${CurrencyFormatter.format(budget!.totalSpent)}
-──────────────────────────────────────
-
-Generated on: ${DateFormat('dd MMM yyyy, hh:mm a').format(now)}
-
-══════════════════════════════════════
-''';
+      pdf.addPage(
+        pw.Page(
+          pageFormat: PdfPageFormat.a4,
+          build: (pw.Context context) {
+            return pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                pw.Text(
+                  'BUDGET REPORT',
+                  style: pw.TextStyle(fontSize: 24, fontWeight: pw.FontWeight.bold),
+                ),
+                pw.SizedBox(height: 20),
+                pw.Divider(),
+                pw.SizedBox(height: 10),
+                
+                pw.Text('Budget Name: ${budget!.name}', style: pw.TextStyle(fontSize: 16)),
+                pw.Text('Generated: ${dateFormat.format(now)}', style: pw.TextStyle(fontSize: 12)),
+                pw.SizedBox(height: 20),
+                
+                pw.Container(
+                  padding: const pw.EdgeInsets.all(10),
+                  decoration: pw.BoxDecoration(
+                    border: pw.Border.all(color: PdfColors.grey),
+                    borderRadius: const pw.BorderRadius.all(pw.Radius.circular(5)),
+                  ),
+                  child: pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.start,
+                    children: [
+                      pw.Text('BUDGET SUMMARY', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+                      pw.SizedBox(height: 10),
+                      pw.Text('Budget Amount: ${CurrencyFormatter.format(budget!.total)}'),
+                      pw.Text('Amount Spent: ${CurrencyFormatter.format(budget!.totalSpent)}'),
+                      pw.Text('Remaining Balance: ${CurrencyFormatter.format(budget!.amountLeft)}'),
+                      pw.Text('Status: ${budget!.isChecked ? "FINALIZED" : "ACTIVE"}'),
+                      if (budget!.isChecked && budget!.checkedDate != null)
+                        pw.Text('Finalized on: ${dateFormat.format(budget!.checkedDate!)}'),
+                    ],
+                  ),
+                ),
+                
+                pw.SizedBox(height: 20),
+                pw.Text('EXPENSE BREAKDOWN', style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold)),
+                pw.SizedBox(height: 10),
+                
+                if (budget!.expenses.isEmpty)
+                  pw.Text('No expenses recorded')
+                else
+                  pw.Table(
+                    border: pw.TableBorder.all(color: PdfColors.grey),
+                    children: [
+                      pw.TableRow(
+                        decoration: const pw.BoxDecoration(color: PdfColors.grey300),
+                        children: [
+                          pw.Padding(
+                            padding: const pw.EdgeInsets.all(8),
+                            child: pw.Text('Expense', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+                          ),
+                          pw.Padding(
+                            padding: const pw.EdgeInsets.all(8),
+                            child: pw.Text('Amount', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+                          ),
+                          pw.Padding(
+                            padding: const pw.EdgeInsets.all(8),
+                            child: pw.Text('Date', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+                          ),
+                        ],
+                      ),
+                      ...budget!.expenses.map((exp) => pw.TableRow(
+                            children: [
+                              pw.Padding(
+                                padding: const pw.EdgeInsets.all(8),
+                                child: pw.Text(exp.name),
+                              ),
+                              pw.Padding(
+                                padding: const pw.EdgeInsets.all(8),
+                                child: pw.Text(CurrencyFormatter.format(exp.amount)),
+                              ),
+                              pw.Padding(
+                                padding: const pw.EdgeInsets.all(8),
+                                child: pw.Text(dateFormat.format(exp.createdDate)),
+                              ),
+                            ],
+                          )),
+                    ],
+                  ),
+                
+                pw.SizedBox(height: 20),
+                pw.Divider(),
+                pw.Text('Total Expenses: ${CurrencyFormatter.format(budget!.totalSpent)}', 
+                  style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold)),
+              ],
+            );
+          },
+        ),
+      );
 
       final directory = await getApplicationDocumentsDirectory();
-      final file = File('${directory.path}/budget_${budget!.id}_receipt.txt');
-      await file.writeAsString(receiptContent);
+      final file = File('${directory.path}/budget_${budget!.id}.pdf');
+      await file.writeAsBytes(await pdf.save());
 
-      await Share.shareXFiles([
-        XFile(file.path),
-      ], text: 'Budget Receipt: ${budget!.name}');
+      await Share.shareXFiles(
+        [XFile(file.path)],
+        text: 'Budget Report: ${budget!.name}',
+      );
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Receipt downloaded successfully'),
+            content: Text('PDF exported successfully'),
             backgroundColor: brandGreen,
           ),
         );
       }
     } catch (e) {
-      debugPrint('Error downloading receipt: $e');
+      debugPrint('Error exporting PDF: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error downloading receipt: $e'),
+            content: Text('Error exporting PDF: $e'),
             backgroundColor: errorColor,
           ),
         );
@@ -389,23 +453,132 @@ Generated on: ${DateFormat('dd MMM yyyy, hh:mm a').format(now)}
     }
   }
 
+  Future<void> exportAsWord() async {
+    if (budget == null) return;
+
+    try {
+      final dateFormat = DateFormat('dd MMM yyyy');
+      final now = DateTime.now();
+      
+      final wordContent = '''
+═══════════════════════════════════════════════════════════════
+                          BUDGET REPORT
+═══════════════════════════════════════════════════════════════
+
+Budget Name: ${budget!.name}
+Generated: ${dateFormat.format(now)}
+
+───────────────────────────────────────────────────────────────
+BUDGET SUMMARY
+───────────────────────────────────────────────────────────────
+
+Budget Amount:     ${CurrencyFormatter.format(budget!.total)}
+Amount Spent:      ${CurrencyFormatter.format(budget!.totalSpent)}
+Remaining Balance: ${CurrencyFormatter.format(budget!.amountLeft)}
+
+Status: ${budget!.isChecked ? '✓ FINALIZED' : '○ ACTIVE'}
+${budget!.isChecked && budget!.checkedDate != null ? 'Finalized on: ${dateFormat.format(budget!.checkedDate!)}' : ''}
+
+───────────────────────────────────────────────────────────────
+EXPENSE BREAKDOWN
+───────────────────────────────────────────────────────────────
+
+${budget!.expenses.isEmpty ? 'No expenses recorded' : budget!.expenses.map((e) => '• ${e.name}\n  Amount: ${CurrencyFormatter.format(e.amount)}\n  Date: ${dateFormat.format(e.createdDate)}').join('\n\n')}
+
+───────────────────────────────────────────────────────────────
+TOTAL EXPENSES: ${CurrencyFormatter.format(budget!.totalSpent)}
+───────────────────────────────────────────────────────────────
+
+Generated on: ${DateFormat('dd MMM yyyy, hh:mm a').format(now)}
+
+═══════════════════════════════════════════════════════════════
+''';
+
+      final directory = await getApplicationDocumentsDirectory();
+      final file = File('${directory.path}/budget_${budget!.id}.txt');
+      await file.writeAsString(wordContent);
+
+      await Share.shareXFiles(
+        [XFile(file.path)],
+        text: 'Budget Report: ${budget!.name}',
+      );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Document exported successfully'),
+            backgroundColor: brandGreen,
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('Error exporting document: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error exporting document: $e'),
+            backgroundColor: errorColor,
+          ),
+        );
+      }
+    }
+  }
+
+  void showExportOptions() {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'Export Budget',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 20),
+            ListTile(
+              leading: const Icon(Icons.picture_as_pdf, color: Colors.red),
+              title: const Text('Export as PDF'),
+              onTap: () {
+                Navigator.pop(context);
+                exportAsPDF();
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.description, color: Colors.blue),
+              title: const Text('Export as Document'),
+              onTap: () {
+                Navigator.pop(context);
+                exportAsWord();
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Future<void> toggleCheckBudget() async {
     if (budget == null) return;
 
     final prefs = await SharedPreferences.getInstance();
 
-    if (!budget!.checked) {
-      // CHECK BUDGET - Deduct from balance
+    if (!budget!.isChecked) {
+      // CHECK BUDGET - Create collective transaction
       final confirmed = await showDialog<bool>(
         context: context,
         builder: (context) => AlertDialog(
-          title: const Text('Check Budget'),
+          title: const Text('Finalize Budget'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text(
-                'This will deduct the total spent amount from your balance.',
+                'This will create a collective transaction and deduct the total spent amount from your balance.',
               ),
               const SizedBox(height: 12),
               Container(
@@ -451,37 +624,48 @@ Generated on: ${DateFormat('dd MMM yyyy, hh:mm a').format(now)}
                 foregroundColor: Colors.white,
               ),
               onPressed: () => Navigator.pop(context, true),
-              child: const Text('Check Budget'),
+              child: const Text('Finalize'),
             ),
           ],
         ),
       );
 
       if (confirmed == true) {
-        // Create transaction
-        final txString = prefs.getString(keyTransactions) ?? '[]';
-        final transactions = List<Map<String, dynamic>>.from(
-          json.decode(txString),
-        );
+        // Prevent double-checking
+        if (budget!.isChecked) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Budget is already finalized'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+          return;
+        }
 
-        final newTx = {
-          'title': 'Budget: ${budget!.name}',
+        // Create collective transaction
+        final txString = prefs.getString(keyTransactions) ?? '[]';
+        final transactions =
+            List<Map<String, dynamic>>.from(json.decode(txString));
+
+        final collectiveTransaction = {
+          'title': 'Budget: ${budget!.name} (Finalized)',
           'amount': budget!.totalSpent,
-          'type': 'budget_checked',
+          'type': 'budget_finalized',
           'date': DateTime.now().toIso8601String(),
           'budgetId': budget!.id,
         };
-        transactions.insert(0, newTx);
+        
+        transactions.insert(0, collectiveTransaction);
         await prefs.setString(keyTransactions, json.encode(transactions));
 
         // Update budget
-        budget!.checked = true;
+        budget!.isChecked = true;
         budget!.checkedDate = DateTime.now();
         await saveBudgets();
 
         await sendNotification(
-          '✓ Budget Checked',
-          'Budget "${budget!.name}" has been checked. ${CurrencyFormatter.format(budget!.totalSpent)} deducted from balance.',
+          '✓ Budget Finalized',
+          'Budget "${budget!.name}" has been finalized. ${CurrencyFormatter.format(budget!.totalSpent)} deducted from balance.',
         );
 
         setState(() {});
@@ -490,7 +674,7 @@ Generated on: ${DateFormat('dd MMM yyyy, hh:mm a').format(now)}
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                'Budget checked. ${CurrencyFormatter.format(budget!.totalSpent)} deducted',
+                'Budget finalized. ${CurrencyFormatter.format(budget!.totalSpent)} deducted',
               ),
               backgroundColor: brandGreen,
             ),
@@ -498,17 +682,17 @@ Generated on: ${DateFormat('dd MMM yyyy, hh:mm a').format(now)}
         }
       }
     } else {
-      // UNCHECK BUDGET - Restore balance
+      // UNCHECK BUDGET - Remove collective transaction
       final confirmed = await showDialog<bool>(
         context: context,
         builder: (context) => AlertDialog(
-          title: const Text('Uncheck Budget'),
+          title: const Text('Unfinalize Budget'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text(
-                'This will restore the deducted amount back to your balance.',
+                'This will remove the collective transaction and restore the deducted amount back to your balance.',
               ),
               const SizedBox(height: 12),
               Container(
@@ -545,33 +729,43 @@ Generated on: ${DateFormat('dd MMM yyyy, hh:mm a').format(now)}
                 foregroundColor: Colors.white,
               ),
               onPressed: () => Navigator.pop(context, true),
-              child: const Text('Uncheck'),
+              child: const Text('Unfinalize'),
             ),
           ],
         ),
       );
 
       if (confirmed == true) {
-        // Remove the budget_checked transaction
+        // Prevent double-unchecking
+        if (!budget!.isChecked) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Budget is already active'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+          return;
+        }
+
+        // Remove the collective transaction
         final txString = prefs.getString(keyTransactions) ?? '[]';
-        final transactions = List<Map<String, dynamic>>.from(
-          json.decode(txString),
-        );
+        final transactions =
+            List<Map<String, dynamic>>.from(json.decode(txString));
 
         transactions.removeWhere(
           (tx) =>
-              tx['type'] == 'budget_checked' && tx['budgetId'] == budget!.id,
+              tx['type'] == 'budget_finalized' && tx['budgetId'] == budget!.id,
         );
         await prefs.setString(keyTransactions, json.encode(transactions));
 
         // Update budget
-        budget!.checked = false;
+        budget!.isChecked = false;
         budget!.checkedDate = null;
         await saveBudgets();
 
         await sendNotification(
-          '○ Budget Unchecked',
-          'Budget "${budget!.name}" has been unchecked. ${CurrencyFormatter.format(budget!.totalSpent)} restored to balance.',
+          '○ Budget Unfinalized',
+          'Budget "${budget!.name}" has been unfinalized. ${CurrencyFormatter.format(budget!.totalSpent)} restored to balance.',
         );
 
         setState(() {});
@@ -580,7 +774,7 @@ Generated on: ${DateFormat('dd MMM yyyy, hh:mm a').format(now)}
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                'Budget unchecked. ${CurrencyFormatter.format(budget!.totalSpent)} restored',
+                'Budget unfinalized. ${CurrencyFormatter.format(budget!.totalSpent)} restored',
               ),
               backgroundColor: brandGreen,
             ),
@@ -615,20 +809,20 @@ Generated on: ${DateFormat('dd MMM yyyy, hh:mm a').format(now)}
           style: const TextStyle(fontWeight: FontWeight.bold),
         ),
         actions: [
-          // Download Receipt
+          // Export Button
           IconButton(
             icon: const Icon(Icons.download),
-            onPressed: downloadReceipt,
-            tooltip: 'Download Receipt',
+            onPressed: showExportOptions,
+            tooltip: 'Export Budget',
           ),
           // Check Budget Toggle
           IconButton(
             icon: Icon(
-              budget!.checked ? Icons.check_circle : Icons.check_circle_outline,
-              color: budget!.checked ? brandGreen : theme.colorScheme.onSurface,
+              budget!.isChecked ? Icons.check_circle : Icons.check_circle_outline,
+              color: budget!.isChecked ? brandGreen : theme.colorScheme.onSurface,
             ),
             onPressed: toggleCheckBudget,
-            tooltip: budget!.checked ? 'Uncheck Budget' : 'Check Budget',
+            tooltip: budget!.isChecked ? 'Unfinalize Budget' : 'Finalize Budget',
           ),
         ],
       ),
@@ -640,7 +834,10 @@ Generated on: ${DateFormat('dd MMM yyyy, hh:mm a').format(now)}
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [accentColor, accentColor.withOpacity(0.8)],
+                colors: [
+                  accentColor,
+                  accentColor.withOpacity(0.8),
+                ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -676,7 +873,7 @@ Generated on: ${DateFormat('dd MMM yyyy, hh:mm a').format(now)}
                         ),
                       ],
                     ),
-                    if (budget!.checked)
+                    if (budget!.isChecked)
                       Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 12,
@@ -695,7 +892,7 @@ Generated on: ${DateFormat('dd MMM yyyy, hh:mm a').format(now)}
                             ),
                             const SizedBox(width: 4),
                             const Text(
-                              'CHECKED',
+                              'FINALIZED',
                               style: TextStyle(
                                 color: Colors.white,
                                 fontWeight: FontWeight.bold,
@@ -786,7 +983,7 @@ Generated on: ${DateFormat('dd MMM yyyy, hh:mm a').format(now)}
           ),
           const SizedBox(height: 8),
 
-          if (budget!.checked)
+          if (budget!.isChecked)
             Container(
               margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               padding: const EdgeInsets.all(12),
@@ -801,7 +998,7 @@ Generated on: ${DateFormat('dd MMM yyyy, hh:mm a').format(now)}
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'Budget is checked. Expenses are locked.',
+                      'Budget is finalized and locked. Uncheck to modify expenses.',
                       style: TextStyle(
                         fontSize: 12,
                         color: Colors.orange.shade900,
@@ -827,17 +1024,15 @@ Generated on: ${DateFormat('dd MMM yyyy, hh:mm a').format(now)}
                         const SizedBox(height: 16),
                         Text(
                           'No expenses yet',
-                          style: theme.textTheme.bodyLarge?.copyWith(
-                            color: Colors.grey.shade600,
-                          ),
+                          style: theme.textTheme.bodyLarge
+                              ?.copyWith(color: Colors.grey.shade600),
                         ),
                         const SizedBox(height: 8),
-                        if (!budget!.checked)
+                        if (!budget!.isChecked)
                           Text(
                             'Tap + to add an expense',
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: Colors.grey.shade500,
-                            ),
+                            style: theme.textTheme.bodySmall
+                                ?.copyWith(color: Colors.grey.shade500),
                           ),
                       ],
                     ),
@@ -852,7 +1047,7 @@ Generated on: ${DateFormat('dd MMM yyyy, hh:mm a').format(now)}
           ),
         ],
       ),
-      floatingActionButton: budget!.checked
+      floatingActionButton: budget!.isChecked
           ? null
           : FloatingActionButton(
               onPressed: showAddExpenseDialog,
@@ -873,10 +1068,10 @@ Generated on: ${DateFormat('dd MMM yyyy, hh:mm a').format(now)}
         color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: budget!.checked
+          color: budget!.isChecked
               ? Colors.orange.shade300
               : theme.colorScheme.onSurface.withAlpha(20),
-          width: budget!.checked ? 2 : 1,
+          width: budget!.isChecked ? 2 : 1,
         ),
         boxShadow: [
           BoxShadow(
@@ -930,7 +1125,7 @@ Generated on: ${DateFormat('dd MMM yyyy, hh:mm a').format(now)}
                   color: errorColor,
                 ),
               ),
-              if (!budget!.checked)
+              if (!budget!.isChecked)
                 Row(
                   children: [
                     IconButton(
@@ -941,11 +1136,7 @@ Generated on: ${DateFormat('dd MMM yyyy, hh:mm a').format(now)}
                     ),
                     const SizedBox(width: 4),
                     IconButton(
-                      icon: const Icon(
-                        Icons.delete,
-                        size: 18,
-                        color: errorColor,
-                      ),
+                      icon: const Icon(Icons.delete, size: 18, color: errorColor),
                       onPressed: () => deleteExpense(expense),
                       padding: EdgeInsets.zero,
                       constraints: const BoxConstraints(),
@@ -966,7 +1157,7 @@ class Budget {
   String name;
   double total;
   List<Expense> expenses;
-  bool checked;
+  bool isChecked;
   DateTime? checkedDate;
   DateTime createdDate;
 
@@ -975,41 +1166,42 @@ class Budget {
     required this.name,
     required this.total,
     List<Expense>? expenses,
-    this.checked = false,
+    this.isChecked = false,
     this.checkedDate,
     DateTime? createdDate,
-  }) : expenses = expenses ?? [],
-       id = id ?? DateTime.now().millisecondsSinceEpoch.toString(),
-       createdDate = createdDate ?? DateTime.now();
+  })  : expenses = expenses ?? [],
+        id = id ?? DateTime.now().millisecondsSinceEpoch.toString(),
+        createdDate = createdDate ?? DateTime.now();
 
   double get totalSpent => expenses.fold(0.0, (sum, e) => sum + e.amount);
   double get amountLeft => total - totalSpent;
 
   Map<String, dynamic> toMap() => {
-    'id': id,
-    'name': name,
-    'total': total,
-    'expenses': expenses.map((e) => e.toMap()).toList(),
-    'checked': checked,
-    'checkedDate': checkedDate?.toIso8601String(),
-    'createdDate': createdDate.toIso8601String(),
-  };
+        'id': id,
+        'name': name,
+        'total': total,
+        'expenses': expenses.map((e) => e.toMap()).toList(),
+        'isChecked': isChecked,
+        'checkedDate': checkedDate?.toIso8601String(),
+        'createdDate': createdDate.toIso8601String(),
+      };
 
   factory Budget.fromMap(Map<String, dynamic> map) => Budget(
-    id: map['id'],
-    name: map['name'],
-    total: (map['total'] as num).toDouble(),
-    expenses:
-        (map['expenses'] as List?)?.map((e) => Expense.fromMap(e)).toList() ??
-        [],
-    checked: map['checked'] ?? false,
-    checkedDate: map['checkedDate'] != null
-        ? DateTime.parse(map['checkedDate'])
-        : null,
-    createdDate: map['createdDate'] != null
-        ? DateTime.parse(map['createdDate'])
-        : DateTime.now(),
-  );
+        id: map['id'] ?? DateTime.now().millisecondsSinceEpoch.toString(),
+        name: map['name'],
+        total: (map['total'] as num).toDouble(),
+        expenses: (map['expenses'] as List?)
+                ?.map((e) => Expense.fromMap(e))
+                .toList() ??
+            [],
+        isChecked: map['isChecked'] ?? map['checked'] ?? false,
+        checkedDate: map['checkedDate'] != null
+            ? DateTime.parse(map['checkedDate'])
+            : null,
+        createdDate: map['createdDate'] != null
+            ? DateTime.parse(map['createdDate'])
+            : DateTime.now(),
+      );
 }
 
 class Expense {
@@ -1023,22 +1215,22 @@ class Expense {
     required this.name,
     required this.amount,
     DateTime? createdDate,
-  }) : id = id ?? DateTime.now().millisecondsSinceEpoch.toString(),
-       createdDate = createdDate ?? DateTime.now();
+  })  : id = id ?? DateTime.now().millisecondsSinceEpoch.toString(),
+        createdDate = createdDate ?? DateTime.now();
 
   Map<String, dynamic> toMap() => {
-    'id': id,
-    'name': name,
-    'amount': amount,
-    'createdDate': createdDate.toIso8601String(),
-  };
+        'id': id,
+        'name': name,
+        'amount': amount,
+        'createdDate': createdDate.toIso8601String(),
+      };
 
   factory Expense.fromMap(Map<String, dynamic> map) => Expense(
-    id: map['id'],
-    name: map['name'],
-    amount: (map['amount'] as num).toDouble(),
-    createdDate: map['createdDate'] != null
-        ? DateTime.parse(map['createdDate'])
-        : DateTime.now(),
-  );
+        id: map['id'] ?? DateTime.now().millisecondsSinceEpoch.toString(),
+        name: map['name'],
+        amount: (map['amount'] as num).toDouble(),
+        createdDate: map['createdDate'] != null
+            ? DateTime.parse(map['createdDate'])
+            : DateTime.now(),
+      );
 }
