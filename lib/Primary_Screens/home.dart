@@ -29,6 +29,7 @@ class _HomePageState extends State<HomePage> {
   static const String keyTotalIncome = 'total_income';
   static const String keyStreakCount = 'streak_count';
   static const String keyLastSaveDate = 'last_save_date';
+  static const String keyStreakLevel = 'streak_level';
 
   final userUid = FirebaseAuth.instance.currentUser!.uid;
   final usersDB = FirebaseFirestore.instance.collection('users');
@@ -302,6 +303,15 @@ class _HomePageState extends State<HomePage> {
     await refreshData();
   }
 
+  String getStreakLevel(int count) {
+    if (count == 0) return 'Base';
+    if (count < 7) return 'Bronze';
+    if (count < 30) return 'Silver';
+    if (count < 90) return 'Gold';
+    if (count < 180) return 'Platinum';
+    return 'Diamond';
+  }
+
   Future<void> updateStreak() async {
     final prefs = await SharedPreferences.getInstance();
     final now = DateTime.now();
@@ -318,6 +328,8 @@ class _HomePageState extends State<HomePage> {
 
       if (difference == 1) {
         streakCount++;
+      } else if (difference >= 3) {
+        streakCount = 1;
       } else {
         streakCount = 1;
       }
@@ -325,13 +337,16 @@ class _HomePageState extends State<HomePage> {
       streakCount = 1;
     }
 
+    String streakLevel = getStreakLevel(streakCount);
+
     await prefs.setInt(keyStreakCount, streakCount);
+    await prefs.setString(keyStreakLevel, streakLevel);
     await prefs.setString(keyLastSaveDate, todayStr);
 
     if (streakCount % 7 == 0) {
       sendNotification(
         '🔥 Streak Milestone!',
-        'Amazing! You\'ve maintained a $streakCount day savings streak!',
+        'Amazing! You\'ve maintained a $streakCount day savings streak at $streakLevel level!',
       );
     }
   }
@@ -854,29 +869,84 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget buildQuickActions() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return Column(
       children: [
-        QuickActionCard(
-          icon: Icons.add,
-          label: 'Add Income',
-          onTap: showAddIncomeDialog,
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            QuickActionCard(
+              icon: Icons.add,
+              label: 'Add Income',
+              onTap: showAddIncomeDialog,
+            ),
+            QuickActionCard(
+              icon: Icons.remove,
+              label: 'Expense',
+              onTap: showSmartExpenseDialog,
+            ),
+            QuickActionCard(
+              icon: Icons.receipt_long,
+              label: 'All Trans.',
+              onTap: () async {
+                await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const TransactionsPage(),
+                  ),
+                );
+                refreshData();
+              },
+            ),
+          ],
         ),
-        QuickActionCard(
-          icon: Icons.remove,
-          label: 'Expense',
-          onTap: showSmartExpenseDialog,
-        ),
-        QuickActionCard(
-          icon: Icons.receipt_long,
-          label: 'All Trans.',
-          onTap: () async {
-            await Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const TransactionsPage()),
-            );
-            refreshData();
-          },
+        sizedBoxHeightSmall,
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            QuickActionCard(
+              icon: Icons.savings,
+              label: 'Savings',
+              onTap: () async {
+                await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => SavingsPage(
+                      onTransactionAdded: onSavingsTransactionAdded,
+                    ),
+                  ),
+                );
+                refreshData();
+              },
+            ),
+            QuickActionCard(
+              icon: Icons.account_balance_wallet,
+              label: 'Budgets',
+              onTap: () async {
+                await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => BudgetPage(
+                      onTransactionAdded: onBudgetTransactionAdded,
+                      onExpenseDeleted: onBudgetExpenseDeleted,
+                    ),
+                  ),
+                );
+                refreshData();
+              },
+            ),
+            QuickActionCard(
+              icon: Icons.analytics,
+              label: 'Analytics',
+              onTap: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Analytics coming soon!'),
+                    duration: Duration(seconds: 2),
+                  ),
+                );
+              },
+            ),
+          ],
         ),
       ],
     );
