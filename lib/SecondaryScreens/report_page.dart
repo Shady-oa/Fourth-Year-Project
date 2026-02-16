@@ -811,7 +811,7 @@ class _ReportPageState extends State<ReportPage> {
           buildSummaryRow('Total Savings', filteredSavings, Colors.white),
           const Divider(color: Colors.white54, height: 24),
           buildSummaryRow(
-            'Net Profit/Loss',
+            'Net Balance',
             filteredIncome - filteredExpenses,
             Colors.white,
             isBold: true,

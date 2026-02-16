@@ -1047,7 +1047,7 @@ class _HomePageState extends State<HomePage> {
           },
         ),
         QuickActionCard(
-          icon: Icons.receipt_long,
+          icon: Icons.list_outlined,
           label: 'View Reports.',
           onTap: () async {
             await Navigator.push(
