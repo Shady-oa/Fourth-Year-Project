@@ -3,7 +3,6 @@ import 'dart:convert';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:final_project/Components/Custom_header.dart';
-import 'package:final_project/Components/back_button.dart';
 import 'package:final_project/Constants/colors.dart';
 import 'package:final_project/Constants/spacing.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -715,7 +714,7 @@ class _SavingsPageState extends State<SavingsPage> {
       backgroundColor: theme.colorScheme.surface,
       appBar: AppBar(
         backgroundColor: theme.colorScheme.surface,
-        leading: const CustomBackButton(),
+
         title: const CustomHeader(headerName: "Savings Goals"),
         elevation: 0,
       ),

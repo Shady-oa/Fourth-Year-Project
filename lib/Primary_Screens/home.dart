@@ -635,7 +635,7 @@ class _HomePageState extends State<HomePage> {
   void handleSavingsExpense() {
     final activeSavings = savings.where((s) => !s.achieved).toList();
     if (activeSavings.isEmpty) {
-      Navigator.push(
+      Navigator.pushReplacement(
         context,
         MaterialPageRoute(
           builder: (context) =>
@@ -695,7 +695,7 @@ class _HomePageState extends State<HomePage> {
 
   void handleBudgetExpense() {
     if (budgets.isEmpty) {
-      Navigator.push(
+      Navigator.pushReplacement(
         context,
         MaterialPageRoute(
           builder: (context) => BudgetPage(

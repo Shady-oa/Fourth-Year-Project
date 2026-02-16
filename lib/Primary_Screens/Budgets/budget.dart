@@ -2,7 +2,6 @@ import 'dart:convert';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:final_project/Components/Custom_header.dart';
-import 'package:final_project/Components/back_button.dart';
 import 'package:final_project/Constants/colors.dart';
 import 'package:final_project/Primary_Screens/Budgets/budget_detail.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -13,18 +12,15 @@ import 'package:shared_preferences/shared_preferences.dart';
 // Currency formatting utility
 class CurrencyFormatter {
   static final NumberFormat _formatter = NumberFormat('#,##0', 'en_US');
-  static String format(double amount) => 'Ksh ${_formatter.format(amount.round())}';
+  static String format(double amount) =>
+      'Ksh ${_formatter.format(amount.round())}';
 }
 
 class BudgetPage extends StatefulWidget {
   final Function(String, double, String)? onTransactionAdded;
   final Function(String, double)? onExpenseDeleted;
 
-  const BudgetPage({
-    super.key,
-    this.onTransactionAdded,
-    this.onExpenseDeleted,
-  });
+  const BudgetPage({super.key, this.onTransactionAdded, this.onExpenseDeleted});
 
   @override
   State<BudgetPage> createState() => _BudgetPageState();
@@ -65,11 +61,11 @@ class _BudgetPageState extends State<BudgetPage> {
           .doc(userUid)
           .collection('notifications')
           .add({
-        'title': title,
-        'message': message,
-        'createdAt': FieldValue.serverTimestamp(),
-        'isRead': false,
-      });
+            'title': title,
+            'message': message,
+            'createdAt': FieldValue.serverTimestamp(),
+            'isRead': false,
+          });
     } catch (e) {
       debugPrint('Error sending notification: $e');
     }
@@ -116,10 +112,7 @@ class _BudgetPageState extends State<BudgetPage> {
               final amount = double.tryParse(amountCtrl.text) ?? 0;
 
               if (name.isNotEmpty && amount > 0) {
-                final newBudget = Budget(
-                  name: name,
-                  total: amount,
-                );
+                final newBudget = Budget(name: name, total: amount);
 
                 budgets.add(newBudget);
                 await saveBudgets();
@@ -309,7 +302,7 @@ class _BudgetPageState extends State<BudgetPage> {
       backgroundColor: theme.colorScheme.surface,
       appBar: AppBar(
         backgroundColor: theme.colorScheme.surface,
-        leading: const CustomBackButton(),
+
         title: const CustomHeader(headerName: "Budgets"),
         elevation: 0,
       ),
@@ -319,7 +312,10 @@ class _BudgetPageState extends State<BudgetPage> {
               children: [
                 // Filter Tabs
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16.0,
+                    vertical: 8.0,
+                  ),
                   child: Row(
                     children: [
                       buildFilterChip('All', 'all', theme),
@@ -346,14 +342,16 @@ class _BudgetPageState extends State<BudgetPage> {
                               const SizedBox(height: 16),
                               Text(
                                 'No budgets found',
-                                style: theme.textTheme.bodyLarge
-                                    ?.copyWith(color: Colors.grey.shade600),
+                                style: theme.textTheme.bodyLarge?.copyWith(
+                                  color: Colors.grey.shade600,
+                                ),
                               ),
                               const SizedBox(height: 8),
                               Text(
                                 'Tap + to create your first budget',
-                                style: theme.textTheme.bodySmall
-                                    ?.copyWith(color: Colors.grey.shade500),
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: Colors.grey.shade500,
+                                ),
                               ),
                             ],
                           ),
@@ -386,7 +384,9 @@ class _BudgetPageState extends State<BudgetPage> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected ? theme.colorScheme.primary : theme.colorScheme.surface,
+          color: isSelected
+              ? theme.colorScheme.primary
+              : theme.colorScheme.surface,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: isSelected
@@ -511,7 +511,10 @@ class _BudgetPageState extends State<BudgetPage> {
                   ),
                 ),
                 PopupMenuButton<String>(
-                  icon: Icon(Icons.more_vert, color: theme.colorScheme.onSurface),
+                  icon: Icon(
+                    Icons.more_vert,
+                    color: theme.colorScheme.onSurface,
+                  ),
                   onSelected: (value) {
                     if (value == 'edit') {
                       showEditBudgetDialog(budget);
@@ -651,39 +654,38 @@ class Budget {
     this.isChecked = false,
     this.checkedDate,
     DateTime? createdDate,
-  })  : expenses = expenses ?? [],
-        id = id ?? DateTime.now().millisecondsSinceEpoch.toString(),
-        createdDate = createdDate ?? DateTime.now();
+  }) : expenses = expenses ?? [],
+       id = id ?? DateTime.now().millisecondsSinceEpoch.toString(),
+       createdDate = createdDate ?? DateTime.now();
 
   double get totalSpent => expenses.fold(0.0, (sum, e) => sum + e.amount);
   double get amountLeft => total - totalSpent;
 
   Map<String, dynamic> toMap() => {
-        'id': id,
-        'name': name,
-        'total': total,
-        'expenses': expenses.map((e) => e.toMap()).toList(),
-        'isChecked': isChecked,
-        'checkedDate': checkedDate?.toIso8601String(),
-        'createdDate': createdDate.toIso8601String(),
-      };
+    'id': id,
+    'name': name,
+    'total': total,
+    'expenses': expenses.map((e) => e.toMap()).toList(),
+    'isChecked': isChecked,
+    'checkedDate': checkedDate?.toIso8601String(),
+    'createdDate': createdDate.toIso8601String(),
+  };
 
   factory Budget.fromMap(Map<String, dynamic> map) => Budget(
-        id: map['id'] ?? DateTime.now().millisecondsSinceEpoch.toString(),
-        name: map['name'],
-        total: (map['total'] as num).toDouble(),
-        expenses: (map['expenses'] as List?)
-                ?.map((e) => Expense.fromMap(e))
-                .toList() ??
-            [],
-        isChecked: map['isChecked'] ?? map['checked'] ?? false,
-        checkedDate: map['checkedDate'] != null
-            ? DateTime.parse(map['checkedDate'])
-            : null,
-        createdDate: map['createdDate'] != null
-            ? DateTime.parse(map['createdDate'])
-            : DateTime.now(),
-      );
+    id: map['id'] ?? DateTime.now().millisecondsSinceEpoch.toString(),
+    name: map['name'],
+    total: (map['total'] as num).toDouble(),
+    expenses:
+        (map['expenses'] as List?)?.map((e) => Expense.fromMap(e)).toList() ??
+        [],
+    isChecked: map['isChecked'] ?? map['checked'] ?? false,
+    checkedDate: map['checkedDate'] != null
+        ? DateTime.parse(map['checkedDate'])
+        : null,
+    createdDate: map['createdDate'] != null
+        ? DateTime.parse(map['createdDate'])
+        : DateTime.now(),
+  );
 }
 
 class Expense {
@@ -697,22 +699,22 @@ class Expense {
     required this.name,
     required this.amount,
     DateTime? createdDate,
-  })  : id = id ?? DateTime.now().millisecondsSinceEpoch.toString(),
-        createdDate = createdDate ?? DateTime.now();
+  }) : id = id ?? DateTime.now().millisecondsSinceEpoch.toString(),
+       createdDate = createdDate ?? DateTime.now();
 
   Map<String, dynamic> toMap() => {
-        'id': id,
-        'name': name,
-        'amount': amount,
-        'createdDate': createdDate.toIso8601String(),
-      };
+    'id': id,
+    'name': name,
+    'amount': amount,
+    'createdDate': createdDate.toIso8601String(),
+  };
 
   factory Expense.fromMap(Map<String, dynamic> map) => Expense(
-        id: map['id'] ?? DateTime.now().millisecondsSinceEpoch.toString(),
-        name: map['name'],
-        amount: (map['amount'] as num).toDouble(),
-        createdDate: map['createdDate'] != null
-            ? DateTime.parse(map['createdDate'])
-            : DateTime.now(),
-      );
+    id: map['id'] ?? DateTime.now().millisecondsSinceEpoch.toString(),
+    name: map['name'],
+    amount: (map['amount'] as num).toDouble(),
+    createdDate: map['createdDate'] != null
+        ? DateTime.parse(map['createdDate'])
+        : DateTime.now(),
+  );
 }
