@@ -11,7 +11,6 @@ import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
-import 'package:permission_handler/permission_handler.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -341,93 +340,11 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
     return 'Over Budget';
   }
 
-  // Show PDF Actions Dialog
-  Future<void> showPDFActionsDialog() async {
-    await showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey.shade300,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            const SizedBox(height: 20),
-            Text(
-              'Analytics Report Options',
-              style: Theme.of(
-                context,
-              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 20),
-            ListTile(
-              leading: Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: brandGreen.withOpacity(0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.download, color: brandGreen),
-              ),
-              title: const Text('Download PDF'),
-              subtitle: const Text('Save analytics report to your device'),
-              onTap: () {
-                Navigator.pop(context);
-                generatePDF(downloadToDevice: true);
-              },
-            ),
-            ListTile(
-              leading: Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: accentColor.withOpacity(0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.share, color: accentColor),
-              ),
-              title: const Text('Share PDF'),
-              subtitle: const Text('Share analytics via apps'),
-              onTap: () {
-                Navigator.pop(context);
-                generatePDF(downloadToDevice: false);
-              },
-            ),
-            const SizedBox(height: 10),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // Generate PDF with Charts
-  Future<void> generatePDF({required bool downloadToDevice}) async {
+  // Generate PDF and share
+  Future<void> generatePDF() async {
     setState(() => isGeneratingPDF = true);
 
     try {
-      // Check permissions for Android
-      if (Platform.isAndroid && downloadToDevice) {
-        if (await _needsStoragePermission()) {
-          final status = await Permission.storage.request();
-          if (!status.isGranted) {
-            // Try with manageExternalStorage for Android 11+
-            final manageStatus = await Permission.manageExternalStorage
-                .request();
-            if (!manageStatus.isGranted) {
-              throw Exception('Storage permission is required to save files');
-            }
-          }
-        }
-      }
-
       final pdf = pw.Document();
 
       // Add pages
@@ -534,16 +451,12 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
         ),
       );
 
-      // Save and share/download
+      // Save and share
       final pdfBytes = await pdf.save();
       final fileName =
           'penny_analytics_${DateFormat('yyyyMMdd_HHmmss').format(DateTime.now())}.pdf';
 
-      if (downloadToDevice) {
-        await _savePDFToDevice(pdfBytes, fileName);
-      } else {
-        await _sharePDF(pdfBytes, fileName);
-      }
+      await _sharePDF(pdfBytes, fileName);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -727,7 +640,7 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
     );
   }
 
-  // FIXED: Actual Pie Chart Implementation for PDF using bar visualization
+  // Actual Pie Chart Implementation for PDF
   pw.Widget _buildPDFPieChart() {
     final categories = expensesByCategory;
     final total = categories.values.fold(0.0, (sum, val) => sum + val);
@@ -761,7 +674,7 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
         crossAxisAlignment: pw.CrossAxisAlignment.start,
         children: [
           pw.Text(
-            'Expense Breakdown',
+            'Expense Categories Breakdown',
             style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold),
           ),
           pw.SizedBox(height: 12),
@@ -770,6 +683,7 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
               final index = categories.keys.toList().indexOf(entry.key);
               final color = colors[index % colors.length];
               final percentage = (entry.value / total) * 100;
+              final barWidth = percentage * 2;
 
               return pw.Padding(
                 padding: const pw.EdgeInsets.only(bottom: 10),
@@ -779,22 +693,9 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
                     pw.Row(
                       mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                       children: [
-                        pw.Row(
-                          children: [
-                            pw.Container(
-                              width: 10,
-                              height: 10,
-                              decoration: pw.BoxDecoration(
-                                color: color,
-                                shape: pw.BoxShape.circle,
-                              ),
-                            ),
-                            pw.SizedBox(width: 6),
-                            pw.Text(
-                              entry.key,
-                              style: const pw.TextStyle(fontSize: 10),
-                            ),
-                          ],
+                        pw.Text(
+                          entry.key,
+                          style: const pw.TextStyle(fontSize: 10),
                         ),
                         pw.Text(
                           '${percentage.toStringAsFixed(0)}%',
@@ -808,34 +709,18 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
                     pw.SizedBox(height: 4),
                     pw.Container(
                       height: 8,
+                      width: barWidth,
                       decoration: pw.BoxDecoration(
-                        color: PdfColors.grey200,
+                        color: color,
                         borderRadius: const pw.BorderRadius.all(
                           pw.Radius.circular(4),
                         ),
                       ),
-                      child: pw.Row(
-                        children: [
-                          pw.Container(
-                            width: (percentage / 100) * 200,
-                            height: 8,
-                            decoration: pw.BoxDecoration(
-                              color: color,
-                              borderRadius: const pw.BorderRadius.all(
-                                pw.Radius.circular(4),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
                     ),
-                    pw.SizedBox(height: 2),
+                    pw.SizedBox(height: 4),
                     pw.Text(
                       CurrencyFormatter.format(entry.value),
-                      style: const pw.TextStyle(
-                        fontSize: 8,
-                        color: PdfColors.grey700,
-                      ),
+                      style: const pw.TextStyle(fontSize: 9),
                     ),
                   ],
                 ),
@@ -1123,84 +1008,6 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
     );
   }
 
-  // Helper methods
-  Future<bool> _needsStoragePermission() async {
-    if (Platform.isAndroid) {
-      return true;
-    }
-    return false;
-  }
-
-  Future<void> _savePDFToDevice(List<int> pdfBytes, String fileName) async {
-    try {
-      File? savedFile;
-
-      if (Platform.isAndroid) {
-        final downloadsDir = Directory('/storage/emulated/0/Download');
-
-        if (await downloadsDir.exists()) {
-          savedFile = File('${downloadsDir.path}/$fileName');
-          await savedFile.writeAsBytes(pdfBytes);
-        } else {
-          final appDir = await getApplicationDocumentsDirectory();
-          savedFile = File('${appDir.path}/$fileName');
-          await savedFile.writeAsBytes(pdfBytes);
-        }
-      } else if (Platform.isIOS) {
-        final appDir = await getApplicationDocumentsDirectory();
-        savedFile = File('${appDir.path}/$fileName');
-        await savedFile.writeAsBytes(pdfBytes);
-      }
-
-      if (mounted && savedFile != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    const Icon(Icons.check_circle, color: Colors.white),
-                    const SizedBox(width: 8),
-                    const Text(
-                      'Analytics Report Downloaded!',
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Saved as: $fileName',
-                  style: const TextStyle(fontSize: 12),
-                ),
-                if (Platform.isAndroid)
-                  const Text(
-                    'Location: Downloads folder',
-                    style: TextStyle(fontSize: 11),
-                  ),
-              ],
-            ),
-            backgroundColor: brandGreen,
-            duration: const Duration(seconds: 5),
-            behavior: SnackBarBehavior.floating,
-            action: SnackBarAction(
-              label: 'Share',
-              textColor: Colors.white,
-              onPressed: () async {
-                await Share.shareXFiles([
-                  XFile(savedFile!.path),
-                ], subject: 'Penny Finance Analytics Report');
-              },
-            ),
-          ),
-        );
-      }
-    } catch (e) {
-      throw Exception('Failed to save PDF: $e');
-    }
-  }
-
   Future<void> _sharePDF(List<int> pdfBytes, String fileName) async {
     try {
       final tempDir = await getTemporaryDirectory();
@@ -1246,7 +1053,7 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
         elevation: 0,
         actions: [
           IconButton(
-            onPressed: isGeneratingPDF ? null : showPDFActionsDialog,
+            onPressed: isGeneratingPDF ? null : generatePDF,
             icon: isGeneratingPDF
                 ? const SizedBox(
                     width: 20,
@@ -1254,7 +1061,7 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
                 : const Icon(Icons.picture_as_pdf),
-            tooltip: 'Export Analytics PDF',
+            tooltip: 'Share Analytics Report',
           ),
         ],
       ),
@@ -1298,7 +1105,7 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton.icon(
-        onPressed: isGeneratingPDF ? null : showPDFActionsDialog,
+        onPressed: isGeneratingPDF ? null : generatePDF,
         style: ElevatedButton.styleFrom(
           backgroundColor: accentColor,
           foregroundColor: Colors.white,
@@ -1317,11 +1124,11 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
                   valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                 ),
               )
-            : const Icon(Icons.picture_as_pdf, size: 24),
+            : const Icon(Icons.share, size: 24),
         label: Text(
           isGeneratingPDF
               ? 'Generating Analytics PDF...'
-              : 'Download or Share Analytics Report',
+              : 'Share Analytics Report',
           style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
         ),
       ),
@@ -1677,7 +1484,6 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
     );
   }
 
-  // FIXED: Pie Chart with Overflow Prevention
   Widget buildPieChart(ThemeData theme) {
     final categories = expensesByCategory;
     if (categories.isEmpty) {

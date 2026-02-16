@@ -10,7 +10,6 @@ import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
-import 'package:permission_handler/permission_handler.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -193,90 +192,11 @@ class _ReportPageState extends State<ReportPage> {
     return grouped;
   }
 
-  // Show options dialog for PDF actions
-  Future<void> showPDFActionsDialog() async {
-    await showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey.shade300,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            const SizedBox(height: 20),
-            Text(
-              'PDF Report Options',
-              style: Theme.of(
-                context,
-              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 20),
-            ListTile(
-              leading: Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: brandGreen.withOpacity(0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.download, color: brandGreen),
-              ),
-              title: const Text('Download PDF'),
-              subtitle: const Text('Save to your device'),
-              onTap: () {
-                Navigator.pop(context);
-                generatePDF(downloadToDevice: true);
-              },
-            ),
-            ListTile(
-              leading: Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: accentColor.withOpacity(0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.share, color: accentColor),
-              ),
-              title: const Text('Share PDF'),
-              subtitle: const Text('Share via apps'),
-              onTap: () {
-                Navigator.pop(context);
-                generatePDF(downloadToDevice: false);
-              },
-            ),
-            const SizedBox(height: 10),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // Generate and handle PDF
-  Future<void> generatePDF({required bool downloadToDevice}) async {
+  // Generate and share PDF
+  Future<void> generatePDF() async {
     setState(() => isGeneratingPDF = true);
 
     try {
-      // Check permissions for Android
-      if (Platform.isAndroid && downloadToDevice) {
-        // For Android 13+ (API 33+), no storage permission needed
-        // For older versions, request storage permission
-        if (await _needsStoragePermission()) {
-          final status = await Permission.storage.request();
-          if (!status.isGranted) {
-            throw Exception('Storage permission is required to save files');
-          }
-        }
-      }
-
       final pdf = pw.Document();
 
       // Build PDF content
@@ -286,37 +206,7 @@ class _ReportPageState extends State<ReportPage> {
           margin: const pw.EdgeInsets.all(32),
           build: (context) => [
             // Header
-            pw.Header(
-              level: 0,
-              child: pw.Column(
-                crossAxisAlignment: pw.CrossAxisAlignment.start,
-                children: [
-                  pw.Text(
-                    'Penny Finance Report',
-                    style: pw.TextStyle(
-                      fontSize: 24,
-                      fontWeight: pw.FontWeight.bold,
-                      color: PdfColors.blue900,
-                    ),
-                  ),
-                  pw.SizedBox(height: 8),
-                  pw.Text(
-                    'Period: ${DateFormat('dd MMM yyyy').format(startDate!)} - ${DateFormat('dd MMM yyyy').format(endDate!)}',
-                    style: const pw.TextStyle(
-                      fontSize: 12,
-                      color: PdfColors.grey700,
-                    ),
-                  ),
-                  pw.Text(
-                    'Generated: ${DateFormat('dd MMM yyyy HH:mm').format(DateTime.now())}',
-                    style: const pw.TextStyle(
-                      fontSize: 10,
-                      color: PdfColors.grey600,
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            _buildPDFHeader(),
             pw.SizedBox(height: 24),
 
             // Summary Section
@@ -325,54 +215,7 @@ class _ReportPageState extends State<ReportPage> {
               style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold),
             ),
             pw.SizedBox(height: 12),
-            pw.Container(
-              padding: const pw.EdgeInsets.all(16),
-              decoration: pw.BoxDecoration(
-                border: pw.Border.all(color: PdfColors.grey300),
-                borderRadius: const pw.BorderRadius.all(pw.Radius.circular(8)),
-              ),
-              child: pw.Column(
-                children: [
-                  _buildPDFSummaryRow(
-                    'Total Income',
-                    filteredIncome,
-                    PdfColors.green,
-                  ),
-                  pw.SizedBox(height: 8),
-                  _buildPDFSummaryRow(
-                    'Total Expenses',
-                    filteredExpenses,
-                    PdfColors.red,
-                  ),
-                  pw.SizedBox(height: 8),
-                  _buildPDFSummaryRow(
-                    'Total Savings',
-                    filteredSavings,
-                    PdfColors.blue,
-                  ),
-                  pw.SizedBox(height: 8),
-                  pw.Divider(),
-                  pw.SizedBox(height: 8),
-                  _buildPDFSummaryRow(
-                    'Net Balance',
-                    filteredIncome - filteredExpenses,
-                    filteredIncome - filteredExpenses >= 0
-                        ? PdfColors.green
-                        : PdfColors.red,
-                  ),
-                  pw.SizedBox(height: 8),
-                  _buildPDFInfoRow(
-                    'Number of Transactions',
-                    '${filteredTransactions.length}',
-                  ),
-                  pw.SizedBox(height: 4),
-                  _buildPDFInfoRow(
-                    'Savings Completion Rate',
-                    '${savingsCompletionRate.toStringAsFixed(1)}%',
-                  ),
-                ],
-              ),
-            ),
+            _buildPDFSummaryCards(),
             pw.SizedBox(height: 24),
 
             // Transactions Table
@@ -381,39 +224,8 @@ class _ReportPageState extends State<ReportPage> {
               style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold),
             ),
             pw.SizedBox(height: 12),
-            pw.Table(
-              border: pw.TableBorder.all(color: PdfColors.grey300),
-              children: [
-                // Header
-                pw.TableRow(
-                  decoration: const pw.BoxDecoration(color: PdfColors.grey200),
-                  children: [
-                    _buildPDFTableCell('Date', isHeader: true),
-                    _buildPDFTableCell('Description', isHeader: true),
-                    _buildPDFTableCell('Type', isHeader: true),
-                    _buildPDFTableCell('Amount', isHeader: true),
-                  ],
-                ),
-                // Transactions
-                ...filteredTransactions.take(50).map((tx) {
-                  final date = DateTime.parse(tx['date']);
-                  final amount =
-                      double.tryParse(tx['amount'].toString()) ?? 0.0;
-                  final isIncome = tx['type'] == 'income';
+            _buildPDFTransactionTable(),
 
-                  return pw.TableRow(
-                    children: [
-                      _buildPDFTableCell(DateFormat('dd/MM/yy').format(date)),
-                      _buildPDFTableCell(tx['title'] ?? 'Unknown'),
-                      _buildPDFTableCell(_getTypeLabel(tx['type'])),
-                      _buildPDFTableCell(
-                        '${isIncome ? '+' : '-'} ${CurrencyFormatter.format(amount)}',
-                      ),
-                    ],
-                  );
-                }).toList(),
-              ],
-            ),
             if (filteredTransactions.length > 50)
               pw.Padding(
                 padding: const pw.EdgeInsets.only(top: 8),
@@ -443,18 +255,12 @@ class _ReportPageState extends State<ReportPage> {
         ),
       );
 
-      // Save PDF
+      // Save and share PDF
       final pdfBytes = await pdf.save();
       final fileName =
           'penny_report_${DateFormat('yyyyMMdd_HHmmss').format(DateTime.now())}.pdf';
 
-      if (downloadToDevice) {
-        // Download to device
-        await _savePDFToDevice(pdfBytes, fileName);
-      } else {
-        // Share PDF
-        await _sharePDF(pdfBytes, fileName);
-      }
+      await _sharePDF(pdfBytes, fileName);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -468,117 +274,216 @@ class _ReportPageState extends State<ReportPage> {
             ),
             backgroundColor: errorColor,
             duration: const Duration(seconds: 4),
-            action: SnackBarAction(
-              label: 'OK',
-              textColor: Colors.white,
-              onPressed: () {},
-            ),
           ),
         );
       }
     } finally {
-      setState(() => isGeneratingPDF = false);
-    }
-  }
-
-  // Check if storage permission is needed (for Android < 13)
-  Future<bool> _needsStoragePermission() async {
-    if (Platform.isAndroid) {
-      final androidInfo = await _getAndroidVersion();
-      // Android 13 (API 33) and above don't need storage permission
-      return androidInfo < 33;
-    }
-    return false;
-  }
-
-  // Get Android SDK version
-  Future<int> _getAndroidVersion() async {
-    try {
-      // This is a simplified version - you might want to use device_info_plus package
-      return 33; // Default to 33 (Android 13) for safety
-    } catch (e) {
-      return 33;
-    }
-  }
-
-  // Save PDF to device storage
-  Future<void> _savePDFToDevice(List<int> pdfBytes, String fileName) async {
-    try {
-      File? savedFile;
-
-      if (Platform.isAndroid) {
-        // Try to save to Downloads folder
-        final downloadsDir = Directory('/storage/emulated/0/Download');
-
-        if (await downloadsDir.exists()) {
-          savedFile = File('${downloadsDir.path}/$fileName');
-          await savedFile.writeAsBytes(pdfBytes);
-        } else {
-          // Fallback to app documents directory
-          final appDir = await getApplicationDocumentsDirectory();
-          savedFile = File('${appDir.path}/$fileName');
-          await savedFile.writeAsBytes(pdfBytes);
-        }
-      } else if (Platform.isIOS) {
-        // For iOS, save to app documents directory
-        final appDir = await getApplicationDocumentsDirectory();
-        savedFile = File('${appDir.path}/$fileName');
-        await savedFile.writeAsBytes(pdfBytes);
-      } else {
-        // For other platforms
-        final appDir = await getApplicationDocumentsDirectory();
-        savedFile = File('${appDir.path}/$fileName');
-        await savedFile.writeAsBytes(pdfBytes);
+      if (mounted) {
+        setState(() => isGeneratingPDF = false);
       }
+    }
+  }
 
-      if (mounted && savedFile != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    const Icon(Icons.check_circle, color: Colors.white),
-                    const SizedBox(width: 8),
-                    const Text(
-                      'Report Downloaded Successfully!',
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                  ],
+  // PDF Components
+  pw.Widget _buildPDFHeader() {
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        pw.Text(
+          'Penny Finance Report',
+          style: pw.TextStyle(
+            fontSize: 24,
+            fontWeight: pw.FontWeight.bold,
+            color: PdfColors.blue900,
+          ),
+        ),
+        pw.SizedBox(height: 8),
+        pw.Text(
+          'Period: ${DateFormat('dd MMM yyyy').format(startDate!)} - ${DateFormat('dd MMM yyyy').format(endDate!)}',
+          style: const pw.TextStyle(fontSize: 12, color: PdfColors.grey700),
+        ),
+        pw.Text(
+          'Generated: ${DateFormat('dd MMM yyyy HH:mm').format(DateTime.now())}',
+          style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey600),
+        ),
+      ],
+    );
+  }
+
+  pw.Widget _buildPDFSummaryCards() {
+    return pw.Container(
+      padding: const pw.EdgeInsets.all(16),
+      decoration: pw.BoxDecoration(
+        border: pw.Border.all(color: PdfColors.grey300),
+        borderRadius: const pw.BorderRadius.all(pw.Radius.circular(8)),
+      ),
+      child: pw.Column(
+        children: [
+          pw.Row(
+            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+            children: [
+              _buildPDFSummaryItem(
+                'Total Income',
+                filteredIncome,
+                PdfColors.green,
+              ),
+              _buildPDFSummaryItem(
+                'Total Expenses',
+                filteredExpenses,
+                PdfColors.red,
+              ),
+            ],
+          ),
+          pw.SizedBox(height: 12),
+          pw.Row(
+            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+            children: [
+              _buildPDFSummaryItem(
+                'Total Savings',
+                filteredSavings,
+                PdfColors.blue,
+              ),
+              _buildPDFSummaryItem(
+                'Net Balance',
+                filteredIncome - filteredExpenses,
+                filteredIncome - filteredExpenses >= 0
+                    ? PdfColors.green
+                    : PdfColors.red,
+              ),
+            ],
+          ),
+          pw.SizedBox(height: 12),
+          pw.Divider(),
+          pw.SizedBox(height: 8),
+          pw.Row(
+            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+            children: [
+              pw.Text(
+                'Number of Transactions',
+                style: const pw.TextStyle(
+                  fontSize: 11,
+                  color: PdfColors.grey700,
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  'Saved as: $fileName',
-                  style: const TextStyle(fontSize: 12),
+              ),
+              pw.Text(
+                '${filteredTransactions.length}',
+                style: pw.TextStyle(
+                  fontSize: 11,
+                  fontWeight: pw.FontWeight.bold,
                 ),
-                if (Platform.isAndroid)
-                  const Text(
-                    'Location: Downloads folder',
-                    style: TextStyle(fontSize: 11),
-                  ),
-              ],
-            ),
-            backgroundColor: brandGreen,
-            duration: const Duration(seconds: 5),
-            behavior: SnackBarBehavior.floating,
-            action: SnackBarAction(
-              label: 'Share',
-              textColor: Colors.white,
-              onPressed: () async {
-                // Share the saved file
-                await Share.shareXFiles([
-                  XFile(savedFile!.path),
-                ], subject: 'Penny Finance Report');
-              },
+              ),
+            ],
+          ),
+          pw.SizedBox(height: 4),
+          pw.Row(
+            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+            children: [
+              pw.Text(
+                'Savings Completion Rate',
+                style: const pw.TextStyle(
+                  fontSize: 11,
+                  color: PdfColors.grey700,
+                ),
+              ),
+              pw.Text(
+                '${savingsCompletionRate.toStringAsFixed(1)}%',
+                style: pw.TextStyle(
+                  fontSize: 11,
+                  fontWeight: pw.FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  pw.Widget _buildPDFSummaryItem(String label, double amount, PdfColor color) {
+    return pw.Expanded(
+      child: pw.Column(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        children: [
+          pw.Text(
+            label,
+            style: const pw.TextStyle(fontSize: 11, color: PdfColors.grey700),
+          ),
+          pw.SizedBox(height: 4),
+          pw.Text(
+            CurrencyFormatter.format(amount),
+            style: pw.TextStyle(
+              fontSize: 14,
+              fontWeight: pw.FontWeight.bold,
+              color: color,
             ),
           ),
-        );
-      }
-    } catch (e) {
-      throw Exception('Failed to save PDF: $e');
+        ],
+      ),
+    );
+  }
+
+  pw.Widget _buildPDFTransactionTable() {
+    if (filteredTransactions.isEmpty) {
+      return pw.Container(
+        padding: const pw.EdgeInsets.all(16),
+        decoration: pw.BoxDecoration(
+          border: pw.Border.all(color: PdfColors.grey300),
+        ),
+        child: pw.Center(child: pw.Text('No transactions found')),
+      );
     }
+
+    return pw.Container(
+      decoration: pw.BoxDecoration(
+        border: pw.Border.all(color: PdfColors.grey300),
+        borderRadius: const pw.BorderRadius.all(pw.Radius.circular(8)),
+      ),
+      child: pw.Table(
+        border: pw.TableBorder.all(color: PdfColors.grey300),
+        children: [
+          // Header
+          pw.TableRow(
+            decoration: const pw.BoxDecoration(color: PdfColors.grey200),
+            children: [
+              _buildPDFTableCell('Date', isHeader: true),
+              _buildPDFTableCell('Description', isHeader: true),
+              _buildPDFTableCell('Type', isHeader: true),
+              _buildPDFTableCell('Amount', isHeader: true),
+            ],
+          ),
+          // Transactions
+          ...filteredTransactions.take(50).map((tx) {
+            final date = DateTime.parse(tx['date']);
+            final amount = double.tryParse(tx['amount'].toString()) ?? 0.0;
+            final isIncome = tx['type'] == 'income';
+
+            return pw.TableRow(
+              children: [
+                _buildPDFTableCell(DateFormat('dd/MM/yy').format(date)),
+                _buildPDFTableCell(tx['title'] ?? 'Unknown'),
+                _buildPDFTableCell(_getTypeLabel(tx['type'])),
+                _buildPDFTableCell(
+                  '${isIncome ? '+' : '-'} ${CurrencyFormatter.format(amount)}',
+                ),
+              ],
+            );
+          }).toList(),
+        ],
+      ),
+    );
+  }
+
+  pw.Widget _buildPDFTableCell(String text, {bool isHeader = false}) {
+    return pw.Padding(
+      padding: const pw.EdgeInsets.all(8),
+      child: pw.Text(
+        text,
+        style: pw.TextStyle(
+          fontSize: isHeader ? 11 : 10,
+          fontWeight: isHeader ? pw.FontWeight.bold : pw.FontWeight.normal,
+        ),
+      ),
+    );
   }
 
   // Share PDF using share dialog
@@ -618,49 +523,6 @@ class _ReportPageState extends State<ReportPage> {
     }
   }
 
-  pw.Widget _buildPDFSummaryRow(String label, double amount, PdfColor color) {
-    return pw.Row(
-      mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-      children: [
-        pw.Text(label, style: const pw.TextStyle(fontSize: 12)),
-        pw.Text(
-          CurrencyFormatter.format(amount),
-          style: pw.TextStyle(
-            fontSize: 14,
-            fontWeight: pw.FontWeight.bold,
-            color: color,
-          ),
-        ),
-      ],
-    );
-  }
-
-  pw.Widget _buildPDFInfoRow(String label, String value) {
-    return pw.Row(
-      mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-      children: [
-        pw.Text(
-          label,
-          style: const pw.TextStyle(fontSize: 11, color: PdfColors.grey700),
-        ),
-        pw.Text(value, style: const pw.TextStyle(fontSize: 11)),
-      ],
-    );
-  }
-
-  pw.Widget _buildPDFTableCell(String text, {bool isHeader = false}) {
-    return pw.Padding(
-      padding: const pw.EdgeInsets.all(8),
-      child: pw.Text(
-        text,
-        style: pw.TextStyle(
-          fontSize: isHeader ? 11 : 10,
-          fontWeight: isHeader ? pw.FontWeight.bold : pw.FontWeight.normal,
-        ),
-      ),
-    );
-  }
-
   String _getTypeLabel(String type) {
     switch (type) {
       case 'income':
@@ -689,7 +551,7 @@ class _ReportPageState extends State<ReportPage> {
         elevation: 0,
         actions: [
           IconButton(
-            onPressed: isGeneratingPDF ? null : showPDFActionsDialog,
+            onPressed: isGeneratingPDF ? null : generatePDF,
             icon: isGeneratingPDF
                 ? const SizedBox(
                     width: 20,
@@ -697,7 +559,7 @@ class _ReportPageState extends State<ReportPage> {
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
                 : const Icon(Icons.picture_as_pdf),
-            tooltip: 'PDF Options',
+            tooltip: 'Share PDF Report',
           ),
         ],
       ),
@@ -717,7 +579,7 @@ class _ReportPageState extends State<ReportPage> {
                     sizedBoxHeightLarge,
                     buildTransactionsSection(theme),
                     sizedBoxHeightLarge,
-                    // Download/Share Button
+                    // Share Button
                     buildPDFActionButton(theme),
                   ],
                 ),
@@ -730,9 +592,9 @@ class _ReportPageState extends State<ReportPage> {
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton.icon(
-        onPressed: isGeneratingPDF ? null : showPDFActionsDialog,
+        onPressed: isGeneratingPDF ? null : generatePDF,
         style: ElevatedButton.styleFrom(
-          backgroundColor: brandGreen,
+          backgroundColor: accentColor,
           foregroundColor: Colors.white,
           padding: const EdgeInsets.symmetric(vertical: 16),
           shape: RoundedRectangleBorder(
@@ -749,11 +611,9 @@ class _ReportPageState extends State<ReportPage> {
                   valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                 ),
               )
-            : const Icon(Icons.picture_as_pdf, size: 24),
+            : const Icon(Icons.share, size: 24),
         label: Text(
-          isGeneratingPDF
-              ? 'Generating PDF...'
-              : 'Download or Share PDF Report',
+          isGeneratingPDF ? 'Generating PDF...' : 'Share PDF Report',
           style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
         ),
       ),
@@ -1174,7 +1034,7 @@ class _ReportPageState extends State<ReportPage> {
   }
 }
 
-// Model Classes remain the same
+// Model Classes
 class Budget {
   String name;
   double total;
