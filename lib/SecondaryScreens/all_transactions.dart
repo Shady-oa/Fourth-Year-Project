@@ -33,10 +33,24 @@ class _TransactionsPageState extends State<TransactionsPage> {
   bool isLoading = true;
   double totalIncome = 0.0;
 
+  // ✅ NEW: Search state
+  final TextEditingController _searchCtrl = TextEditingController();
+  String _searchQuery = '';
+  bool _isSearchVisible = false;
+
   @override
   void initState() {
     super.initState();
     loadTransactions();
+    _searchCtrl.addListener(() {
+      setState(() => _searchQuery = _searchCtrl.text.toLowerCase().trim());
+    });
+  }
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
   }
 
   Future<void> loadTransactions() async {
@@ -46,25 +60,20 @@ class _TransactionsPageState extends State<TransactionsPage> {
     transactions = List<Map<String, dynamic>>.from(json.decode(txString));
     totalIncome = prefs.getDouble(keyTotalIncome) ?? 0.0;
 
-    // Load budgets to check for finalized budgets
     final budgetStrings = prefs.getStringList(keyBudgets) ?? [];
-    budgets = budgetStrings.map((s) => Budget.fromMap(json.decode(s))).toList();
+    budgets =
+        budgetStrings.map((s) => Budget.fromMap(json.decode(s))).toList();
 
-    // Load savings to check for achieved goals
     final savingsStrings = prefs.getStringList(keySavings) ?? [];
-    savings = savingsStrings
-        .map((s) => Saving.fromMap(json.decode(s)))
-        .toList();
+    savings =
+        savingsStrings.map((s) => Saving.fromMap(json.decode(s))).toList();
 
     setState(() => isLoading = false);
   }
 
-  /// Check if a transaction belongs to an achieved saving goal
   bool isTransactionLinkedToAchievedGoal(Map<String, dynamic> tx) {
     if (tx['type'] != 'savings_deduction' &&
-        tx['type'] != 'savings_withdrawal') {
-      return false;
-    }
+        tx['type'] != 'savings_withdrawal') return false;
     final title = tx['title'] ?? '';
     for (var saving in savings) {
       if (title.contains(saving.name) && saving.achieved) return true;
@@ -72,41 +81,25 @@ class _TransactionsPageState extends State<TransactionsPage> {
     return false;
   }
 
-  /// Check if a transaction belongs to a finalized/checked budget
   bool isTransactionLinkedToCheckedBudget(Map<String, dynamic> tx) {
-    if (tx['type'] != 'budget_finalized') {
-      return false;
-    }
-
+    if (tx['type'] != 'budget_finalized') return false;
     final budgetId = tx['budgetId'];
     if (budgetId == null) return false;
-
     for (var budget in budgets) {
-      if (budget.id == budgetId && budget.isChecked) {
-        return true;
-      }
+      if (budget.id == budgetId && budget.isChecked) return true;
     }
-
     return false;
   }
 
-  /// Recalculate savings goals after transaction deletion
   Future<void> recalculateSavingsGoals() async {
     final prefs = await SharedPreferences.getInstance();
-
-    // Reload latest transactions
     final txString = prefs.getString(keyTransactions) ?? '[]';
-    final currentTransactions = List<Map<String, dynamic>>.from(
-      json.decode(txString),
-    );
+    final currentTransactions =
+        List<Map<String, dynamic>>.from(json.decode(txString));
 
     bool savingsChanged = false;
-
-    // For each saving goal, recalculate saved amount from transactions
     for (var saving in savings) {
       double calculatedAmount = 0.0;
-
-      // Find all transactions for this goal
       for (var tx in currentTransactions) {
         if ((tx['type'] == 'savings_deduction' ||
                 tx['type'] == 'saving_deposit') &&
@@ -115,100 +108,80 @@ class _TransactionsPageState extends State<TransactionsPage> {
           calculatedAmount += double.tryParse(tx['amount'].toString()) ?? 0.0;
         }
       }
-
-      // Update saved amount
       if (saving.savedAmount != calculatedAmount) {
         saving.savedAmount = calculatedAmount;
         savingsChanged = true;
       }
-
-      // Dynamically calculate achieved status
       bool shouldBeAchieved = saving.savedAmount >= saving.targetAmount;
       if (saving.achieved != shouldBeAchieved) {
         saving.achieved = shouldBeAchieved;
         savingsChanged = true;
-
-        debugPrint(
-          '🔄 Saving goal "${saving.name}" status changed: Achieved=$shouldBeAchieved',
-        );
       }
     }
-
-    // If any savings changed, persist to SharedPreferences
     if (savingsChanged) {
       final data = savings.map((s) => json.encode(s.toMap())).toList();
       await prefs.setStringList(keySavings, data);
-      debugPrint('✅ Savings goals recalculated and persisted');
     }
   }
 
   Future<void> deleteTransaction(int originalIndex) async {
     final tx = transactions[originalIndex];
     final amount = double.tryParse(tx['amount'].toString()) ?? 0.0;
+    final transactionCost =
+        double.tryParse(tx['transactionCost']?.toString() ?? '0') ?? 0.0;
     final type = tx['type'];
 
-    // BUSINESS RULE: Check if transaction is linked to an achieved saving goal
     if (isTransactionLinkedToAchievedGoal(tx)) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Row(
-              children: [
-                Icon(Icons.lock, color: Colors.white, size: 20),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Transactions linked to an achieved saving goal cannot be deleted.',
-                    style: TextStyle(fontSize: 14),
-                  ),
+            content: Row(children: [
+              const Icon(Icons.lock, color: Colors.white, size: 20),
+              const SizedBox(width: 8),
+              const Expanded(
+                child: Text(
+                  'Transactions linked to an achieved saving goal cannot be deleted.',
+                  style: TextStyle(fontSize: 14),
                 ),
-              ],
-            ),
+              ),
+            ]),
             backgroundColor: Colors.orange.shade700,
             behavior: SnackBarBehavior.floating,
             duration: const Duration(seconds: 4),
             action: SnackBarAction(
-              label: 'OK',
-              textColor: Colors.white,
-              onPressed: () {},
-            ),
+                label: 'OK', textColor: Colors.white, onPressed: () {}),
           ),
         );
       }
-      return; // Prevent deletion
+      return;
     }
 
-    // BUSINESS RULE: Check if transaction is linked to a finalized budget
     if (isTransactionLinkedToCheckedBudget(tx)) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Row(
-              children: [
-                Icon(Icons.lock, color: Colors.white, size: 20),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Transactions from finalized budgets cannot be deleted.',
-                    style: TextStyle(fontSize: 14),
-                  ),
+            content: Row(children: [
+              const Icon(Icons.lock, color: Colors.white, size: 20),
+              const SizedBox(width: 8),
+              const Expanded(
+                child: Text(
+                  'Transactions from finalized budgets cannot be deleted.',
+                  style: TextStyle(fontSize: 14),
                 ),
-              ],
-            ),
+              ),
+            ]),
             backgroundColor: Colors.orange.shade700,
             behavior: SnackBarBehavior.floating,
             duration: const Duration(seconds: 4),
             action: SnackBarAction(
-              label: 'OK',
-              textColor: Colors.white,
-              onPressed: () {},
-            ),
+                label: 'OK', textColor: Colors.white, onPressed: () {}),
           ),
         );
       }
-      return; // Prevent deletion
+      return;
     }
 
+    final totalAmount = amount + transactionCost;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -219,11 +192,14 @@ class _TransactionsPageState extends State<TransactionsPage> {
           children: [
             const Text('Are you sure you want to delete this transaction?'),
             const SizedBox(height: 12),
-            Text(
-              '${tx['title']}',
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
+            Text('${tx['title']}',
+                style: const TextStyle(fontWeight: FontWeight.bold)),
             Text('Amount: ${CurrencyFormatter.format(amount)}'),
+            if (transactionCost > 0)
+              Text('+ Fee: ${CurrencyFormatter.format(transactionCost)}'),
+            if (transactionCost > 0)
+              Text('Total: ${CurrencyFormatter.format(totalAmount)}',
+                  style: const TextStyle(fontWeight: FontWeight.bold)),
             const SizedBox(height: 12),
             Container(
               padding: const EdgeInsets.all(8),
@@ -232,38 +208,31 @@ class _TransactionsPageState extends State<TransactionsPage> {
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(color: Colors.orange.shade200),
               ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.warning_amber_rounded,
-                    color: Colors.orange.shade700,
-                    size: 20,
+              child: Row(children: [
+                Icon(Icons.warning_amber_rounded,
+                    color: Colors.orange.shade700, size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'This will affect your balance and statistics.',
+                    style: TextStyle(
+                        fontSize: 12, color: Colors.orange.shade900),
                   ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'This will affect your balance and statistics.',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.orange.shade900,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ]),
             ),
           ],
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel')),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: errorColor,
               foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
             ),
             onPressed: () => Navigator.pop(context, true),
             child: const Text('Delete'),
@@ -282,28 +251,24 @@ class _TransactionsPageState extends State<TransactionsPage> {
         await prefs.setDouble(keyTotalIncome, totalIncome);
       }
 
-      // CRITICAL: Recalculate savings goals after deletion (system-level safety)
       await recalculateSavingsGoals();
-
-      // Reload data to reflect changes
       await loadTransactions();
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text(
-              '✅ Transaction deleted and synced with Home page',
-            ),
+          const SnackBar(
+            content: Text('✅ Transaction deleted and synced with Home page'),
             backgroundColor: brandGreen,
             behavior: SnackBarBehavior.floating,
-            duration: const Duration(seconds: 2),
+            duration: Duration(seconds: 2),
           ),
         );
       }
     }
   }
 
-  List<Map<String, dynamic>> get filteredTransactions {
+  // ✅ Applies type filter
+  List<Map<String, dynamic>> get typeFilteredTransactions {
     if (filter == 'all') return transactions;
     if (filter == 'income') {
       return transactions.where((tx) => tx['type'] == 'income').toList();
@@ -311,19 +276,40 @@ class _TransactionsPageState extends State<TransactionsPage> {
     return transactions.where((tx) => tx['type'] != 'income').toList();
   }
 
+  // ✅ NEW: Search filter — case-insensitive, searches title, type, category, budget name
+  List<Map<String, dynamic>> get filteredTransactions {
+    final base = typeFilteredTransactions;
+    if (_searchQuery.isEmpty) return base;
+
+    return base.where((tx) {
+      final title = (tx['title'] ?? '').toString().toLowerCase();
+      final type = getTypeLabel(tx['type'] ?? '').toLowerCase();
+      final rawType = (tx['type'] ?? '').toString().toLowerCase();
+
+      // Also search budget name if applicable
+      String budgetName = '';
+      if (tx['budgetId'] != null) {
+        final b = budgets.where((b) => b.id == tx['budgetId']).toList();
+        if (b.isNotEmpty) budgetName = b.first.name.toLowerCase();
+      }
+
+      return title.contains(_searchQuery) ||
+          type.contains(_searchQuery) ||
+          rawType.contains(_searchQuery) ||
+          budgetName.contains(_searchQuery);
+    }).toList();
+  }
+
   Map<String, List<Map<String, dynamic>>> get groupedTransactions {
     final grouped = <String, List<Map<String, dynamic>>>{};
-
     for (var tx in filteredTransactions) {
       final date = DateTime.parse(tx['date']);
       final dateKey = DateFormat('dd MMM yyyy').format(date);
-
       if (!grouped.containsKey(dateKey)) {
         grouped[dateKey] = [];
       }
       grouped[dateKey]!.add(tx);
     }
-
     return grouped;
   }
 
@@ -336,19 +322,46 @@ class _TransactionsPageState extends State<TransactionsPage> {
       backgroundColor: theme.colorScheme.surface,
       appBar: AppBar(
         backgroundColor: theme.colorScheme.surface,
-        title: const Text("All Transactions"),
-        centerTitle: true,
+        title: _isSearchVisible
+            ? TextField(
+                controller: _searchCtrl,
+                autofocus: true,
+                decoration: InputDecoration(
+                  hintText: 'Search transactions...',
+                  border: InputBorder.none,
+                  hintStyle: TextStyle(color: Colors.grey.shade400),
+                ),
+                style: theme.textTheme.bodyLarge,
+              )
+            : const Text("All Transactions"),
+        centerTitle: !_isSearchVisible,
         elevation: 0,
+        actions: [
+          IconButton(
+            icon: Icon(
+              _isSearchVisible ? Icons.close : Icons.search,
+              color: theme.colorScheme.onSurface,
+            ),
+            onPressed: () {
+              setState(() {
+                _isSearchVisible = !_isSearchVisible;
+                if (!_isSearchVisible) {
+                  _searchCtrl.clear();
+                  _searchQuery = '';
+                }
+              });
+            },
+          ),
+        ],
       ),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
           : Column(
               children: [
+                // Filter chips
                 Padding(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 16.0,
-                    vertical: 8.0,
-                  ),
+                      horizontal: 16.0, vertical: 8.0),
                   child: Row(
                     children: [
                       buildFilterChip('All', 'all', theme),
@@ -360,28 +373,25 @@ class _TransactionsPageState extends State<TransactionsPage> {
                   ),
                 ),
                 buildSummaryCard(theme),
+                // Hint bar
                 Container(
                   margin: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
-                  ),
-                  padding: const EdgeInsets.all(12),
+                      horizontal: 16, vertical: 4),
+                  padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: accentColor.withOpacity(0.1),
+                    color: accentColor.withOpacity(0.08),
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: accentColor.withOpacity(0.3)),
+                    border: Border.all(color: accentColor.withOpacity(0.25)),
                   ),
                   child: Row(
                     children: [
-                      Icon(Icons.swipe, color: accentColor, size: 20),
+                      Icon(Icons.swipe, color: accentColor, size: 18),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
                           'Swipe to delete. 🔒 Achieved goals & finalized budgets are protected.',
                           style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey.shade700,
-                          ),
+                              fontSize: 12, color: Colors.grey.shade700),
                         ),
                       ),
                     ],
@@ -393,28 +403,36 @@ class _TransactionsPageState extends State<TransactionsPage> {
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Icon(
-                                Icons.receipt_long_outlined,
-                                size: 64,
-                                color: Colors.grey.shade400,
-                              ),
+                              Icon(Icons.receipt_long_outlined,
+                                  size: 64, color: Colors.grey.shade400),
                               const SizedBox(height: 16),
                               Text(
-                                'No transactions found',
+                                _searchQuery.isNotEmpty
+                                    ? 'No results for "$_searchQuery"'
+                                    : 'No transactions found',
                                 style: theme.textTheme.bodyLarge?.copyWith(
-                                  color: Colors.grey.shade600,
-                                ),
+                                    color: Colors.grey.shade600),
                               ),
+                              if (_searchQuery.isNotEmpty)
+                                TextButton(
+                                  onPressed: () {
+                                    _searchCtrl.clear();
+                                    setState(() => _searchQuery = '');
+                                  },
+                                  child: const Text('Clear search'),
+                                ),
                             ],
                           ),
                         )
                       : RefreshIndicator(
                           onRefresh: loadTransactions,
                           child: ListView.builder(
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            padding:
+                                const EdgeInsets.symmetric(horizontal: 16),
                             itemCount: groupedTx.length,
                             itemBuilder: (context, index) {
-                              final dateKey = groupedTx.keys.elementAt(index);
+                              final dateKey =
+                                  groupedTx.keys.elementAt(index);
                               final txList = groupedTx[dateKey]!;
 
                               return Column(
@@ -422,8 +440,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
                                 children: [
                                   Padding(
                                     padding: const EdgeInsets.symmetric(
-                                      vertical: 12.0,
-                                    ),
+                                        vertical: 12.0),
                                     child: Text(
                                       getDateLabel(dateKey),
                                       style: Theme.of(context)
@@ -438,14 +455,10 @@ class _TransactionsPageState extends State<TransactionsPage> {
                                     ),
                                   ),
                                   ...txList.map((tx) {
-                                    final originalIndex = transactions.indexOf(
-                                      tx,
-                                    );
+                                    final originalIndex =
+                                        transactions.indexOf(tx);
                                     return buildTransactionCard(
-                                      tx,
-                                      originalIndex,
-                                      theme,
-                                    );
+                                        tx, originalIndex, theme);
                                   }),
                                   const SizedBox(height: 8),
                                 ],
@@ -464,7 +477,8 @@ class _TransactionsPageState extends State<TransactionsPage> {
     return GestureDetector(
       onTap: () => setState(() => filter = value),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+        padding:
+            const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
         decoration: BoxDecoration(
           color: isSelected
               ? theme.colorScheme.primary
@@ -497,10 +511,12 @@ class _TransactionsPageState extends State<TransactionsPage> {
 
     for (var tx in filteredTransactions) {
       final amount = double.tryParse(tx['amount'].toString()) ?? 0.0;
+      final fee =
+          double.tryParse(tx['transactionCost']?.toString() ?? '0') ?? 0.0;
       if (tx['type'] == 'income') {
         totalIncomeFiltered += amount;
       } else {
-        totalExpenseFiltered += amount;
+        totalExpenseFiltered += amount + fee;
       }
     }
 
@@ -534,7 +550,10 @@ class _TransactionsPageState extends State<TransactionsPage> {
             Icons.arrow_circle_down_rounded,
             theme.colorScheme.onSurface,
           ),
-          Container(height: 40, width: 1, color: Colors.white.withOpacity(0.3)),
+          Container(
+              height: 40,
+              width: 1,
+              color: Colors.white.withOpacity(0.3)),
           buildSummaryStat(
             'Expenses',
             totalExpenseFiltered,
@@ -547,11 +566,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
   }
 
   Widget buildSummaryStat(
-    String label,
-    double amount,
-    IconData icon,
-    Color color,
-  ) {
+      String label, double amount, IconData icon, Color color) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -562,8 +577,8 @@ class _TransactionsPageState extends State<TransactionsPage> {
             Text(
               label,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.onSurface,
-              ),
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
             ),
           ],
         ),
@@ -571,24 +586,24 @@ class _TransactionsPageState extends State<TransactionsPage> {
         Text(
           CurrencyFormatter.format(amount),
           style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-            color: Theme.of(context).colorScheme.onSurface,
-          ),
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
         ),
       ],
     );
   }
 
   Widget buildTransactionCard(
-    Map<String, dynamic> tx,
-    int originalIndex,
-    ThemeData theme,
-  ) {
+      Map<String, dynamic> tx, int originalIndex, ThemeData theme) {
     final isIncome = tx['type'] == 'income';
     final date = DateTime.parse(tx['date']);
-    final time = DateFormat('HH:mm').format(date); // 24-hour format
+    // ✅ 24-hour format
+    final time = DateFormat('HH:mm').format(date);
     final amount = double.tryParse(tx['amount'].toString()) ?? 0.0;
-    final isLocked =
-        isTransactionLinkedToAchievedGoal(tx) ||
+    final transactionCost =
+        double.tryParse(tx['transactionCost']?.toString() ?? '0') ?? 0.0;
+    final totalDeducted = amount + transactionCost;
+    final isLocked = isTransactionLinkedToAchievedGoal(tx) ||
         isTransactionLinkedToCheckedBudget(tx);
 
     IconData txIcon;
@@ -623,7 +638,8 @@ class _TransactionsPageState extends State<TransactionsPage> {
 
     return Dismissible(
       key: Key('${tx['date']}_$originalIndex'),
-      direction: isLocked ? DismissDirection.none : DismissDirection.horizontal,
+      direction:
+          isLocked ? DismissDirection.none : DismissDirection.horizontal,
       confirmDismiss: (direction) async {
         if (isLocked) return false;
         await deleteTransaction(originalIndex);
@@ -639,11 +655,8 @@ class _TransactionsPageState extends State<TransactionsPage> {
               ),
               alignment: Alignment.centerLeft,
               padding: const EdgeInsets.only(left: 20),
-              child: const Icon(
-                Icons.delete_outline,
-                color: Colors.white,
-                size: 32,
-              ),
+              child: const Icon(Icons.delete_outline,
+                  color: Colors.white, size: 32),
             ),
       secondaryBackground: isLocked
           ? null
@@ -655,11 +668,8 @@ class _TransactionsPageState extends State<TransactionsPage> {
               ),
               alignment: Alignment.centerRight,
               padding: const EdgeInsets.only(right: 20),
-              child: const Icon(
-                Icons.delete_outline,
-                color: Colors.white,
-                size: 32,
-              ),
+              child: const Icon(Icons.delete_outline,
+                  color: Colors.white, size: 32),
             ),
       child: Container(
         margin: const EdgeInsets.only(bottom: 8),
@@ -679,10 +689,8 @@ class _TransactionsPageState extends State<TransactionsPage> {
           ],
         ),
         child: ListTile(
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 12,
-            vertical: 4,
-          ),
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
           leading: Stack(
             children: [
               Container(
@@ -701,36 +709,56 @@ class _TransactionsPageState extends State<TransactionsPage> {
                   child: Container(
                     padding: const EdgeInsets.all(2),
                     decoration: BoxDecoration(
-                      color: Colors.orange.shade700,
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(Icons.lock, color: Colors.white, size: 12),
+                        color: Colors.orange.shade700,
+                        shape: BoxShape.circle),
+                    child: const Icon(Icons.lock,
+                        color: Colors.white, size: 12),
                   ),
                 ),
             ],
           ),
           title: Text(
             tx['title'] ?? "Unknown",
-            style: theme.textTheme.bodyLarge?.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
+            style: theme.textTheme.bodyLarge
+                ?.copyWith(fontWeight: FontWeight.w600),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
           subtitle: Row(
             children: [
-              Icon(
-                Icons.access_time,
-                size: 12,
-                color: Theme.of(context).colorScheme.onSurface.withAlpha(80),
-              ),
+              Icon(Icons.access_time,
+                  size: 12,
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onSurface
+                      .withAlpha(80)),
               const SizedBox(width: 4),
               Text(
                 time,
                 style: theme.textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurface.withAlpha(80),
-                ),
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withAlpha(80)),
               ),
+              if (transactionCost > 0) ...[
+                const SizedBox(width: 6),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    '+fee',
+                    style: TextStyle(
+                        fontSize: 10,
+                        color: Colors.orange.shade700,
+                        fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ],
             ],
           ),
           trailing: Column(
@@ -738,20 +766,22 @@ class _TransactionsPageState extends State<TransactionsPage> {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
                   color: iconBgColor.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Text(
                   getTypeLabel(tx['type']),
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodySmall?.copyWith(color: iconBgColor),
+                  style: Theme.of(context)
+                      .textTheme
+                      .bodySmall
+                      ?.copyWith(color: iconBgColor),
                 ),
               ),
               Text(
-                "${isIncome ? '+' : '-'} ${CurrencyFormatter.format(amount)}",
+                "${isIncome ? '+' : '-'} ${CurrencyFormatter.format(isIncome ? amount : totalDeducted)}",
                 style: theme.textTheme.bodyLarge?.copyWith(
                   fontWeight: FontWeight.bold,
                   color: isIncome ? brandGreen : errorColor,
@@ -770,7 +800,6 @@ class _TransactionsPageState extends State<TransactionsPage> {
     final today = DateTime(now.year, now.month, now.day);
     final yesterday = today.subtract(const Duration(days: 1));
     final txDate = DateTime(date.year, date.month, date.day);
-
     if (txDate == today) return 'Today';
     if (txDate == yesterday) return 'Yesterday';
     return dateKey;
@@ -814,38 +843,39 @@ class Budget {
     this.isChecked = false,
     this.checkedDate,
     DateTime? createdDate,
-  }) : expenses = expenses ?? [],
-       id = id ?? DateTime.now().millisecondsSinceEpoch.toString(),
-       createdDate = createdDate ?? DateTime.now();
+  })  : expenses = expenses ?? [],
+        id = id ?? DateTime.now().millisecondsSinceEpoch.toString(),
+        createdDate = createdDate ?? DateTime.now();
 
   double get totalSpent => expenses.fold(0.0, (sum, e) => sum + e.amount);
   double get amountLeft => total - totalSpent;
 
   Map<String, dynamic> toMap() => {
-    'id': id,
-    'name': name,
-    'total': total,
-    'expenses': expenses.map((e) => e.toMap()).toList(),
-    'isChecked': isChecked,
-    'checkedDate': checkedDate?.toIso8601String(),
-    'createdDate': createdDate.toIso8601String(),
-  };
+        'id': id,
+        'name': name,
+        'total': total,
+        'expenses': expenses.map((e) => e.toMap()).toList(),
+        'isChecked': isChecked,
+        'checkedDate': checkedDate?.toIso8601String(),
+        'createdDate': createdDate.toIso8601String(),
+      };
 
   factory Budget.fromMap(Map<String, dynamic> map) => Budget(
-    id: map['id'] ?? DateTime.now().millisecondsSinceEpoch.toString(),
-    name: map['name'],
-    total: (map['total'] as num).toDouble(),
-    expenses:
-        (map['expenses'] as List?)?.map((e) => Expense.fromMap(e)).toList() ??
-        [],
-    isChecked: map['isChecked'] ?? map['checked'] ?? false,
-    checkedDate: map['checkedDate'] != null
-        ? DateTime.parse(map['checkedDate'])
-        : null,
-    createdDate: map['createdDate'] != null
-        ? DateTime.parse(map['createdDate'])
-        : DateTime.now(),
-  );
+        id: map['id'] ?? DateTime.now().millisecondsSinceEpoch.toString(),
+        name: map['name'],
+        total: (map['total'] as num).toDouble(),
+        expenses: (map['expenses'] as List?)
+                ?.map((e) => Expense.fromMap(e))
+                .toList() ??
+            [],
+        isChecked: map['isChecked'] ?? map['checked'] ?? false,
+        checkedDate: map['checkedDate'] != null
+            ? DateTime.parse(map['checkedDate'])
+            : null,
+        createdDate: map['createdDate'] != null
+            ? DateTime.parse(map['createdDate'])
+            : DateTime.now(),
+      );
 }
 
 class Expense {
@@ -859,24 +889,24 @@ class Expense {
     required this.name,
     required this.amount,
     DateTime? createdDate,
-  }) : id = id ?? DateTime.now().millisecondsSinceEpoch.toString(),
-       createdDate = createdDate ?? DateTime.now();
+  })  : id = id ?? DateTime.now().millisecondsSinceEpoch.toString(),
+        createdDate = createdDate ?? DateTime.now();
 
   Map<String, dynamic> toMap() => {
-    'id': id,
-    'name': name,
-    'amount': amount,
-    'createdDate': createdDate.toIso8601String(),
-  };
+        'id': id,
+        'name': name,
+        'amount': amount,
+        'createdDate': createdDate.toIso8601String(),
+      };
 
   factory Expense.fromMap(Map<String, dynamic> map) => Expense(
-    id: map['id'] ?? DateTime.now().millisecondsSinceEpoch.toString(),
-    name: map['name'],
-    amount: (map['amount'] as num).toDouble(),
-    createdDate: map['createdDate'] != null
-        ? DateTime.parse(map['createdDate'])
-        : DateTime.now(),
-  );
+        id: map['id'] ?? DateTime.now().millisecondsSinceEpoch.toString(),
+        name: map['name'],
+        amount: (map['amount'] as num).toDouble(),
+        createdDate: map['createdDate'] != null
+            ? DateTime.parse(map['createdDate'])
+            : DateTime.now(),
+      );
 }
 
 class Saving {
@@ -902,37 +932,33 @@ class Saving {
 
   double get balance => targetAmount - savedAmount;
 
-  Map<String, dynamic> toMap() {
-    return {
-      'name': name,
-      'savedAmount': savedAmount,
-      'targetAmount': targetAmount,
-      'deadline': deadline.toIso8601String(),
-      'achieved': achieved,
-      'walletType': walletType,
-      'walletName': walletName,
-      'lastUpdated': lastUpdated.toIso8601String(),
-    };
-  }
+  Map<String, dynamic> toMap() => {
+        'name': name,
+        'savedAmount': savedAmount,
+        'targetAmount': targetAmount,
+        'deadline': deadline.toIso8601String(),
+        'achieved': achieved,
+        'walletType': walletType,
+        'walletName': walletName,
+        'lastUpdated': lastUpdated.toIso8601String(),
+      };
 
-  factory Saving.fromMap(Map<String, dynamic> map) {
-    return Saving(
-      name: map['name'] ?? 'Unnamed',
-      savedAmount: map['savedAmount'] is String
-          ? double.tryParse(map['savedAmount']) ?? 0.0
-          : (map['savedAmount'] as num?)?.toDouble() ?? 0.0,
-      targetAmount: map['targetAmount'] is String
-          ? double.tryParse(map['targetAmount']) ?? 0.0
-          : (map['targetAmount'] as num?)?.toDouble() ?? 0.0,
-      deadline: map['deadline'] != null
-          ? DateTime.parse(map['deadline'])
-          : DateTime.now().add(const Duration(days: 30)),
-      achieved: map['achieved'] ?? false,
-      walletType: map['walletType'] ?? 'M-Pesa',
-      walletName: map['walletName'],
-      lastUpdated: map['lastUpdated'] != null
-          ? DateTime.parse(map['lastUpdated'])
-          : DateTime.now(),
-    );
-  }
+  factory Saving.fromMap(Map<String, dynamic> map) => Saving(
+        name: map['name'] ?? 'Unnamed',
+        savedAmount: map['savedAmount'] is String
+            ? double.tryParse(map['savedAmount']) ?? 0.0
+            : (map['savedAmount'] as num?)?.toDouble() ?? 0.0,
+        targetAmount: map['targetAmount'] is String
+            ? double.tryParse(map['targetAmount']) ?? 0.0
+            : (map['targetAmount'] as num?)?.toDouble() ?? 0.0,
+        deadline: map['deadline'] != null
+            ? DateTime.parse(map['deadline'])
+            : DateTime.now().add(const Duration(days: 30)),
+        achieved: map['achieved'] ?? false,
+        walletType: map['walletType'] ?? 'M-Pesa',
+        walletName: map['walletName'],
+        lastUpdated: map['lastUpdated'] != null
+            ? DateTime.parse(map['lastUpdated'])
+            : DateTime.now(),
+      );
 }

@@ -40,6 +40,7 @@ class _BudgetDetailPageState extends State<BudgetDetailPage> {
 
   Budget? budget;
   bool isLoading = true;
+  bool _isToggling = false; // Prevent double-tap
   final userUid = FirebaseAuth.instance.currentUser!.uid;
 
   @override
@@ -52,10 +53,8 @@ class _BudgetDetailPageState extends State<BudgetDetailPage> {
     setState(() => isLoading = true);
     final prefs = await SharedPreferences.getInstance();
     final budgetStrings = prefs.getStringList(keyBudgets) ?? [];
-    final budgets = budgetStrings
-        .map((s) => Budget.fromMap(json.decode(s)))
-        .toList();
-
+    final budgets =
+        budgetStrings.map((s) => Budget.fromMap(json.decode(s))).toList();
     budget = budgets.firstWhere(
       (b) => b.id == widget.budgetId,
       orElse: () => throw Exception('Budget not found'),
@@ -66,15 +65,12 @@ class _BudgetDetailPageState extends State<BudgetDetailPage> {
   Future<void> saveBudgets() async {
     final prefs = await SharedPreferences.getInstance();
     final budgetStrings = prefs.getStringList(keyBudgets) ?? [];
-    final budgets = budgetStrings
-        .map((s) => Budget.fromMap(json.decode(s)))
-        .toList();
-
+    final budgets =
+        budgetStrings.map((s) => Budget.fromMap(json.decode(s))).toList();
     final index = budgets.indexWhere((b) => b.id == widget.budgetId);
     if (index != -1 && budget != null) {
       budgets[index] = budget!;
     }
-
     final data = budgets.map((b) => json.encode(b.toMap())).toList();
     await prefs.setStringList(keyBudgets, data);
     widget.onBudgetUpdated?.call();
@@ -87,11 +83,11 @@ class _BudgetDetailPageState extends State<BudgetDetailPage> {
           .doc(userUid)
           .collection('notifications')
           .add({
-            'title': title,
-            'message': message,
-            'createdAt': FieldValue.serverTimestamp(),
-            'isRead': false,
-          });
+        'title': title,
+        'message': message,
+        'createdAt': FieldValue.serverTimestamp(),
+        'isRead': false,
+      });
     } catch (e) {
       debugPrint('Error sending notification: $e');
     }
@@ -101,18 +97,15 @@ class _BudgetDetailPageState extends State<BudgetDetailPage> {
     if (budget == null || budget!.isChecked) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Row(
-            children: [
-              const Icon(Icons.lock, color: Colors.white, size: 20),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  'This budget is finalized and locked. Uncheck to modify.',
-                  style: TextStyle(fontSize: 14),
-                ),
-              ),
-            ],
-          ),
+          content: Row(children: [
+            const Icon(Icons.lock, color: Colors.white, size: 20),
+            const SizedBox(width: 8),
+            const Expanded(
+              child: Text(
+                  'Budget is finalized. Toggle off to add expenses.',
+                  style: TextStyle(fontSize: 14)),
+            ),
+          ]),
           backgroundColor: Colors.orange.shade700,
         ),
       );
@@ -150,21 +143,18 @@ class _BudgetDetailPageState extends State<BudgetDetailPage> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel')),
           ElevatedButton(
             onPressed: () async {
               final name = nameCtrl.text.trim();
               final amount = double.tryParse(amountCtrl.text) ?? 0;
-
               if (name.isNotEmpty && amount > 0) {
                 final newExpense = Expense(name: name, amount: amount);
                 budget!.expenses.add(newExpense);
                 await saveBudgets();
                 Navigator.pop(context);
                 setState(() {});
-
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text('Expense "$name" added'),
@@ -180,27 +170,90 @@ class _BudgetDetailPageState extends State<BudgetDetailPage> {
     );
   }
 
-  void showEditExpenseDialog(Expense expense) {
-    if (budget == null || budget!.isChecked) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
+  /// ✅ UPDATED: Bottom sheet for expense edit & delete
+  void showExpenseOptionsBottomSheet(Expense expense) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.lock, color: Colors.white, size: 20),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  'This budget is finalized and locked. Uncheck to modify.',
-                  style: TextStyle(fontSize: 14),
+              Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(2),
                 ),
               ),
+              Text(
+                expense.name,
+                style: Theme.of(context)
+                    .textTheme
+                    .titleMedium
+                    ?.copyWith(fontWeight: FontWeight.bold),
+              ),
+              Text(
+                CurrencyFormatter.format(expense.amount),
+                style: TextStyle(
+                    color: errorColor,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14),
+              ),
+              const SizedBox(height: 12),
+              const Divider(height: 1),
+              const SizedBox(height: 8),
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: accentColor.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(Icons.edit_outlined,
+                      color: accentColor, size: 20),
+                ),
+                title: const Text('Edit Expense',
+                    style: TextStyle(fontWeight: FontWeight.w600)),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _showEditExpenseDialog(expense);
+                },
+              ),
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: errorColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(Icons.delete_outline,
+                      color: errorColor, size: 20),
+                ),
+                title: const Text('Delete Expense',
+                    style: TextStyle(
+                        fontWeight: FontWeight.w600, color: errorColor)),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _deleteExpense(expense);
+                },
+              ),
+              const SizedBox(height: 8),
             ],
           ),
-          backgroundColor: Colors.orange.shade700,
         ),
-      );
-      return;
-    }
+      ),
+    );
+  }
+
+  void _showEditExpenseDialog(Expense expense) {
+    if (budget == null || budget!.isChecked) return;
 
     final nameCtrl = TextEditingController(text: expense.name);
     final amountCtrl = TextEditingController(text: expense.amount.toString());
@@ -233,21 +286,18 @@ class _BudgetDetailPageState extends State<BudgetDetailPage> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel')),
           ElevatedButton(
             onPressed: () async {
               final name = nameCtrl.text.trim();
               final amount = double.tryParse(amountCtrl.text) ?? 0;
-
               if (name.isNotEmpty && amount > 0) {
                 expense.name = name;
                 expense.amount = amount;
                 await saveBudgets();
                 Navigator.pop(context);
                 setState(() {});
-
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
                     content: Text('Expense updated'),
@@ -263,22 +313,11 @@ class _BudgetDetailPageState extends State<BudgetDetailPage> {
     );
   }
 
-  Future<void> deleteExpense(Expense expense) async {
+  Future<void> _deleteExpense(Expense expense) async {
     if (budget == null || budget!.isChecked) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Row(
-            children: [
-              const Icon(Icons.lock, color: Colors.white, size: 20),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  'This budget is finalized and locked. Uncheck to modify.',
-                  style: TextStyle(fontSize: 14),
-                ),
-              ),
-            ],
-          ),
+          content: const Text('Budget is finalized. Toggle off to delete.'),
           backgroundColor: Colors.orange.shade700,
         ),
       );
@@ -292,14 +331,11 @@ class _BudgetDetailPageState extends State<BudgetDetailPage> {
         content: Text('Delete "${expense.name}"?'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel')),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: errorColor,
-              foregroundColor: Colors.white,
-            ),
+                backgroundColor: errorColor, foregroundColor: Colors.white),
             onPressed: () => Navigator.pop(context, true),
             child: const Text('Delete'),
           ),
@@ -311,7 +347,6 @@ class _BudgetDetailPageState extends State<BudgetDetailPage> {
       budget!.expenses.remove(expense);
       await saveBudgets();
       setState(() {});
-
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Expense deleted'),
@@ -323,7 +358,6 @@ class _BudgetDetailPageState extends State<BudgetDetailPage> {
 
   Future<void> exportAsPDF() async {
     if (budget == null) return;
-
     try {
       final pdf = pw.Document();
       final dateFormat = DateFormat('dd MMM yyyy');
@@ -336,73 +370,49 @@ class _BudgetDetailPageState extends State<BudgetDetailPage> {
             return pw.Column(
               crossAxisAlignment: pw.CrossAxisAlignment.start,
               children: [
-                pw.Text(
-                  'BUDGET REPORT',
-                  style: pw.TextStyle(
-                    fontSize: 24,
-                    fontWeight: pw.FontWeight.bold,
-                  ),
-                ),
+                pw.Text('BUDGET REPORT',
+                    style: pw.TextStyle(
+                        fontSize: 24, fontWeight: pw.FontWeight.bold)),
                 pw.SizedBox(height: 20),
                 pw.Divider(),
                 pw.SizedBox(height: 10),
-
-                pw.Text(
-                  'Budget Name: ${budget!.name}',
-                  style: pw.TextStyle(fontSize: 16),
-                ),
-                pw.Text(
-                  'Generated: ${dateFormat.format(now)}',
-                  style: pw.TextStyle(fontSize: 12),
-                ),
+                pw.Text('Budget Name: ${budget!.name}',
+                    style: pw.TextStyle(fontSize: 16)),
+                pw.Text('Generated: ${dateFormat.format(now)}',
+                    style: pw.TextStyle(fontSize: 12)),
                 pw.SizedBox(height: 20),
-
                 pw.Container(
                   padding: const pw.EdgeInsets.all(10),
                   decoration: pw.BoxDecoration(
                     border: pw.Border.all(color: PdfColors.grey),
-                    borderRadius: const pw.BorderRadius.all(
-                      pw.Radius.circular(5),
-                    ),
+                    borderRadius:
+                        const pw.BorderRadius.all(pw.Radius.circular(5)),
                   ),
                   child: pw.Column(
                     crossAxisAlignment: pw.CrossAxisAlignment.start,
                     children: [
-                      pw.Text(
-                        'BUDGET SUMMARY',
-                        style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
-                      ),
+                      pw.Text('BUDGET SUMMARY',
+                          style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
                       pw.SizedBox(height: 10),
                       pw.Text(
-                        'Budget Amount: ${CurrencyFormatter.format(budget!.total)}',
-                      ),
+                          'Budget Amount: ${CurrencyFormatter.format(budget!.total)}'),
                       pw.Text(
-                        'Amount Spent: ${CurrencyFormatter.format(budget!.totalSpent)}',
-                      ),
+                          'Amount Spent: ${CurrencyFormatter.format(budget!.totalSpent)}'),
                       pw.Text(
-                        'Remaining Balance: ${CurrencyFormatter.format(budget!.amountLeft)}',
-                      ),
+                          'Remaining Balance: ${CurrencyFormatter.format(budget!.amountLeft)}'),
                       pw.Text(
-                        'Status: ${budget!.isChecked ? "FINALIZED" : "ACTIVE"}',
-                      ),
+                          'Status: ${budget!.isChecked ? "FINALIZED" : "ACTIVE"}'),
                       if (budget!.isChecked && budget!.checkedDate != null)
                         pw.Text(
-                          'Finalized on: ${dateFormat.format(budget!.checkedDate!)}',
-                        ),
+                            'Finalized on: ${dateFormat.format(budget!.checkedDate!)}'),
                     ],
                   ),
                 ),
-
                 pw.SizedBox(height: 20),
-                pw.Text(
-                  'EXPENSE BREAKDOWN',
-                  style: pw.TextStyle(
-                    fontSize: 16,
-                    fontWeight: pw.FontWeight.bold,
-                  ),
-                ),
+                pw.Text('EXPENSE BREAKDOWN',
+                    style: pw.TextStyle(
+                        fontSize: 16, fontWeight: pw.FontWeight.bold)),
                 pw.SizedBox(height: 10),
-
                 if (budget!.expenses.isEmpty)
                   pw.Text('No expenses recorded')
                 else
@@ -411,72 +421,48 @@ class _BudgetDetailPageState extends State<BudgetDetailPage> {
                     children: [
                       pw.TableRow(
                         decoration: const pw.BoxDecoration(
-                          color: PdfColors.grey300,
-                        ),
+                            color: PdfColors.grey300),
                         children: [
                           pw.Padding(
-                            padding: const pw.EdgeInsets.all(8),
-                            child: pw.Text(
-                              'Expense',
-                              style: pw.TextStyle(
-                                fontWeight: pw.FontWeight.bold,
-                              ),
-                            ),
-                          ),
+                              padding: const pw.EdgeInsets.all(8),
+                              child: pw.Text('Expense',
+                                  style: pw.TextStyle(
+                                      fontWeight: pw.FontWeight.bold))),
                           pw.Padding(
-                            padding: const pw.EdgeInsets.all(8),
-                            child: pw.Text(
-                              'Amount',
-                              style: pw.TextStyle(
-                                fontWeight: pw.FontWeight.bold,
-                              ),
-                            ),
-                          ),
+                              padding: const pw.EdgeInsets.all(8),
+                              child: pw.Text('Amount',
+                                  style: pw.TextStyle(
+                                      fontWeight: pw.FontWeight.bold))),
                           pw.Padding(
-                            padding: const pw.EdgeInsets.all(8),
-                            child: pw.Text(
-                              'Date',
-                              style: pw.TextStyle(
-                                fontWeight: pw.FontWeight.bold,
-                              ),
-                            ),
-                          ),
+                              padding: const pw.EdgeInsets.all(8),
+                              child: pw.Text('Date',
+                                  style: pw.TextStyle(
+                                      fontWeight: pw.FontWeight.bold))),
                         ],
                       ),
                       ...budget!.expenses.map(
-                        (exp) => pw.TableRow(
-                          children: [
-                            pw.Padding(
+                        (exp) => pw.TableRow(children: [
+                          pw.Padding(
                               padding: const pw.EdgeInsets.all(8),
-                              child: pw.Text(exp.name),
-                            ),
-                            pw.Padding(
+                              child: pw.Text(exp.name)),
+                          pw.Padding(
                               padding: const pw.EdgeInsets.all(8),
                               child: pw.Text(
-                                CurrencyFormatter.format(exp.amount),
-                              ),
-                            ),
-                            pw.Padding(
+                                  CurrencyFormatter.format(exp.amount))),
+                          pw.Padding(
                               padding: const pw.EdgeInsets.all(8),
                               child: pw.Text(
-                                dateFormat.format(exp.createdDate),
-                              ),
-                            ),
-                          ],
-                        ),
+                                  dateFormat.format(exp.createdDate))),
+                        ]),
                       ),
                     ],
                   ),
-
                 pw.SizedBox(height: 20),
                 pw.Divider(),
                 pw.Text(
-                  'Total Expenses: ${CurrencyFormatter.format(budget!.totalSpent)}',
-                  style: pw.TextStyle(
-                    fontSize: 14,
-                    fontWeight: pw.FontWeight.bold,
-                  ),
-                ),
+                    'Total Expenses: ${CurrencyFormatter.format(budget!.totalSpent)}',
+                    style: pw.TextStyle(
+                        fontSize: 14, fontWeight: pw.FontWeight.bold)),
               ],
             );
           },
@@ -486,10 +472,8 @@ class _BudgetDetailPageState extends State<BudgetDetailPage> {
       final directory = await getApplicationDocumentsDirectory();
       final file = File('${directory.path}/budget_${budget!.id}.pdf');
       await file.writeAsBytes(await pdf.save());
-
-      await Share.shareXFiles([
-        XFile(file.path),
-      ], text: 'Budget Report: ${budget!.name}');
+      await Share.shareXFiles([XFile(file.path)],
+          text: 'Budget Report: ${budget!.name}');
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -512,13 +496,15 @@ class _BudgetDetailPageState extends State<BudgetDetailPage> {
     }
   }
 
-  Future<void> toggleCheckBudget() async {
-    if (budget == null) return;
+  /// ✅ UPDATED: Called from toggle switch
+  Future<void> toggleCheckBudget(bool newValue) async {
+    if (budget == null || _isToggling) return;
+    setState(() => _isToggling = true);
 
     final prefs = await SharedPreferences.getInstance();
 
-    if (!budget!.isChecked) {
-      // CHECK BUDGET - Create collective transaction
+    if (newValue) {
+      // Finalize budget
       final confirmed = await showDialog<bool>(
         context: context,
         builder: (context) => AlertDialog(
@@ -528,8 +514,7 @@ class _BudgetDetailPageState extends State<BudgetDetailPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text(
-                'This will create a collective transaction and deduct the total spent amount from your balance.',
-              ),
+                  'This will create a collective transaction and deduct the total spent amount from your balance.'),
               const SizedBox(height: 12),
               Container(
                 padding: const EdgeInsets.all(12),
@@ -538,41 +523,32 @@ class _BudgetDetailPageState extends State<BudgetDetailPage> {
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(color: accentColor),
                 ),
-                child: Column(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text('Amount to deduct:'),
-                        Text(
-                          CurrencyFormatter.format(budget!.totalSpent),
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                          ),
-                        ),
-                      ],
+                    const Text('Amount to deduct:'),
+                    Text(
+                      CurrencyFormatter.format(budget!.totalSpent),
+                      style: const TextStyle(
+                          fontWeight: FontWeight.bold, fontSize: 16),
                     ),
                   ],
                 ),
               ),
               const SizedBox(height: 12),
               const Text(
-                '⚠️ You will not be able to add, edit, or delete expenses until unchecked.',
+                '⚠️ You will not be able to add, edit, or delete expenses until toggled off.',
                 style: TextStyle(fontSize: 12, color: Colors.orange),
               ),
             ],
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Cancel'),
-            ),
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Cancel')),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: brandGreen,
-                foregroundColor: Colors.white,
-              ),
+                  backgroundColor: brandGreen, foregroundColor: Colors.white),
               onPressed: () => Navigator.pop(context, true),
               child: const Text('Finalize'),
             ),
@@ -581,35 +557,20 @@ class _BudgetDetailPageState extends State<BudgetDetailPage> {
       );
 
       if (confirmed == true) {
-        // Prevent double-checking
-        if (budget!.isChecked) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Budget is already finalized'),
-              backgroundColor: Colors.orange,
-            ),
-          );
-          return;
-        }
-
-        // Create collective transaction
         final txString = prefs.getString(keyTransactions) ?? '[]';
-        final transactions = List<Map<String, dynamic>>.from(
-          json.decode(txString),
-        );
-
+        final transactions =
+            List<Map<String, dynamic>>.from(json.decode(txString));
         final collectiveTransaction = {
           'title': 'Budget: ${budget!.name} (Finalized)',
           'amount': budget!.totalSpent,
           'type': 'budget_finalized',
+          'transactionCost': 0.0,
           'date': DateTime.now().toIso8601String(),
           'budgetId': budget!.id,
         };
-
         transactions.insert(0, collectiveTransaction);
         await prefs.setString(keyTransactions, json.encode(transactions));
 
-        // Update budget
         budget!.isChecked = true;
         budget!.checkedDate = DateTime.now();
         await saveBudgets();
@@ -618,22 +579,19 @@ class _BudgetDetailPageState extends State<BudgetDetailPage> {
           '✓ Budget Finalized',
           'Budget "${budget!.name}" has been finalized. ${CurrencyFormatter.format(budget!.totalSpent)} deducted from balance.',
         );
-
         setState(() {});
-
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                'Budget finalized. ${CurrencyFormatter.format(budget!.totalSpent)} deducted',
-              ),
+                  'Budget finalized. ${CurrencyFormatter.format(budget!.totalSpent)} deducted'),
               backgroundColor: brandGreen,
             ),
           );
         }
       }
     } else {
-      // UNCHECK BUDGET - Remove collective transaction
+      // Un-finalize budget
       final confirmed = await showDialog<bool>(
         context: context,
         builder: (context) => AlertDialog(
@@ -643,8 +601,7 @@ class _BudgetDetailPageState extends State<BudgetDetailPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text(
-                'This will remove the collective transaction and restore the deducted amount back to your balance.',
-              ),
+                  'This will remove the collective transaction and restore the deducted amount back to your balance.'),
               const SizedBox(height: 12),
               Container(
                 padding: const EdgeInsets.all(12),
@@ -660,9 +617,7 @@ class _BudgetDetailPageState extends State<BudgetDetailPage> {
                     Text(
                       CurrencyFormatter.format(budget!.totalSpent),
                       style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
+                          fontWeight: FontWeight.bold, fontSize: 16),
                     ),
                   ],
                 ),
@@ -671,14 +626,12 @@ class _BudgetDetailPageState extends State<BudgetDetailPage> {
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Cancel'),
-            ),
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Cancel')),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.orange,
-                foregroundColor: Colors.white,
-              ),
+                  backgroundColor: Colors.orange,
+                  foregroundColor: Colors.white),
               onPressed: () => Navigator.pop(context, true),
               child: const Text('Unfinalize'),
             ),
@@ -687,30 +640,13 @@ class _BudgetDetailPageState extends State<BudgetDetailPage> {
       );
 
       if (confirmed == true) {
-        // Prevent double-unchecking
-        if (!budget!.isChecked) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Budget is already active'),
-              backgroundColor: Colors.orange,
-            ),
-          );
-          return;
-        }
-
-        // Remove the collective transaction
         final txString = prefs.getString(keyTransactions) ?? '[]';
-        final transactions = List<Map<String, dynamic>>.from(
-          json.decode(txString),
-        );
-
-        transactions.removeWhere(
-          (tx) =>
-              tx['type'] == 'budget_finalized' && tx['budgetId'] == budget!.id,
-        );
+        final transactions =
+            List<Map<String, dynamic>>.from(json.decode(txString));
+        transactions.removeWhere((tx) =>
+            tx['type'] == 'budget_finalized' && tx['budgetId'] == budget!.id);
         await prefs.setString(keyTransactions, json.encode(transactions));
 
-        // Update budget
         budget!.isChecked = false;
         budget!.checkedDate = null;
         await saveBudgets();
@@ -719,21 +655,20 @@ class _BudgetDetailPageState extends State<BudgetDetailPage> {
           '○ Budget Unfinalized',
           'Budget "${budget!.name}" has been unfinalized. ${CurrencyFormatter.format(budget!.totalSpent)} restored to balance.',
         );
-
         setState(() {});
-
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                'Budget unfinalized. ${CurrencyFormatter.format(budget!.totalSpent)} restored',
-              ),
+                  'Budget unfinalized. ${CurrencyFormatter.format(budget!.totalSpent)} restored'),
               backgroundColor: brandGreen,
             ),
           );
         }
       }
     }
+
+    setState(() => _isToggling = false);
   }
 
   @override
@@ -756,10 +691,8 @@ class _BudgetDetailPageState extends State<BudgetDetailPage> {
       appBar: AppBar(
         backgroundColor: theme.colorScheme.surface,
         leading: const CustomBackButton(),
-        title: Text(
-          budget!.name,
-          style: const TextStyle(fontWeight: FontWeight.bold),
-        ),
+        title: Text(budget!.name,
+            style: const TextStyle(fontWeight: FontWeight.bold)),
         actions: [
           // Export PDF Button
           IconButton(
@@ -767,20 +700,34 @@ class _BudgetDetailPageState extends State<BudgetDetailPage> {
             onPressed: exportAsPDF,
             tooltip: 'Export as PDF',
           ),
-          // Check Budget Toggle
-          IconButton(
-            icon: Icon(
-              budget!.isChecked
-                  ? Icons.check_circle
-                  : Icons.check_circle_outline,
-              color: budget!.isChecked
-                  ? brandGreen
-                  : theme.colorScheme.onSurface,
+          // ✅ UPDATED: Toggle switch replacing icon button
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  budget!.isChecked ? 'On' : 'Off',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: budget!.isChecked ? brandGreen : Colors.grey,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Transform.scale(
+                  scale: 0.85,
+                  child: Switch(
+                    value: budget!.isChecked,
+                    onChanged: _isToggling ? null : toggleCheckBudget,
+                    activeColor: brandGreen,
+                    activeTrackColor: brandGreen.withOpacity(0.3),
+                    inactiveThumbColor: Colors.grey.shade400,
+                    inactiveTrackColor: Colors.grey.shade200,
+                  ),
+                ),
+              ],
             ),
-            onPressed: toggleCheckBudget,
-            tooltip: budget!.isChecked
-                ? 'Unfinalize Budget'
-                : 'Finalize Budget',
           ),
         ],
       ),
@@ -815,9 +762,8 @@ class _BudgetDetailPageState extends State<BudgetDetailPage> {
                       children: [
                         Text(
                           'Budget Amount',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: Colors.white.withOpacity(0.8),
-                          ),
+                          style: theme.textTheme.bodySmall
+                              ?.copyWith(color: Colors.white.withOpacity(0.8)),
                         ),
                         Text(
                           CurrencyFormatter.format(budget!.total),
@@ -831,22 +777,17 @@ class _BudgetDetailPageState extends State<BudgetDetailPage> {
                     if (budget!.isChecked)
                       Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
-                        ),
+                            horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
                           color: brandGreen,
                           borderRadius: BorderRadius.circular(20),
                         ),
-                        child: Row(
+                        child: const Row(
                           children: [
-                            const Icon(
-                              Icons.check_circle,
-                              size: 16,
-                              color: Colors.white,
-                            ),
-                            const SizedBox(width: 4),
-                            const Text(
+                            Icon(Icons.check_circle,
+                                size: 16, color: Colors.white),
+                            SizedBox(width: 4),
+                            Text(
                               'FINALIZED',
                               style: TextStyle(
                                 color: Colors.white,
@@ -869,8 +810,7 @@ class _BudgetDetailPageState extends State<BudgetDetailPage> {
                           Text(
                             'Spent',
                             style: theme.textTheme.bodySmall?.copyWith(
-                              color: Colors.white.withOpacity(0.8),
-                            ),
+                                color: Colors.white.withOpacity(0.8)),
                           ),
                           Text(
                             CurrencyFormatter.format(totalSpent),
@@ -883,10 +823,9 @@ class _BudgetDetailPageState extends State<BudgetDetailPage> {
                       ),
                     ),
                     Container(
-                      height: 40,
-                      width: 1,
-                      color: Colors.white.withOpacity(0.3),
-                    ),
+                        height: 40,
+                        width: 1,
+                        color: Colors.white.withOpacity(0.3)),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.end,
@@ -894,8 +833,7 @@ class _BudgetDetailPageState extends State<BudgetDetailPage> {
                           Text(
                             'Balance',
                             style: theme.textTheme.bodySmall?.copyWith(
-                              color: Colors.white.withOpacity(0.8),
-                            ),
+                                color: Colors.white.withOpacity(0.8)),
                           ),
                           Text(
                             CurrencyFormatter.format(amountLeft),
@@ -923,15 +861,13 @@ class _BudgetDetailPageState extends State<BudgetDetailPage> {
               children: [
                 Text(
                   'Expenses',
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: theme.textTheme.titleLarge
+                      ?.copyWith(fontWeight: FontWeight.bold),
                 ),
                 Text(
                   '${budget!.expenses.length} items',
                   style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurface.withAlpha(120),
-                  ),
+                      color: theme.colorScheme.onSurface.withAlpha(120)),
                 ),
               ],
             ),
@@ -940,7 +876,8 @@ class _BudgetDetailPageState extends State<BudgetDetailPage> {
 
           if (budget!.isChecked)
             Container(
-              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              margin:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: Colors.orange.shade50,
@@ -953,11 +890,9 @@ class _BudgetDetailPageState extends State<BudgetDetailPage> {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'Budget is finalized and locked. Uncheck to modify expenses.',
+                      'Budget is finalized. Toggle off to modify expenses.',
                       style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.orange.shade900,
-                      ),
+                          fontSize: 12, color: Colors.orange.shade900),
                     ),
                   ),
                 ],
@@ -971,25 +906,19 @@ class _BudgetDetailPageState extends State<BudgetDetailPage> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(
-                          Icons.receipt_long_outlined,
-                          size: 64,
-                          color: Colors.grey.shade400,
-                        ),
+                        Icon(Icons.receipt_long_outlined,
+                            size: 64, color: Colors.grey.shade400),
                         const SizedBox(height: 16),
                         Text(
                           'No expenses yet',
                           style: theme.textTheme.bodyLarge?.copyWith(
-                            color: Colors.grey.shade600,
-                          ),
+                              color: Colors.grey.shade600),
                         ),
-                        const SizedBox(height: 8),
                         if (!budget!.isChecked)
                           Text(
                             'Tap + to add an expense',
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: Colors.grey.shade500,
-                            ),
+                            style: theme.textTheme.bodySmall
+                                ?.copyWith(color: Colors.grey.shade500),
                           ),
                       ],
                     ),
@@ -1014,99 +943,80 @@ class _BudgetDetailPageState extends State<BudgetDetailPage> {
     );
   }
 
+  /// ✅ UPDATED: No icons, 24h time, tap opens bottom sheet
   Widget buildExpenseCard(Expense expense) {
     final theme = Theme.of(context);
-    final dateFormat = DateFormat('dd MMM yyyy, hh:mm a');
+    // ✅ 24-hour format
+    final timeStr = DateFormat('HH:mm').format(expense.createdDate);
+    final dateStr = DateFormat('dd MMM yyyy').format(expense.createdDate);
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: budget!.isChecked
-              ? Colors.orange.shade300
-              : theme.colorScheme.onSurface.withAlpha(20),
-          width: budget!.isChecked ? 2 : 1,
+    return GestureDetector(
+      onTap: budget!.isChecked ? null : () => showExpenseOptionsBottomSheet(expense),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surface,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: budget!.isChecked
+                ? Colors.orange.shade200
+                : theme.colorScheme.onSurface.withAlpha(15),
+            width: budget!.isChecked ? 1.5 : 1,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.03),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: errorColor.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(10),
+        child: Row(
+          children: [
+            // ✅ No icon — clean minimal list
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    expense.name,
+                    style: theme.textTheme.bodyLarge?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    '$dateStr · $timeStr',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurface.withAlpha(100),
+                    ),
+                  ),
+                ],
+              ),
             ),
-            child: Icon(
-              Icons.arrow_circle_up_outlined,
-              color: errorColor,
-              size: 24,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text(
-                  expense.name,
-                  style: theme.textTheme.bodyLarge?.copyWith(
-                    fontWeight: FontWeight.w600,
+                  CurrencyFormatter.format(expense.amount),
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: errorColor,
                   ),
                 ),
-                Text(
-                  dateFormat.format(expense.createdDate),
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurface.withAlpha(120),
+                if (!budget!.isChecked)
+                  Text(
+                    'tap to edit',
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: Colors.grey.shade400,
+                    ),
                   ),
-                ),
               ],
             ),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                CurrencyFormatter.format(expense.amount),
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: errorColor,
-                ),
-              ),
-              if (!budget!.isChecked)
-                Row(
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.edit, size: 18),
-                      onPressed: () => showEditExpenseDialog(expense),
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                    ),
-                    const SizedBox(width: 4),
-                    IconButton(
-                      icon: const Icon(
-                        Icons.delete,
-                        size: 18,
-                        color: errorColor,
-                      ),
-                      onPressed: () => deleteExpense(expense),
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                    ),
-                  ],
-                ),
-            ],
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -1130,38 +1040,39 @@ class Budget {
     this.isChecked = false,
     this.checkedDate,
     DateTime? createdDate,
-  }) : expenses = expenses ?? [],
-       id = id ?? DateTime.now().millisecondsSinceEpoch.toString(),
-       createdDate = createdDate ?? DateTime.now();
+  })  : expenses = expenses ?? [],
+        id = id ?? DateTime.now().millisecondsSinceEpoch.toString(),
+        createdDate = createdDate ?? DateTime.now();
 
   double get totalSpent => expenses.fold(0.0, (sum, e) => sum + e.amount);
   double get amountLeft => total - totalSpent;
 
   Map<String, dynamic> toMap() => {
-    'id': id,
-    'name': name,
-    'total': total,
-    'expenses': expenses.map((e) => e.toMap()).toList(),
-    'isChecked': isChecked,
-    'checkedDate': checkedDate?.toIso8601String(),
-    'createdDate': createdDate.toIso8601String(),
-  };
+        'id': id,
+        'name': name,
+        'total': total,
+        'expenses': expenses.map((e) => e.toMap()).toList(),
+        'isChecked': isChecked,
+        'checkedDate': checkedDate?.toIso8601String(),
+        'createdDate': createdDate.toIso8601String(),
+      };
 
   factory Budget.fromMap(Map<String, dynamic> map) => Budget(
-    id: map['id'] ?? DateTime.now().millisecondsSinceEpoch.toString(),
-    name: map['name'],
-    total: (map['total'] as num).toDouble(),
-    expenses:
-        (map['expenses'] as List?)?.map((e) => Expense.fromMap(e)).toList() ??
-        [],
-    isChecked: map['isChecked'] ?? map['checked'] ?? false,
-    checkedDate: map['checkedDate'] != null
-        ? DateTime.parse(map['checkedDate'])
-        : null,
-    createdDate: map['createdDate'] != null
-        ? DateTime.parse(map['createdDate'])
-        : DateTime.now(),
-  );
+        id: map['id'] ?? DateTime.now().millisecondsSinceEpoch.toString(),
+        name: map['name'],
+        total: (map['total'] as num).toDouble(),
+        expenses: (map['expenses'] as List?)
+                ?.map((e) => Expense.fromMap(e))
+                .toList() ??
+            [],
+        isChecked: map['isChecked'] ?? map['checked'] ?? false,
+        checkedDate: map['checkedDate'] != null
+            ? DateTime.parse(map['checkedDate'])
+            : null,
+        createdDate: map['createdDate'] != null
+            ? DateTime.parse(map['createdDate'])
+            : DateTime.now(),
+      );
 }
 
 class Expense {
@@ -1175,22 +1086,22 @@ class Expense {
     required this.name,
     required this.amount,
     DateTime? createdDate,
-  }) : id = id ?? DateTime.now().millisecondsSinceEpoch.toString(),
-       createdDate = createdDate ?? DateTime.now();
+  })  : id = id ?? DateTime.now().millisecondsSinceEpoch.toString(),
+        createdDate = createdDate ?? DateTime.now();
 
   Map<String, dynamic> toMap() => {
-    'id': id,
-    'name': name,
-    'amount': amount,
-    'createdDate': createdDate.toIso8601String(),
-  };
+        'id': id,
+        'name': name,
+        'amount': amount,
+        'createdDate': createdDate.toIso8601String(),
+      };
 
   factory Expense.fromMap(Map<String, dynamic> map) => Expense(
-    id: map['id'] ?? DateTime.now().millisecondsSinceEpoch.toString(),
-    name: map['name'],
-    amount: (map['amount'] as num).toDouble(),
-    createdDate: map['createdDate'] != null
-        ? DateTime.parse(map['createdDate'])
-        : DateTime.now(),
-  );
+        id: map['id'] ?? DateTime.now().millisecondsSinceEpoch.toString(),
+        name: map['name'],
+        amount: (map['amount'] as num).toDouble(),
+        createdDate: map['createdDate'] != null
+            ? DateTime.parse(map['createdDate'])
+            : DateTime.now(),
+      );
 }
