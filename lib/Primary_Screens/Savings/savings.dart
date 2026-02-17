@@ -722,7 +722,7 @@ class _SavingsPageState extends State<SavingsPage> {
               children: [
                 buildStreakCard(theme),
                 buildFilterChips(theme),
-                buildStatsCard(theme),
+
                 Expanded(
                   child: filteredGoals.isEmpty
                       ? buildEmptyState(theme)
@@ -866,91 +866,6 @@ class _SavingsPageState extends State<SavingsPage> {
             fontSize: 14,
           ),
         ),
-      ),
-    );
-  }
-
-  Widget buildStatsCard(ThemeData theme) {
-    double totalTarget = 0;
-    double totalSaved = 0;
-    int activeGoals = 0;
-    int achievedGoals = 0;
-
-    for (var saving in savings) {
-      totalTarget += saving.targetAmount;
-      totalSaved += saving.savedAmount;
-      if (saving.achieved) {
-        achievedGoals++;
-      } else {
-        activeGoals++;
-      }
-    }
-
-    return Container(
-      margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: radiusSmall,
-        border: Border.all(color: Colors.grey.shade200),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: buildStatItem(
-                  'Total Target',
-                  'Ksh ${totalTarget.toStringAsFixed(0)}',
-                  Icons.flag,
-                  Colors.blue,
-                  theme,
-                ),
-              ),
-              Container(height: 40, width: 1, color: Colors.grey.shade300),
-              Expanded(
-                child: buildStatItem(
-                  'Total Saved',
-                  'Ksh ${totalSaved.toStringAsFixed(0)}',
-                  Icons.account_balance_wallet,
-                  brandGreen,
-                  theme,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: buildStatItem(
-                  'Active Goals',
-                  activeGoals.toString(),
-                  Icons.trending_up,
-                  Colors.orange,
-                  theme,
-                ),
-              ),
-              Container(height: 40, width: 1, color: Colors.grey.shade300),
-              Expanded(
-                child: buildStatItem(
-                  'Achieved',
-                  achievedGoals.toString(),
-                  Icons.check_circle,
-                  brandGreen,
-                  theme,
-                ),
-              ),
-            ],
-          ),
-        ],
       ),
     );
   }
