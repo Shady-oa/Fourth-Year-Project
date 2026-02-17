@@ -112,12 +112,14 @@ class _HomePageState extends State<HomePage> {
   void calculateStats() {
     double expenses = 0.0;
     for (var tx in transactions) {
-      if (tx['type'] == 'expense' ||
-          tx['type'] == 'budget_finalized' ||
-          tx['type'] == 'savings_deduction' ||
-          tx['type'] == 'saving_deposit') {
+      final type = tx['type'];
+      if (type == 'expense' ||
+          type == 'budget_finalized' ||
+          type == 'savings_deduction') {
         expenses += double.tryParse(tx['amount'].toString()) ?? 0.0;
       }
+      // 'savings_withdrawal' is NOT counted as expense —
+      // it was added back to totalIncome via _adjustIncome()
     }
     totalExpenses = expenses;
   }
@@ -185,18 +187,14 @@ class _HomePageState extends State<HomePage> {
 
   /// Check if a transaction belongs to an achieved saving goal
   bool isTransactionLinkedToAchievedGoal(Map<String, dynamic> tx) {
-    if (tx['type'] != 'savings_deduction' && tx['type'] != 'saving_deposit') {
+    if (tx['type'] != 'savings_deduction' &&
+        tx['type'] != 'savings_withdrawal') {
       return false;
     }
-
     final title = tx['title'] ?? '';
-
     for (var saving in savings) {
-      if (title.contains(saving.name) && saving.achieved) {
-        return true;
-      }
+      if (title.contains(saving.name) && saving.achieved) return true;
     }
-
     return false;
   }
 
@@ -385,6 +383,7 @@ class _HomePageState extends State<HomePage> {
             style: ElevatedButton.styleFrom(
               backgroundColor: errorColor,
               foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
             ),
             onPressed: () => Navigator.pop(context, true),
             child: const Text('Delete'),
@@ -580,6 +579,9 @@ class _HomePageState extends State<HomePage> {
             child: const Text("Cancel"),
           ),
           ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            ),
             onPressed: () async {
               final amt = double.tryParse(amountController.text) ?? 0;
               if (amt > 0 && titleCtrl.text.isNotEmpty) {
@@ -591,7 +593,7 @@ class _HomePageState extends State<HomePage> {
                 refreshData();
               }
             },
-            child: const Text("Add"),
+            child: const Text("Add Income"),
           ),
         ],
       ),
@@ -673,27 +675,14 @@ class _HomePageState extends State<HomePage> {
                 ),
                 onTap: () {
                   Navigator.pop(context);
-                  showAmountDialog(
-                    title: "Add funds to ${s.name}",
-                    onConfirm: (amt) async {
-                      s.savedAmount += amt;
-                      if (s.savedAmount >= s.targetAmount && !s.achieved) {
-                        s.achieved = true;
-                        sendNotification(
-                          '🎉 Goal Achieved!',
-                          'Congratulations! You\'ve reached your ${s.name} savings goal of ${CurrencyFormatter.format(s.targetAmount)}!',
-                        );
-                      }
-                      await syncSavings();
-                      await saveTransaction(
-                        "Saved for ${s.name}",
-                        amt,
-                        "savings_deduction",
-                      );
-                      await updateStreak();
-                      refreshData();
-                    },
-                  );
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => SavingsPage(
+                        onTransactionAdded: onSavingsTransactionAdded,
+                      ),
+                    ),
+                  ).then((_) => refreshData());
                 },
               );
             },
@@ -770,19 +759,15 @@ class _HomePageState extends State<HomePage> {
             child: const Text("Cancel"),
           ),
           ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            ),
             onPressed: () async {
               final amt = double.tryParse(amtCtrl.text) ?? 0;
               if (amt > 0 && titleCtrl.text.isNotEmpty) {
-                // Add expense to budget
                 budget.expenses.add(Expense(name: titleCtrl.text, amount: amt));
                 await syncBudgets();
-
-                // DO NOT create a transaction - budget expenses are internal only
-                // This ensures they don't affect the total balance or appear in transactions
-
                 Navigator.pop(context);
-
-                // Show success message
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text('Budget expense added: ${titleCtrl.text}'),
@@ -791,7 +776,6 @@ class _HomePageState extends State<HomePage> {
                     duration: const Duration(seconds: 2),
                   ),
                 );
-
                 refreshData();
               }
             },
@@ -830,6 +814,9 @@ class _HomePageState extends State<HomePage> {
             child: const Text("Cancel"),
           ),
           ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            ),
             onPressed: () async {
               final amt = double.tryParse(amtCtrl.text) ?? 0;
               if (amt > 0 && titleCtrl.text.isNotEmpty) {
@@ -845,41 +832,6 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  void showAmountDialog({
-    required String title,
-    required Function(double) onConfirm,
-  }) {
-    final ctrl = TextEditingController();
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(title),
-        content: TextField(
-          controller: ctrl,
-          keyboardType: TextInputType.number,
-          decoration: const InputDecoration(hintText: "Amount"),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Cancel"),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              final val = double.tryParse(ctrl.text) ?? 0;
-              if (val > 0) {
-                onConfirm(val);
-                Navigator.pop(context);
-              }
-            },
-            child: const Text("Confirm"),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // NEW METHOD: Pick and upload profile image
   void pickAndUploadImage() async {
     File? image = await cloudinary.pickImage();
     if (image != null) {
@@ -922,7 +874,6 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  // NEW METHOD: Show profile bottom sheet
   void showProfileBottomSheet() {
     showModalBottomSheet(
       context: context,
@@ -941,7 +892,6 @@ class _HomePageState extends State<HomePage> {
             padding: paddingAllMedium,
             child: Column(
               children: [
-                // Handle bar
                 Container(
                   width: 40,
                   height: 4,
@@ -951,8 +901,6 @@ class _HomePageState extends State<HomePage> {
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
-
-                // Profile Header
                 Container(
                   padding: paddingAllLarge,
                   decoration: BoxDecoration(
@@ -1034,7 +982,6 @@ class _HomePageState extends State<HomePage> {
                     ],
                   ),
                 ),
-
                 const SizedBox(height: 30),
                 Align(
                   alignment: Alignment.centerLeft,
@@ -1044,8 +991,6 @@ class _HomePageState extends State<HomePage> {
                   ),
                 ),
                 const SizedBox(height: 16),
-
-                // Dark Mode Toggle
                 _buildModernSettingsCard(
                   context: context,
                   icon: Icons.dark_mode_outlined,
@@ -1073,8 +1018,6 @@ class _HomePageState extends State<HomePage> {
                     ).toggleTheme();
                   },
                 ),
-
-                // Change Password
                 _buildModernSettingsCard(
                   context: context,
                   icon: Icons.lock_outline_rounded,
@@ -1089,8 +1032,6 @@ class _HomePageState extends State<HomePage> {
                     );
                   },
                 ),
-
-                // About
                 _buildModernSettingsCard(
                   context: context,
                   icon: Icons.info_outline,
@@ -1106,8 +1047,6 @@ class _HomePageState extends State<HomePage> {
                     );
                   },
                 ),
-
-                // Logout
                 _buildModernSettingsCard(
                   context: context,
                   icon: Icons.logout_rounded,
@@ -1128,7 +1067,6 @@ class _HomePageState extends State<HomePage> {
                     );
                   },
                 ),
-
                 const SizedBox(height: 30),
               ],
             ),
@@ -1397,7 +1335,7 @@ class _HomePageState extends State<HomePage> {
         ),
         QuickActionCard(
           icon: Icons.list_outlined,
-          label: 'View Reports.',
+          label: 'View Reports',
           onTap: () async {
             await Navigator.push(
               context,
@@ -1450,7 +1388,7 @@ class _HomePageState extends State<HomePage> {
     final theme = Theme.of(context);
     final isIncome = tx['type'] == 'income';
     final date = DateTime.parse(tx['date']);
-    final time = DateFormat('hh:mm a').format(date);
+    final time = DateFormat('HH:mm').format(date); // 24-hour format
     final amount = double.tryParse(tx['amount'].toString()) ?? 0.0;
     final isLocked =
         isTransactionLinkedToAchievedGoal(tx) ||
@@ -1636,8 +1574,9 @@ class _HomePageState extends State<HomePage> {
       case 'budget_finalized':
         return 'Budget';
       case 'savings_deduction':
-      case 'saving_deposit':
-        return 'Savings';
+        return 'Savings ↓';
+      case 'savings_withdrawal':
+        return 'Savings ↑';
       case 'expense':
         return 'Expense';
       default:
@@ -1646,6 +1585,7 @@ class _HomePageState extends State<HomePage> {
   }
 }
 
+// Models
 class Budget {
   String name;
   double total;
@@ -1734,7 +1674,9 @@ class Saving {
   double targetAmount;
   DateTime deadline;
   bool achieved;
-  String? iconCode;
+  String walletType;
+  String? walletName;
+  DateTime lastUpdated;
 
   Saving({
     required this.name,
@@ -1742,8 +1684,10 @@ class Saving {
     required this.targetAmount,
     required this.deadline,
     this.achieved = false,
-    this.iconCode,
-  });
+    required this.walletType,
+    this.walletName,
+    DateTime? lastUpdated,
+  }) : lastUpdated = lastUpdated ?? DateTime.now();
 
   double get balance => targetAmount - savedAmount;
 
@@ -1754,7 +1698,9 @@ class Saving {
       'targetAmount': targetAmount,
       'deadline': deadline.toIso8601String(),
       'achieved': achieved,
-      'iconCode': iconCode,
+      'walletType': walletType,
+      'walletName': walletName,
+      'lastUpdated': lastUpdated.toIso8601String(),
     };
   }
 
@@ -1771,7 +1717,11 @@ class Saving {
           ? DateTime.parse(map['deadline'])
           : DateTime.now().add(const Duration(days: 30)),
       achieved: map['achieved'] ?? false,
-      iconCode: map['iconCode'],
+      walletType: map['walletType'] ?? 'M-Pesa',
+      walletName: map['walletName'],
+      lastUpdated: map['lastUpdated'] != null
+          ? DateTime.parse(map['lastUpdated'])
+          : DateTime.now(),
     );
   }
 }

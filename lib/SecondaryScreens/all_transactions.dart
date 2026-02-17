@@ -61,19 +61,14 @@ class _TransactionsPageState extends State<TransactionsPage> {
 
   /// Check if a transaction belongs to an achieved saving goal
   bool isTransactionLinkedToAchievedGoal(Map<String, dynamic> tx) {
-    if (tx['type'] != 'savings_deduction' && tx['type'] != 'saving_deposit') {
+    if (tx['type'] != 'savings_deduction' &&
+        tx['type'] != 'savings_withdrawal') {
       return false;
     }
-
     final title = tx['title'] ?? '';
-
-    // Extract goal name from transaction title (format: "Saved for [GoalName]")
     for (var saving in savings) {
-      if (title.contains(saving.name) && saving.achieved) {
-        return true;
-      }
+      if (title.contains(saving.name) && saving.achieved) return true;
     }
-
     return false;
   }
 
@@ -268,6 +263,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
             style: ElevatedButton.styleFrom(
               backgroundColor: errorColor,
               foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
             ),
             onPressed: () => Navigator.pop(context, true),
             child: const Text('Delete'),
@@ -468,7 +464,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
     return GestureDetector(
       onTap: () => setState(() => filter = value),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
         decoration: BoxDecoration(
           color: isSelected
               ? theme.colorScheme.primary
@@ -589,7 +585,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
   ) {
     final isIncome = tx['type'] == 'income';
     final date = DateTime.parse(tx['date']);
-    final time = DateFormat('hh:mm a').format(date);
+    final time = DateFormat('HH:mm').format(date); // 24-hour format
     final amount = double.tryParse(tx['amount'].toString()) ?? 0.0;
     final isLocked =
         isTransactionLinkedToAchievedGoal(tx) ||
@@ -615,6 +611,10 @@ class _TransactionsPageState extends State<TransactionsPage> {
       case 'saving_deposit':
         txIcon = Icons.savings;
         iconBgColor = brandGreen;
+        break;
+      case 'savings_withdrawal':
+        txIcon = Icons.savings;
+        iconBgColor = Colors.orange;
         break;
       default:
         txIcon = Icons.arrow_circle_up_outlined;
@@ -785,8 +785,9 @@ class _TransactionsPageState extends State<TransactionsPage> {
       case 'budget_finalized':
         return 'Budget';
       case 'savings_deduction':
-      case 'saving_deposit':
-        return 'Savings';
+        return 'Savings ↓';
+      case 'savings_withdrawal':
+        return 'Savings ↑';
       case 'expense':
         return 'Expense';
       default:
@@ -795,6 +796,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
   }
 }
 
+// Models
 class Budget {
   String name;
   double total;
@@ -883,7 +885,9 @@ class Saving {
   double targetAmount;
   DateTime deadline;
   bool achieved;
-  String? iconCode;
+  String walletType;
+  String? walletName;
+  DateTime lastUpdated;
 
   Saving({
     required this.name,
@@ -891,8 +895,10 @@ class Saving {
     required this.targetAmount,
     required this.deadline,
     this.achieved = false,
-    this.iconCode,
-  });
+    required this.walletType,
+    this.walletName,
+    DateTime? lastUpdated,
+  }) : lastUpdated = lastUpdated ?? DateTime.now();
 
   double get balance => targetAmount - savedAmount;
 
@@ -903,7 +909,9 @@ class Saving {
       'targetAmount': targetAmount,
       'deadline': deadline.toIso8601String(),
       'achieved': achieved,
-      'iconCode': iconCode,
+      'walletType': walletType,
+      'walletName': walletName,
+      'lastUpdated': lastUpdated.toIso8601String(),
     };
   }
 
@@ -920,7 +928,11 @@ class Saving {
           ? DateTime.parse(map['deadline'])
           : DateTime.now().add(const Duration(days: 30)),
       achieved: map['achieved'] ?? false,
-      iconCode: map['iconCode'],
+      walletType: map['walletType'] ?? 'M-Pesa',
+      walletName: map['walletName'],
+      lastUpdated: map['lastUpdated'] != null
+          ? DateTime.parse(map['lastUpdated'])
+          : DateTime.now(),
     );
   }
 }
