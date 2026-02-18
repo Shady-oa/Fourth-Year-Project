@@ -17,6 +17,11 @@ const _keyTotalIncome = 'total_income';
 const _keyStreakCount = 'streak_count';
 const _keyStreakLevel = 'streak_level';
 
+/// Sentinel prefix used to identify enriched messages saved by the backend.
+/// Any Firestore document whose content starts with this string is a
+/// duplicated context bubble and must be hidden from the UI.
+const _contextPrefix = '[USER FINANCIAL DATA CONTEXT]';
+
 // ─── Message Model ────────────────────────────────────────────────────────────
 enum MessageSender { user, ai }
 
@@ -58,6 +63,8 @@ class _AiPageState extends State<AiPage> {
   final String userUid = FirebaseAuth.instance.currentUser!.uid;
 
   bool _isSending = false;
+  // Tracks whether the initial jump-to-bottom has happened after page load.
+  bool _initialScrollDone = false;
 
   // ─── Quick questions ───────────────────────────────────────────────────────
   static const List<_QuickQuestion> _quickQuestions = [
@@ -145,6 +152,23 @@ class _AiPageState extends State<AiPage> {
     ),
   ];
 
+  @override
+  void initState() {
+    super.initState();
+    // Scroll to bottom after the first frame so the user lands at the
+    // latest message even when navigating back to this page.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _jumpToBottom();
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
   // ─── Load local financial data ─────────────────────────────────────────────
   Future<Map<String, dynamic>> _loadLocalData() async {
     final prefs = await SharedPreferences.getInstance();
@@ -159,7 +183,6 @@ class _AiPageState extends State<AiPage> {
     final streakCount = prefs.getInt(_keyStreakCount) ?? 0;
     final streakLevel = prefs.getString(_keyStreakLevel) ?? 'Base';
 
-    // Compute totals
     double totalExpenses = 0.0;
     final Map<String, double> categoryTotals = {};
     final now = DateTime.now();
@@ -196,7 +219,6 @@ class _AiPageState extends State<AiPage> {
       if (recentTx.length < 10) recentTx.add(map);
     }
 
-    // Savings summary
     final savingsSummary = savingsStrings.map((s) {
       final m = json.decode(s) as Map<String, dynamic>;
       return {
@@ -208,7 +230,6 @@ class _AiPageState extends State<AiPage> {
       };
     }).toList();
 
-    // Budget summary
     final budgetSummary = budgetStrings.map((s) {
       final m = json.decode(s) as Map<String, dynamic>;
       final expenses = (m['expenses'] as List? ?? []);
@@ -249,7 +270,7 @@ class _AiPageState extends State<AiPage> {
       String ksh(dynamic v) => 'Ksh ${fmt.format((v as num).round())}';
 
       final sb = StringBuffer();
-      sb.writeln('[USER FINANCIAL DATA CONTEXT]');
+      sb.writeln('[$_contextPrefix]');
       sb.writeln('Total Income: ${ksh(data['totalIncome'])}');
       sb.writeln('Total Expenses: ${ksh(data['totalExpenses'])}');
       sb.writeln('Net Balance: ${ksh(data['netBalance'])}');
@@ -261,14 +282,12 @@ class _AiPageState extends State<AiPage> {
         'Savings Streak: ${data['streakCount']} days (${data['streakLevel']} level)',
       );
 
-      // Category breakdown
       final cats = data['categoryBreakdown'] as Map<String, double>;
       if (cats.isNotEmpty) {
         sb.writeln('\nSpending by Category:');
         cats.forEach((cat, amt) => sb.writeln('  - $cat: ${ksh(amt)}'));
       }
 
-      // Recent transactions
       final recent = data['recentTransactions'] as List;
       if (recent.isNotEmpty) {
         sb.writeln('\nLast ${recent.length} Transactions:');
@@ -286,7 +305,6 @@ class _AiPageState extends State<AiPage> {
         }
       }
 
-      // Savings goals
       final savings = data['savings'] as List;
       if (savings.isNotEmpty) {
         sb.writeln('\nSavings Goals:');
@@ -302,7 +320,6 @@ class _AiPageState extends State<AiPage> {
         }
       }
 
-      // Budgets
       final budgets = data['budgets'] as List;
       if (budgets.isNotEmpty) {
         sb.writeln('\nBudgets:');
@@ -326,15 +343,27 @@ class _AiPageState extends State<AiPage> {
   }
 
   // ─── Send message to AI backend ───────────────────────────────────────────
-  Future<String> _sendMessageToAI(String message, String userid) async {
+  /// [displayText] – the clean user question shown in the chat bubble.
+  /// [aiPrompt]    – enriched message (context + question) sent to the AI.
+  Future<String> _sendMessageToAI(
+    String displayText,
+    String aiPrompt,
+    String userid,
+  ) async {
     try {
       final context = await _buildFinancialContext();
-      final enrichedMessage = '$context\n\nUser question: $message';
+      final enrichedMessage = '$context\n\nUser question: $aiPrompt';
 
       final response = await http.post(
         Uri.parse('https://fourth-year-backend.onrender.com/ai/chat'),
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'userId': userid, 'message': enrichedMessage}),
+        body: jsonEncode({
+          'userId': userid,
+          'message': enrichedMessage,
+          // Provide the clean display text so the backend can save only
+          // the human-readable question when it stores the user turn.
+          'displayMessage': displayText,
+        }),
       );
 
       if (response.statusCode == 200) {
@@ -348,22 +377,60 @@ class _AiPageState extends State<AiPage> {
     }
   }
 
-  // ─── Handle sending ────────────────────────────────────────────────────────
-  void _handleSend([String? overrideText]) async {
-    final text = overrideText ?? _controller.text.trim();
-    if (text.isEmpty || _isSending) return;
+  // ─── Save the clean user message to Firestore immediately ─────────────────
+  /// Writes only the human-readable question to Firestore so it appears
+  /// in the StreamBuilder bubble before the AI has responded.
+  /// The enriched context message that the backend may also write is filtered
+  /// out in the StreamBuilder using [_contextPrefix].
+  Future<void> _saveUserMessageLocally(String displayText) async {
+    await FirebaseFirestore.instance
+        .collection('users')
+        .doc(userUid)
+        .collection('chats')
+        .add({
+          'content': displayText,
+          'role': 'user',
+          'timestamp': FieldValue.serverTimestamp(),
+        });
+  }
 
-    if (overrideText == null) _controller.clear();
+  // ─── Handle sending ────────────────────────────────────────────────────────
+  void _handleSend({String? displayText, String? aiPrompt}) async {
+    final userText = displayText ?? _controller.text.trim();
+    final promptText = aiPrompt ?? userText;
+
+    if (userText.isEmpty || _isSending) return;
+
+    if (displayText == null) _controller.clear();
 
     setState(() => _isSending = true);
+
+    // 1️⃣  Write the clean user bubble to Firestore immediately (optimistic UI).
+    await _saveUserMessageLocally(userText);
     _scrollToBottom();
 
-    await _sendMessageToAI(text, userUid);
+    // 2️⃣  Call AI backend – backend saves AI reply (and possibly the enriched
+    //     user message) to Firestore. The context bubble is filtered in the UI.
+    await _sendMessageToAI(userText, promptText, userUid);
 
     if (mounted) setState(() => _isSending = false);
     _scrollToBottom();
   }
 
+  // ─── Scroll helpers ────────────────────────────────────────────────────────
+
+  /// Instant jump – used for initial load to avoid animation from top.
+  void _jumpToBottom() {
+    Future.delayed(const Duration(milliseconds: 150), () {
+      if (_scrollController.hasClients) {
+        _scrollController.jumpTo(
+          _scrollController.position.maxScrollExtent,
+        );
+      }
+    });
+  }
+
+  /// Animated scroll – used after sending / receiving messages.
   void _scrollToBottom() {
     Future.delayed(const Duration(milliseconds: 300), () {
       if (_scrollController.hasClients) {
@@ -431,12 +498,16 @@ class _AiPageState extends State<AiPage> {
                         Text(
                           'Quick Insights',
                           style: Theme.of(context).textTheme.titleMedium
-                              ?.copyWith(fontWeight: FontWeight.bold),
+                              ?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                fontFamily: 'Poppins',
+                              ),
                         ),
                         Text(
                           'Tap a question to ask Penny AI',
                           style: TextStyle(
                             fontSize: 12,
+                            fontFamily: 'Poppins',
                             color: Colors.grey.shade500,
                           ),
                         ),
@@ -446,7 +517,7 @@ class _AiPageState extends State<AiPage> {
                 ),
               ),
               Divider(color: Colors.grey.shade200),
-              // Questions grid
+              // Questions list
               Expanded(
                 child: ListView.builder(
                   controller: scrollCtrl,
@@ -458,7 +529,7 @@ class _AiPageState extends State<AiPage> {
                       question: q,
                       onTap: () {
                         Navigator.pop(ctx);
-                        _handleSend(q.prompt);
+                        _handleSend(displayText: q.prompt, aiPrompt: q.prompt);
                       },
                     );
                   },
@@ -471,10 +542,99 @@ class _AiPageState extends State<AiPage> {
     );
   }
 
+  // ─── Text cleaning ─────────────────────────────────────────────────────────
+  /// Removes stray single asterisks (*) that are NOT part of a ** pair.
+  /// Preserves **bold** markers intact so the formatter can handle them.
+  String _cleanAiText(String text) {
+    // Replace any single * not preceded or followed by another * with nothing.
+    // The negative look-around ensures ** is left untouched.
+    return text.replaceAllMapped(
+      RegExp(r'(?<!\*)\*(?!\*)'),
+      (_) => '',
+    );
+  }
+
+  // ─── Formatted text parser ─────────────────────────────────────────────────
+  /// Parses a raw AI response string and converts:
+  ///   **text**  →  bold TextSpan
+  ///   [text]    →  bold + underlined TextSpan
+  ///   plain     →  normal TextSpan
+  List<TextSpan> _parseFormattedText(String raw, {required Color textColor}) {
+    // First, strip stray single asterisks.
+    final text = _cleanAiText(raw);
+
+    final List<TextSpan> spans = [];
+    final pattern = RegExp(r'\*\*(.+?)\*\*|\[(.+?)\]');
+    int lastEnd = 0;
+
+    // Shared base style for Poppins at 12sp.
+    TextStyle base(
+      FontWeight weight, {
+      TextDecoration decoration = TextDecoration.none,
+    }) => TextStyle(
+      fontFamily: 'Poppins',
+      fontSize: 12,
+      height: 1.5,
+      color: textColor,
+      fontWeight: weight,
+      decoration: decoration,
+      decorationColor: textColor,
+    );
+
+    for (final match in pattern.allMatches(text)) {
+      if (match.start > lastEnd) {
+        spans.add(
+          TextSpan(
+            text: text.substring(lastEnd, match.start),
+            style: base(FontWeight.normal),
+          ),
+        );
+      }
+
+      if (match.group(1) != null) {
+        // **text** → bold
+        spans.add(
+          TextSpan(
+            text: match.group(1),
+            style: base(FontWeight.w600),
+          ),
+        );
+      } else if (match.group(2) != null) {
+        // [text] → bold + underline
+        spans.add(
+          TextSpan(
+            text: match.group(2),
+            style: base(FontWeight.w600, decoration: TextDecoration.underline),
+          ),
+        );
+      }
+
+      lastEnd = match.end;
+    }
+
+    if (lastEnd < text.length) {
+      spans.add(
+        TextSpan(
+          text: text.substring(lastEnd),
+          style: base(FontWeight.normal),
+        ),
+      );
+    }
+
+    if (spans.isEmpty) {
+      spans.add(TextSpan(text: text, style: base(FontWeight.normal)));
+    }
+
+    return spans;
+  }
+
   // ─── Build message bubble ──────────────────────────────────────────────────
   Widget _buildMessage(ChatMessage message) {
     final isUser = message.sender == MessageSender.user;
     final timeStr = DateFormat('HH:mm').format(message.timestamp);
+    final textColor = isUser
+        ? Colors.white
+        : Theme.of(context).colorScheme.onSurface;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
@@ -495,8 +655,9 @@ class _AiPageState extends State<AiPage> {
               ],
               Flexible(
                 child: Container(
+                  // Slightly wider bubble – 80% of screen width.
                   constraints: BoxConstraints(
-                    maxWidth: MediaQuery.of(context).size.width * 0.72,
+                    maxWidth: MediaQuery.of(context).size.width * 0.80,
                   ),
                   padding: const EdgeInsets.symmetric(
                     horizontal: 14,
@@ -522,14 +683,24 @@ class _AiPageState extends State<AiPage> {
                   ),
                   child: message.isLoading
                       ? const _TypingIndicator()
-                      : Text(
-                          message.text,
-                          style: TextStyle(
-                            fontSize: 14.5,
-                            height: 1.45,
-                            color: isUser
-                                ? Colors.white
-                                : Theme.of(context).colorScheme.onSurface,
+                      : RichText(
+                          text: TextSpan(
+                            children: isUser
+                                ? [
+                                    TextSpan(
+                                      text: message.text,
+                                      style: TextStyle(
+                                        fontFamily: 'Poppins',
+                                        fontSize: 12,
+                                        height: 1.5,
+                                        color: textColor,
+                                      ),
+                                    ),
+                                  ]
+                                : _parseFormattedText(
+                                    message.text,
+                                    textColor: textColor,
+                                  ),
                           ),
                         ),
                 ),
@@ -545,7 +716,11 @@ class _AiPageState extends State<AiPage> {
             ),
             child: Text(
               timeStr,
-              style: TextStyle(fontSize: 10, color: Colors.grey.shade400),
+              style: TextStyle(
+                fontFamily: 'Poppins',
+                fontSize: 10,
+                color: Colors.grey.shade400,
+              ),
             ),
           ),
         ],
@@ -599,11 +774,18 @@ class _AiPageState extends State<AiPage> {
                 controller: _controller,
                 minLines: 1,
                 maxLines: 5,
-                style: const TextStyle(fontSize: 14),
+                style: const TextStyle(
+                  fontFamily: 'Poppins',
+                  fontSize: 12,
+                ),
                 decoration: const InputDecoration(
                   hintText: 'Ask Penny AI anything…',
                   border: InputBorder.none,
-                  hintStyle: TextStyle(color: Color(0xFFAAAAAA)),
+                  hintStyle: TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 12,
+                    color: Color(0xFFAAAAAA),
+                  ),
                   isDense: true,
                   contentPadding: EdgeInsets.symmetric(vertical: 10),
                 ),
@@ -674,8 +856,9 @@ class _AiPageState extends State<AiPage> {
                 const Text(
                   "Hello! I'm Penny AI",
                   style: TextStyle(
+                    fontFamily: 'Poppins',
                     color: Colors.white,
-                    fontSize: 16,
+                    fontSize: 15,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -683,8 +866,9 @@ class _AiPageState extends State<AiPage> {
                 Text(
                   'Your smart finance assistant. Tap ✨ or type to ask me anything about your finances.',
                   style: TextStyle(
+                    fontFamily: 'Poppins',
                     color: Colors.white.withOpacity(0.9),
-                    fontSize: 12.5,
+                    fontSize: 11.5,
                     height: 1.4,
                   ),
                 ),
@@ -706,7 +890,6 @@ class _AiPageState extends State<AiPage> {
         elevation: 0,
         title: const CustomHeader(headerName: 'Penny AI'),
         actions: [
-          // Quick questions button
           Tooltip(
             message: 'Quick Insights',
             child: InkWell(
@@ -731,6 +914,7 @@ class _AiPageState extends State<AiPage> {
                     Text(
                       'Ask',
                       style: TextStyle(
+                        fontFamily: 'Poppins',
                         color: brandGreen,
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
@@ -762,32 +946,53 @@ class _AiPageState extends State<AiPage> {
                 }
 
                 final docs = snapshot.data!.docs;
-                final messages = docs.map((doc) {
-                  final data = doc.data() as Map<String, dynamic>;
-                  final ts = data['timestamp'];
-                  final dt = ts is Timestamp ? ts.toDate() : DateTime.now();
-                  return ChatMessage(
-                    data['content'] ?? '',
-                    data['role'] == 'user'
-                        ? MessageSender.user
-                        : MessageSender.ai,
-                    dt,
-                  );
-                }).toList();
 
-                // Show welcome state when no messages
+                // ── FIX 1: Filter out any message whose content contains the
+                //    financial-context header. This prevents the enriched user
+                //    message saved by the backend from appearing as a bubble. ──
+                final messages = docs
+                    .where((doc) {
+                      final data = doc.data() as Map<String, dynamic>;
+                      final content =
+                          (data['content'] as String? ?? '').trim();
+                      return !content.contains(_contextPrefix) &&
+                          !content.startsWith('[USER FINANCIAL DATA CONTEXT]');
+                    })
+                    .map((doc) {
+                      final data = doc.data() as Map<String, dynamic>;
+                      final ts = data['timestamp'];
+                      final dt =
+                          ts is Timestamp ? ts.toDate() : DateTime.now();
+                      return ChatMessage(
+                        data['content'] ?? '',
+                        data['role'] == 'user'
+                            ? MessageSender.user
+                            : MessageSender.ai,
+                        dt,
+                      );
+                    })
+                    .toList();
+
                 final showWelcome = messages.isEmpty;
 
-                WidgetsBinding.instance.addPostFrameCallback(
-                  (_) => _scrollToBottom(),
-                );
+                // Scroll to bottom whenever the stream emits new data.
+                // On first load use a jump (no animation) so the user lands
+                // at the bottom instantly without seeing a scroll animation
+                // from the top.
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (!_initialScrollDone) {
+                    _initialScrollDone = true;
+                    _jumpToBottom();
+                  } else {
+                    _scrollToBottom();
+                  }
+                });
 
                 return ListView(
                   controller: _scrollController,
                   padding: const EdgeInsets.only(top: 8, bottom: 8),
                   children: [
                     if (showWelcome) _buildWelcomeBanner(),
-                    // Quick suggestion chips when empty
                     if (showWelcome)
                       Padding(
                         padding: const EdgeInsets.symmetric(
@@ -799,7 +1004,10 @@ class _AiPageState extends State<AiPage> {
                           runSpacing: 8,
                           children: _quickQuestions.take(4).map((q) {
                             return GestureDetector(
-                              onTap: () => _handleSend(q.prompt),
+                              onTap: () => _handleSend(
+                                displayText: q.prompt,
+                                aiPrompt: q.prompt,
+                              ),
                               child: Container(
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 12,
@@ -820,6 +1028,7 @@ class _AiPageState extends State<AiPage> {
                                     Text(
                                       q.label,
                                       style: TextStyle(
+                                        fontFamily: 'Poppins',
                                         color: q.color,
                                         fontSize: 12,
                                         fontWeight: FontWeight.w600,
@@ -833,7 +1042,7 @@ class _AiPageState extends State<AiPage> {
                         ),
                       ),
                     ...messages.map((m) => _buildMessage(m)),
-                    // Sending indicator
+                    // Typing indicator while waiting for AI
                     if (_isSending)
                       _buildMessage(
                         ChatMessage(
@@ -986,6 +1195,7 @@ class _QuestionTile extends StatelessWidget {
                   Text(
                     question.label,
                     style: TextStyle(
+                      fontFamily: 'Poppins',
                       fontWeight: FontWeight.bold,
                       fontSize: 13,
                       color: question.color,
@@ -995,6 +1205,7 @@ class _QuestionTile extends StatelessWidget {
                   Text(
                     question.prompt,
                     style: TextStyle(
+                      fontFamily: 'Poppins',
                       fontSize: 11.5,
                       color: Colors.grey.shade600,
                       height: 1.3,
