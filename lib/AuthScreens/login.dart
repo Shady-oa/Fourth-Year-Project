@@ -1,4 +1,3 @@
-import 'package:final_project/AuthScreens/forgot_pwd_page.dart';
 import 'package:final_project/Components/bottom_nav.dart';
 import 'package:final_project/Components/form_logo.dart';
 import 'package:final_project/Constants/colors.dart';

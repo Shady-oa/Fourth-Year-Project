@@ -202,7 +202,7 @@ class NotificationService {
       iOS: iosSettings,
     );
 
-    await _plugin.initialize(initSettings);
+    await _plugin.initialize(settings: initSettings);
     _initialized = true;
 
     // Request POST_NOTIFICATIONS permission on Android 13+.
@@ -253,10 +253,10 @@ class NotificationService {
     // Notification IDs must fit in a 32-bit int. Using remainder(100000)
     // keeps the value safely within range on all Android versions.
     await _plugin.show(
-      DateTime.now().millisecondsSinceEpoch.remainder(100000),
-      title,
-      body,
-      details,
+      id: DateTime.now().millisecondsSinceEpoch.remainder(100000),
+      title: title,
+      body: body,
+      notificationDetails: details,
     );
   }
 
