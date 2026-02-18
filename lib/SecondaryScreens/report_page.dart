@@ -18,8 +18,9 @@ class CurrencyFormatter {
   static final NumberFormat _fmt = NumberFormat('#,##0', 'en_US');
   static String format(double amount) => 'Ksh ${_fmt.format(amount.round())}';
   static String compact(double amount) {
-    if (amount >= 1000000)
+    if (amount >= 1000000) {
       return 'Ksh ${(amount / 1000000).toStringAsFixed(1)}M';
+    }
     if (amount >= 1000) return 'Ksh ${(amount / 1000).toStringAsFixed(1)}K';
     return format(amount);
   }
@@ -195,27 +196,31 @@ class _ReportPageState extends State<ReportPage>
       final txDate = DateTime.parse(tx['date']);
       if (startDate != null && txDate.isBefore(startDate!)) return false;
       if (endDate != null &&
-          txDate.isAfter(endDate!.add(const Duration(days: 1))))
+          txDate.isAfter(endDate!.add(const Duration(days: 1)))) {
         return false;
+      }
       if (selectedType != null && selectedType != 'All') {
         if (selectedType == 'Income' && tx['type'] != 'income') return false;
         if (selectedType == 'Expense' && tx['type'] == 'income') return false;
         if (selectedType == 'Savings' &&
             tx['type'] != 'savings_deduction' &&
-            tx['type'] != 'saving_deposit')
+            tx['type'] != 'saving_deposit') {
           return false;
+        }
       }
       if (selectedBudget != null && selectedBudget != 'All') {
         if (!(tx['title'] ?? '').toString().toLowerCase().contains(
           selectedBudget!.toLowerCase(),
-        ))
+        )) {
           return false;
+        }
       }
       if (selectedSaving != null && selectedSaving != 'All') {
         if (!(tx['title'] ?? '').toString().toLowerCase().contains(
           selectedSaving!.toLowerCase(),
-        ))
+        )) {
           return false;
+        }
       }
       return true;
     }).toList();
@@ -331,8 +336,9 @@ class _ReportPageState extends State<ReportPage>
   }
 
   Map<String, double> get priorPeriodExpenses {
-    if (startDate == null || endDate == null)
+    if (startDate == null || endDate == null) {
       return {'prior': 0, 'current': filteredExpenses};
+    }
     final duration = endDate!.difference(startDate!);
     final priorEnd = startDate!.subtract(const Duration(days: 1));
     final priorStart = priorEnd.subtract(duration);
@@ -423,10 +429,11 @@ class _ReportPageState extends State<ReportPage>
         );
       }
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('PDF error: $e'), backgroundColor: errorColor),
         );
+      }
     } finally {
       if (mounted) setState(() => isGeneratingPDF = false);
     }
@@ -531,11 +538,12 @@ class _ReportPageState extends State<ReportPage>
 
   pw.Widget _pdfCategoryBreakdown() {
     final cats = spendingByCategory;
-    if (cats.isEmpty)
+    if (cats.isEmpty) {
       return pw.Text(
         'No spending data',
         style: const pw.TextStyle(fontSize: 10),
       );
+    }
     final total = cats.values.fold(0.0, (s, v) => s + v);
     return pw.Container(
       padding: const pw.EdgeInsets.all(12),
@@ -641,7 +649,7 @@ class _ReportPageState extends State<ReportPage>
             ),
           ],
         );
-      }).toList(),
+      }),
     ],
   );
 
@@ -713,17 +721,18 @@ class _ReportPageState extends State<ReportPage>
             ),
           ],
         );
-      }).toList(),
+      }),
     ],
   );
 
   pw.Widget _pdfTransactionTable() {
     final txList = filteredTransactions.take(100).toList();
-    if (txList.isEmpty)
+    if (txList.isEmpty) {
       return pw.Text(
         'No transactions found',
         style: const pw.TextStyle(fontSize: 10),
       );
+    }
     return pw.Column(
       children: [
         pw.Table(
@@ -800,7 +809,7 @@ class _ReportPageState extends State<ReportPage>
                   ),
                 ],
               );
-            }).toList(),
+            }),
           ],
         ),
         if (filteredTransactions.length > 100)
@@ -1033,7 +1042,7 @@ class _ReportPageState extends State<ReportPage>
                       ),
                       margin: const EdgeInsets.only(bottom: 8),
                       decoration: BoxDecoration(
-                        color: theme.colorScheme.surfaceVariant.withOpacity(
+                        color: theme.colorScheme.surfaceContainerHighest.withOpacity(
                           0.5,
                         ),
                         borderRadius: BorderRadius.circular(8),
@@ -1636,12 +1645,13 @@ class _ReportPageState extends State<ReportPage>
 
   // ─── Budgets Section ─────────────────────────────────────────────────────────
   Widget _buildBudgetsSection(ThemeData theme) {
-    if (budgets.isEmpty)
+    if (budgets.isEmpty) {
       return _buildEmptyState(
         theme,
         'No budgets',
         'Create budgets to track your spending',
       );
+    }
 
     return Column(
       children: budgets.map((b) {
@@ -1774,12 +1784,13 @@ class _ReportPageState extends State<ReportPage>
 
   // ─── Savings Section ─────────────────────────────────────────────────────────
   Widget _buildSavingsSection(ThemeData theme) {
-    if (savings.isEmpty)
+    if (savings.isEmpty) {
       return _buildEmptyState(
         theme,
         'No savings goals',
         'Create goals to start saving',
       );
+    }
 
     return Column(
       children: savings.map((s) {
@@ -1916,12 +1927,13 @@ class _ReportPageState extends State<ReportPage>
   // ─── Spending Category Chart ─────────────────────────────────────────────────
   Widget _buildSpendingCategoryChart(ThemeData theme) {
     final cats = spendingByCategory;
-    if (cats.isEmpty)
+    if (cats.isEmpty) {
       return _buildEmptyState(
         theme,
         'No spending data',
         'Add expenses to see a breakdown',
       );
+    }
 
     final total = cats.values.fold(0.0, (s, v) => s + v);
     final colors = [

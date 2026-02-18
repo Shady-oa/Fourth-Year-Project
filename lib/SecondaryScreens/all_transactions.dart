@@ -73,7 +73,9 @@ class _TransactionsPageState extends State<TransactionsPage> {
 
   bool isTransactionLinkedToAchievedGoal(Map<String, dynamic> tx) {
     if (tx['type'] != 'savings_deduction' &&
-        tx['type'] != 'savings_withdrawal') return false;
+        tx['type'] != 'savings_withdrawal') {
+      return false;
+    }
     final title = tx['title'] ?? '';
     for (var saving in savings) {
       if (title.contains(saving.name) && saving.achieved) return true;

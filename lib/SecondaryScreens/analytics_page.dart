@@ -19,8 +19,9 @@ class CurrencyFormatter {
   static final NumberFormat _fmt = NumberFormat('#,##0', 'en_US');
   static String format(double amount) => 'Ksh ${_fmt.format(amount.round())}';
   static String compact(double amount) {
-    if (amount >= 1000000)
+    if (amount >= 1000000) {
       return 'Ksh ${(amount / 1000000).toStringAsFixed(1)}M';
+    }
     if (amount >= 1000) return 'Ksh ${(amount / 1000).toStringAsFixed(1)}K';
     return format(amount);
   }
@@ -122,8 +123,9 @@ class _AnalyticsPageState extends State<AnalyticsPage>
         startDate = DateTime(now.year, 1, 1);
         break;
       case 'Custom':
-        if (customStartDate == null || customEndDate == null)
+        if (customStartDate == null || customEndDate == null) {
           return transactions;
+        }
         startDate = customStartDate!;
         endDate = customEndDate!;
         break;
@@ -206,37 +208,44 @@ class _AnalyticsPageState extends State<AnalyticsPage>
         lower.contains('dinner') ||
         lower.contains('breakfast') ||
         lower.contains('restaurant') ||
-        lower.contains('snack'))
+        lower.contains('snack')) {
       return 'Food & Dining';
+    }
     if (lower.contains('transport') ||
         lower.contains('uber') ||
         lower.contains('taxi') ||
         lower.contains('fuel') ||
         lower.contains('matatu') ||
-        lower.contains('bus'))
+        lower.contains('bus')) {
       return 'Transport';
+    }
     if (lower.contains('rent') ||
         lower.contains('house') ||
         lower.contains('electricity') ||
         lower.contains('water') ||
-        lower.contains('utility'))
+        lower.contains('utility')) {
       return 'Housing';
+    }
     if (lower.contains('entertainment') ||
         lower.contains('movie') ||
         lower.contains('game') ||
         lower.contains('netflix') ||
-        lower.contains('spotify'))
+        lower.contains('spotify')) {
       return 'Entertainment';
+    }
     if (lower.contains('shopping') ||
         lower.contains('clothes') ||
-        lower.contains('shoes'))
+        lower.contains('shoes')) {
       return 'Shopping';
+    }
     if (lower.contains('health') ||
         lower.contains('doctor') ||
-        lower.contains('pharmacy'))
+        lower.contains('pharmacy')) {
       return 'Health';
-    if (lower.contains('saved for') || lower.contains('savings'))
+    }
+    if (lower.contains('saved for') || lower.contains('savings')) {
       return 'Savings';
+    }
     if (lower.contains('budget')) return 'Budgets';
     return 'Other';
   }
@@ -285,14 +294,14 @@ class _AnalyticsPageState extends State<AnalyticsPage>
     for (var tx in transactions) {
       final d = DateTime.parse(tx['date']);
       if (tx['type'] == 'income') {
-        if (d.isAfter(thisMonthStart))
+        if (d.isAfter(thisMonthStart)) {
           thisMonthInc += _amt(tx);
-        else if (d.isAfter(lastMonthStart) && d.isBefore(lastMonthEnd))
+        } else if (d.isAfter(lastMonthStart) && d.isBefore(lastMonthEnd))
           lastMonthInc += _amt(tx);
       } else {
-        if (d.isAfter(thisMonthStart))
+        if (d.isAfter(thisMonthStart)) {
           thisMonthExp += _amt(tx) + _fee(tx);
-        else if (d.isAfter(lastMonthStart) && d.isBefore(lastMonthEnd))
+        } else if (d.isAfter(lastMonthStart) && d.isBefore(lastMonthEnd))
           lastMonthExp += _amt(tx) + _fee(tx);
       }
     }
@@ -534,7 +543,7 @@ class _AnalyticsPageState extends State<AnalyticsPage>
       await Share.shareXFiles([
         XFile(file.path),
       ], subject: 'Penny Finance Analytics');
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Row(
@@ -549,11 +558,13 @@ class _AnalyticsPageState extends State<AnalyticsPage>
             duration: Duration(seconds: 2),
           ),
         );
+      }
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('PDF error: $e'), backgroundColor: errorColor),
         );
+      }
     } finally {
       if (mounted) setState(() => isGeneratingPDF = false);
     }
@@ -661,8 +672,9 @@ class _AnalyticsPageState extends State<AnalyticsPage>
         d['expenses'] as double,
       ].reduce((a, b) => a > b ? a : b),
     );
-    if (maxVal == 0)
+    if (maxVal == 0) {
       return pw.Text('No data', style: const pw.TextStyle(fontSize: 10));
+    }
 
     return pw.Container(
       height: 180,
@@ -711,8 +723,9 @@ class _AnalyticsPageState extends State<AnalyticsPage>
   pw.Widget _pdfCategoryChart() {
     final cats = expensesByCategory;
     final total = cats.values.fold(0.0, (s, v) => s + v);
-    if (total == 0)
+    if (total == 0) {
       return pw.Text('No data', style: const pw.TextStyle(fontSize: 10));
+    }
 
     final pdfColors = [
       PdfColors.blue,
@@ -907,7 +920,7 @@ class _AnalyticsPageState extends State<AnalyticsPage>
             ),
           ],
         );
-      }).toList(),
+      }),
     ],
   );
 
@@ -995,7 +1008,7 @@ class _AnalyticsPageState extends State<AnalyticsPage>
             ),
           ],
         );
-      }).toList(),
+      }),
     ],
   );
 
@@ -1155,7 +1168,7 @@ class _AnalyticsPageState extends State<AnalyticsPage>
             sizedBoxHeightMedium,
             ...insights
                 .map((insight) => _buildInsightCard(theme, insight))
-                .toList(),
+                ,
             sizedBoxHeightLarge,
             _buildSpendingCategoryTable(theme),
             sizedBoxHeightLarge,

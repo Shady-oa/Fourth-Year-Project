@@ -31,7 +31,6 @@ class _LoginState extends State<Login> {
 
   Future signin() async {
     if (_emailcontroller.text.isEmpty || _passwordcontroller.text.isEmpty) {
-      
       ToastService.showToast(
         context,
         backgroundColor: errorColor,
@@ -46,7 +45,9 @@ class _LoginState extends State<Login> {
           color: Theme.of(context).colorScheme.surface,
         ),
         slideCurve: Curves.easeInOut,
-        shadowColor: Theme.of(context).colorScheme.onSurface.withAlpha((255 * 0.5).round()),
+        shadowColor: Theme.of(
+          context,
+        ).colorScheme.onSurface.withAlpha((255 * 0.5).round()),
       );
       return;
     }
@@ -77,7 +78,9 @@ class _LoginState extends State<Login> {
           color: Theme.of(context).colorScheme.surface,
         ),
         slideCurve: Curves.easeInOut,
-        shadowColor: Theme.of(context).colorScheme.onSurface.withAlpha((255 * 0.5).round()),
+        shadowColor: Theme.of(
+          context,
+        ).colorScheme.onSurface.withAlpha((255 * 0.5).round()),
       );
 
       _emailcontroller.clear();
@@ -125,9 +128,8 @@ class _LoginState extends State<Login> {
                           border: const OutlineInputBorder(
                             borderRadius: radiusMedium,
                           ),
-                          fillColor: Theme.of(
-                            context,
-                          ).colorScheme.onSurface.withAlpha((255 * 0.1).round()),
+                          fillColor: Theme.of(context).colorScheme.onSurface
+                              .withAlpha((255 * 0.1).round()),
                           filled: true,
                         ),
                       ),
@@ -143,9 +145,8 @@ class _LoginState extends State<Login> {
                           border: const OutlineInputBorder(
                             borderRadius: radiusMedium,
                           ),
-                          fillColor: Theme.of(
-                            context,
-                          ).colorScheme.onSurface.withAlpha((255 * 0.1).round()),
+                          fillColor: Theme.of(context).colorScheme.onSurface
+                              .withAlpha((255 * 0.1).round()),
                           filled: true,
                         ),
                       ),
@@ -215,6 +216,7 @@ class _LoginState extends State<Login> {
                           } on NoGoogleAccountChoosenException {
                             return;
                           } catch (e) {
+                            print("Google sign-in error❤️❤️: $e");
                             if (!context.mounted) return;
                             ToastService.showToast(
                               context,
@@ -235,9 +237,10 @@ class _LoginState extends State<Login> {
                                     ).colorScheme.surface,
                                   ),
                               slideCurve: Curves.easeInOut,
-                              shadowColor: Theme.of(
-                                context,
-                              ).colorScheme.onSurface.withAlpha((255 * 0.5).round()),
+                              shadowColor: Theme.of(context)
+                                  .colorScheme
+                                  .onSurface
+                                  .withAlpha((255 * 0.5).round()),
                             );
                           }
                         },
