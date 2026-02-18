@@ -63,7 +63,11 @@ dependencies:
   printing: ^5.14.2
   permission_handler: ^11.0.1
   path_provider: ^2.1.1
+<<<<<<< HEAD
   flutter_local_notifications: ^17.2.2
+=======
+  flutter_facebook_auth: ^7.1.5
+>>>>>>> 1d8db08f8181d69cd1e8b05d623cdecc042ba565
   
 
 dev_dependencies:

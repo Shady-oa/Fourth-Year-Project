@@ -24,7 +24,8 @@ class _AuthPageState extends State<AuthPage> {
     if (showLoginPage) {
       return Login(showSignupPage: toggleScreens);
     } else {
-      return SignUp(showLoginpage: toggleScreens);
+      return Login(showSignupPage: toggleScreens);
+      //return SignUp(showLoginpage: toggleScreens);
     }
   }
 }
