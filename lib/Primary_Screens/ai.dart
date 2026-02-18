@@ -5,6 +5,7 @@ import 'package:final_project/Components/Custom_header.dart';
 import 'package:final_project/Constants/colors.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -18,7 +19,7 @@ const _keyStreakCount = 'streak_count';
 const _keyStreakLevel = 'streak_level';
 
 /// Sentinel prefix used to identify enriched messages saved by the backend.
-/// Any Firestore document whose content starts with this string is a
+/// Any Firestore document whose content contains this string is a
 /// duplicated context bubble and must be hidden from the UI.
 const _contextPrefix = '[USER FINANCIAL DATA CONTEXT]';
 
@@ -63,8 +64,27 @@ class _AiPageState extends State<AiPage> {
   final String userUid = FirebaseAuth.instance.currentUser!.uid;
 
   bool _isSending = false;
-  // Tracks whether the initial jump-to-bottom has happened after page load.
   bool _initialScrollDone = false;
+
+  // ─── Urbanist style helpers ────────────────────────────────────────────────
+  // These mirror the weight conventions in createTextTheme() so the chat UI
+  // automatically looks consistent with the rest of the app.
+
+  static TextStyle _urbanist({
+    double size = 12,
+    FontWeight weight = FontWeight.w600,
+    Color? color,
+    double height = 1.55,
+    TextDecoration decoration = TextDecoration.none,
+    Color? decorationColor,
+  }) => GoogleFonts.urbanist(
+    fontSize: size,
+    fontWeight: weight,
+    color: color,
+    height: height,
+    decoration: decoration,
+    decorationColor: decorationColor,
+  );
 
   // ─── Quick questions ───────────────────────────────────────────────────────
   static const List<_QuickQuestion> _quickQuestions = [
@@ -155,11 +175,8 @@ class _AiPageState extends State<AiPage> {
   @override
   void initState() {
     super.initState();
-    // Scroll to bottom after the first frame so the user lands at the
-    // latest message even when navigating back to this page.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _jumpToBottom();
-    });
+    // Jump to the latest message immediately when the page first renders.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _jumpToBottom());
   }
 
   @override
@@ -343,8 +360,6 @@ class _AiPageState extends State<AiPage> {
   }
 
   // ─── Send message to AI backend ───────────────────────────────────────────
-  /// [displayText] – the clean user question shown in the chat bubble.
-  /// [aiPrompt]    – enriched message (context + question) sent to the AI.
   Future<String> _sendMessageToAI(
     String displayText,
     String aiPrompt,
@@ -360,8 +375,6 @@ class _AiPageState extends State<AiPage> {
         body: jsonEncode({
           'userId': userid,
           'message': enrichedMessage,
-          // Provide the clean display text so the backend can save only
-          // the human-readable question when it stores the user turn.
           'displayMessage': displayText,
         }),
       );
@@ -378,10 +391,6 @@ class _AiPageState extends State<AiPage> {
   }
 
   // ─── Save the clean user message to Firestore immediately ─────────────────
-  /// Writes only the human-readable question to Firestore so it appears
-  /// in the StreamBuilder bubble before the AI has responded.
-  /// The enriched context message that the backend may also write is filtered
-  /// out in the StreamBuilder using [_contextPrefix].
   Future<void> _saveUserMessageLocally(String displayText) async {
     await FirebaseFirestore.instance
         .collection('users')
@@ -400,7 +409,6 @@ class _AiPageState extends State<AiPage> {
     final promptText = aiPrompt ?? userText;
 
     if (userText.isEmpty || _isSending) return;
-
     if (displayText == null) _controller.clear();
 
     setState(() => _isSending = true);
@@ -409,8 +417,8 @@ class _AiPageState extends State<AiPage> {
     await _saveUserMessageLocally(userText);
     _scrollToBottom();
 
-    // 2️⃣  Call AI backend – backend saves AI reply (and possibly the enriched
-    //     user message) to Firestore. The context bubble is filtered in the UI.
+    // 2️⃣  Call AI backend – backend saves AI reply to Firestore.
+    //     Any enriched context bubble is filtered out in the StreamBuilder.
     await _sendMessageToAI(userText, promptText, userUid);
 
     if (mounted) setState(() => _isSending = false);
@@ -419,18 +427,16 @@ class _AiPageState extends State<AiPage> {
 
   // ─── Scroll helpers ────────────────────────────────────────────────────────
 
-  /// Instant jump – used for initial load to avoid animation from top.
+  /// Instant jump – avoids jarring top-to-bottom animation on page open.
   void _jumpToBottom() {
     Future.delayed(const Duration(milliseconds: 150), () {
       if (_scrollController.hasClients) {
-        _scrollController.jumpTo(
-          _scrollController.position.maxScrollExtent,
-        );
+        _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
       }
     });
   }
 
-  /// Animated scroll – used after sending / receiving messages.
+  /// Smooth animated scroll – used after a new message arrives.
   void _scrollToBottom() {
     Future.delayed(const Duration(milliseconds: 300), () {
       if (_scrollController.hasClients) {
@@ -461,7 +467,7 @@ class _AiPageState extends State<AiPage> {
           ),
           child: Column(
             children: [
-              // Handle
+              // Drag handle
               Container(
                 width: 40,
                 height: 4,
@@ -471,7 +477,7 @@ class _AiPageState extends State<AiPage> {
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
-              // Header
+              // Sheet header
               Padding(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 20,
@@ -497,17 +503,17 @@ class _AiPageState extends State<AiPage> {
                       children: [
                         Text(
                           'Quick Insights',
-                          style: Theme.of(context).textTheme.titleMedium
-                              ?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                fontFamily: 'Poppins',
-                              ),
+                          style: _urbanist(
+                            size: 16,
+                            weight: FontWeight.bold,
+                            color: Theme.of(context).colorScheme.onSurface,
+                          ),
                         ),
                         Text(
                           'Tap a question to ask Penny AI',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontFamily: 'Poppins',
+                          style: _urbanist(
+                            size: 12,
+                            weight: FontWeight.w500,
                             color: Colors.grey.shade500,
                           ),
                         ),
@@ -517,7 +523,6 @@ class _AiPageState extends State<AiPage> {
                 ),
               ),
               Divider(color: Colors.grey.shade200),
-              // Questions list
               Expanded(
                 child: ListView.builder(
                   controller: scrollCtrl,
@@ -543,68 +548,51 @@ class _AiPageState extends State<AiPage> {
   }
 
   // ─── Text cleaning ─────────────────────────────────────────────────────────
-  /// Removes stray single asterisks (*) that are NOT part of a ** pair.
-  /// Preserves **bold** markers intact so the formatter can handle them.
-  String _cleanAiText(String text) {
-    // Replace any single * not preceded or followed by another * with nothing.
-    // The negative look-around ensures ** is left untouched.
-    return text.replaceAllMapped(
-      RegExp(r'(?<!\*)\*(?!\*)'),
-      (_) => '',
-    );
-  }
+  /// Strips stray single `*` that are NOT part of a `**` pair.
+  /// Leaves `**bold**` formatting fully intact.
+  String _cleanAiText(String text) =>
+      text.replaceAllMapped(RegExp(r'(?<!\*)\*(?!\*)'), (_) => '');
 
   // ─── Formatted text parser ─────────────────────────────────────────────────
-  /// Parses a raw AI response string and converts:
-  ///   **text**  →  bold TextSpan
-  ///   [text]    →  bold + underlined TextSpan
-  ///   plain     →  normal TextSpan
+  /// **text**  → bold Urbanist w700
+  /// [text]    → bold + underline Urbanist w700
+  /// plain     → regular Urbanist w600
   List<TextSpan> _parseFormattedText(String raw, {required Color textColor}) {
-    // First, strip stray single asterisks.
     final text = _cleanAiText(raw);
-
     final List<TextSpan> spans = [];
     final pattern = RegExp(r'\*\*(.+?)\*\*|\[(.+?)\]');
     int lastEnd = 0;
 
-    // Shared base style for Poppins at 12sp.
-    TextStyle base(
-      FontWeight weight, {
-      TextDecoration decoration = TextDecoration.none,
-    }) => TextStyle(
-      fontFamily: 'Poppins',
-      fontSize: 12,
-      height: 1.5,
-      color: textColor,
-      fontWeight: weight,
-      decoration: decoration,
-      decorationColor: textColor,
-    );
-
     for (final match in pattern.allMatches(text)) {
+      // Plain text before this match
       if (match.start > lastEnd) {
         spans.add(
           TextSpan(
             text: text.substring(lastEnd, match.start),
-            style: base(FontWeight.normal),
+            style: _urbanist(color: textColor),
           ),
         );
       }
 
       if (match.group(1) != null) {
-        // **text** → bold
+        // **bold**
         spans.add(
           TextSpan(
             text: match.group(1),
-            style: base(FontWeight.w600),
+            style: _urbanist(weight: FontWeight.bold, color: textColor),
           ),
         );
       } else if (match.group(2) != null) {
-        // [text] → bold + underline
+        // [bold + underline]
         spans.add(
           TextSpan(
             text: match.group(2),
-            style: base(FontWeight.w600, decoration: TextDecoration.underline),
+            style: _urbanist(
+              weight: FontWeight.bold,
+              color: textColor,
+              decoration: TextDecoration.underline,
+              decorationColor: textColor,
+            ),
           ),
         );
       }
@@ -612,17 +600,24 @@ class _AiPageState extends State<AiPage> {
       lastEnd = match.end;
     }
 
+    // Remaining plain text after the last match
     if (lastEnd < text.length) {
       spans.add(
         TextSpan(
           text: text.substring(lastEnd),
-          style: base(FontWeight.normal),
+          style: _urbanist(color: textColor),
         ),
       );
     }
 
+    // Fallback: whole string as plain text
     if (spans.isEmpty) {
-      spans.add(TextSpan(text: text, style: base(FontWeight.normal)));
+      spans.add(
+        TextSpan(
+          text: text,
+          style: _urbanist(color: textColor),
+        ),
+      );
     }
 
     return spans;
@@ -632,6 +627,8 @@ class _AiPageState extends State<AiPage> {
   Widget _buildMessage(ChatMessage message) {
     final isUser = message.sender == MessageSender.user;
     final timeStr = DateFormat('HH:mm').format(message.timestamp);
+
+    // Text color derived from theme – adapts to light / dark mode automatically.
     final textColor = isUser
         ? Colors.white
         : Theme.of(context).colorScheme.onSurface;
@@ -655,7 +652,8 @@ class _AiPageState extends State<AiPage> {
               ],
               Flexible(
                 child: Container(
-                  // Slightly wider bubble – 80% of screen width.
+                  // 80 % width gives AI long responses enough room without
+                  // making user bubbles look like wall-of-text.
                   constraints: BoxConstraints(
                     maxWidth: MediaQuery.of(context).size.width * 0.80,
                   ),
@@ -664,6 +662,8 @@ class _AiPageState extends State<AiPage> {
                     vertical: 12,
                   ),
                   decoration: BoxDecoration(
+                    // User → accentColor (blue) from colors.dart
+                    // AI   → surfaceVariant (theme-aware light/dark)
                     color: isUser
                         ? accentColor
                         : Theme.of(context).colorScheme.surfaceVariant,
@@ -687,14 +687,10 @@ class _AiPageState extends State<AiPage> {
                           text: TextSpan(
                             children: isUser
                                 ? [
+                                    // User bubbles: plain Urbanist, no markdown.
                                     TextSpan(
                                       text: message.text,
-                                      style: TextStyle(
-                                        fontFamily: 'Poppins',
-                                        fontSize: 12,
-                                        height: 1.5,
-                                        color: textColor,
-                                      ),
+                                      style: _urbanist(color: textColor),
                                     ),
                                   ]
                                 : _parseFormattedText(
@@ -716,10 +712,11 @@ class _AiPageState extends State<AiPage> {
             ),
             child: Text(
               timeStr,
-              style: TextStyle(
-                fontFamily: 'Poppins',
-                fontSize: 10,
+              style: _urbanist(
+                size: 10,
+                weight: FontWeight.w500,
                 color: Colors.grey.shade400,
+                height: 1.2,
               ),
             ),
           ),
@@ -774,20 +771,18 @@ class _AiPageState extends State<AiPage> {
                 controller: _controller,
                 minLines: 1,
                 maxLines: 5,
-                style: const TextStyle(
-                  fontFamily: 'Poppins',
-                  fontSize: 12,
+                style: _urbanist(
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   hintText: 'Ask Penny AI anything…',
                   border: InputBorder.none,
-                  hintStyle: TextStyle(
-                    fontFamily: 'Poppins',
-                    fontSize: 12,
-                    color: Color(0xFFAAAAAA),
+                  hintStyle: _urbanist(
+                    weight: FontWeight.w500,
+                    color: const Color(0xFFAAAAAA),
                   ),
                   isDense: true,
-                  contentPadding: EdgeInsets.symmetric(vertical: 10),
+                  contentPadding: const EdgeInsets.symmetric(vertical: 10),
                 ),
                 onSubmitted: (_) => _handleSend(),
               ),
@@ -832,6 +827,7 @@ class _AiPageState extends State<AiPage> {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: LinearGradient(
+          // brandGreen → accentColor matches the app's primary palette.
           colors: [brandGreen.withOpacity(0.85), accentColor.withOpacity(0.7)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -853,22 +849,21 @@ class _AiPageState extends State<AiPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   "Hello! I'm Penny AI",
-                  style: TextStyle(
-                    fontFamily: 'Poppins',
+                  style: _urbanist(
+                    size: 16,
+                    weight: FontWeight.bold,
                     color: Colors.white,
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   'Your smart finance assistant. Tap ✨ or type to ask me anything about your finances.',
-                  style: TextStyle(
-                    fontFamily: 'Poppins',
+                  style: _urbanist(
+                    size: 12,
+                    weight: FontWeight.w500,
                     color: Colors.white.withOpacity(0.9),
-                    fontSize: 11.5,
                     height: 1.4,
                   ),
                 ),
@@ -913,11 +908,10 @@ class _AiPageState extends State<AiPage> {
                     const SizedBox(width: 5),
                     Text(
                       'Ask',
-                      style: TextStyle(
-                        fontFamily: 'Poppins',
+                      style: _urbanist(
+                        size: 13,
+                        weight: FontWeight.w700,
                         color: brandGreen,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ],
@@ -939,30 +933,35 @@ class _AiPageState extends State<AiPage> {
                   .snapshots(),
               builder: (context, snapshot) {
                 if (snapshot.hasError) {
-                  return Center(child: Text('Error: ${snapshot.error}'));
+                  return Center(
+                    child: Text(
+                      'Error: ${snapshot.error}',
+                      style: _urbanist(
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
+                    ),
+                  );
                 }
                 if (!snapshot.hasData) {
-                  return const Center(child: CircularProgressIndicator());
+                  return const Center(
+                    child: CircularProgressIndicator(color: brandGreen),
+                  );
                 }
 
                 final docs = snapshot.data!.docs;
 
-                // ── FIX 1: Filter out any message whose content contains the
-                //    financial-context header. This prevents the enriched user
-                //    message saved by the backend from appearing as a bubble. ──
+                // ── Filter out enriched-context bubbles saved by the backend.
+                //    Only documents WITHOUT the sentinel header are rendered.
                 final messages = docs
                     .where((doc) {
                       final data = doc.data() as Map<String, dynamic>;
-                      final content =
-                          (data['content'] as String? ?? '').trim();
-                      return !content.contains(_contextPrefix) &&
-                          !content.startsWith('[USER FINANCIAL DATA CONTEXT]');
+                      final content = (data['content'] as String? ?? '').trim();
+                      return !content.contains(_contextPrefix);
                     })
                     .map((doc) {
                       final data = doc.data() as Map<String, dynamic>;
                       final ts = data['timestamp'];
-                      final dt =
-                          ts is Timestamp ? ts.toDate() : DateTime.now();
+                      final dt = ts is Timestamp ? ts.toDate() : DateTime.now();
                       return ChatMessage(
                         data['content'] ?? '',
                         data['role'] == 'user'
@@ -975,10 +974,7 @@ class _AiPageState extends State<AiPage> {
 
                 final showWelcome = messages.isEmpty;
 
-                // Scroll to bottom whenever the stream emits new data.
-                // On first load use a jump (no animation) so the user lands
-                // at the bottom instantly without seeing a scroll animation
-                // from the top.
+                // Jump (first load) or animate (new messages) to the bottom.
                 WidgetsBinding.instance.addPostFrameCallback((_) {
                   if (!_initialScrollDone) {
                     _initialScrollDone = true;
@@ -993,6 +989,7 @@ class _AiPageState extends State<AiPage> {
                   padding: const EdgeInsets.only(top: 8, bottom: 8),
                   children: [
                     if (showWelcome) _buildWelcomeBanner(),
+                    // Quick-start chips shown only on an empty chat.
                     if (showWelcome)
                       Padding(
                         padding: const EdgeInsets.symmetric(
@@ -1027,11 +1024,10 @@ class _AiPageState extends State<AiPage> {
                                     const SizedBox(width: 5),
                                     Text(
                                       q.label,
-                                      style: TextStyle(
-                                        fontFamily: 'Poppins',
+                                      style: _urbanist(
+                                        size: 12,
+                                        weight: FontWeight.w700,
                                         color: q.color,
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w600,
                                       ),
                                     ),
                                   ],
@@ -1042,7 +1038,7 @@ class _AiPageState extends State<AiPage> {
                         ),
                       ),
                     ...messages.map((m) => _buildMessage(m)),
-                    // Typing indicator while waiting for AI
+                    // Typing indicator while the AI is responding.
                     if (_isSending)
                       _buildMessage(
                         ChatMessage(
@@ -1124,9 +1120,7 @@ class _TypingIndicatorState extends State<_TypingIndicator>
 
   @override
   void dispose() {
-    for (final c in _controllers) {
-      c.dispose();
-    }
+    for (final c in _controllers) c.dispose();
     super.dispose();
   }
 
@@ -1194,19 +1188,18 @@ class _QuestionTile extends StatelessWidget {
                 children: [
                   Text(
                     question.label,
-                    style: TextStyle(
-                      fontFamily: 'Poppins',
-                      fontWeight: FontWeight.bold,
+                    style: GoogleFonts.urbanist(
                       fontSize: 13,
+                      fontWeight: FontWeight.bold,
                       color: question.color,
                     ),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     question.prompt,
-                    style: TextStyle(
-                      fontFamily: 'Poppins',
+                    style: GoogleFonts.urbanist(
                       fontSize: 11.5,
+                      fontWeight: FontWeight.w500,
                       color: Colors.grey.shade600,
                       height: 1.3,
                     ),
