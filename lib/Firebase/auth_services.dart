@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:final_project/Constants/colors.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:intl/intl.dart';
@@ -108,6 +109,73 @@ class AuthService {
           fontSize: 16.0,
         );
       }
+    }
+  }
+
+  Future<UserCredential?> signInWithFacebook() async {
+    try {
+      // Trigger Facebook login
+      final LoginResult result = await FacebookAuth.instance.login();
+
+      if (result.status != LoginStatus.success) {
+        Fluttertoast.showToast(
+          msg: "Facebook login cancelled",
+          backgroundColor: Colors.red,
+          textColor: Colors.white,
+        );
+        return null;
+      }
+
+      // Create Firebase credential
+      final OAuthCredential credential = FacebookAuthProvider.credential(
+        result.accessToken!.tokenString,
+      );
+
+      final UserCredential userCredential = await auth.signInWithCredential(
+        credential,
+      );
+
+      final user = userCredential.user;
+      final uid = user?.uid;
+
+      if (user == null) return null;
+
+      // Save / merge user in Firestore
+      final userDoc = FirebaseFirestore.instance
+          .collection(collection)
+          .doc(uid);
+
+      OneSignal.login(uid!);
+
+      await userDoc.set({
+        'fullName': user.displayName ?? '',
+        'username': user.displayName ?? '',
+        'email': user.email ?? '',
+        'profileUrl': user.photoURL ?? '',
+      }, SetOptions(merge: true));
+
+      await FirebaseFirestore.instance
+          .collection('statistics')
+          .doc(uid)
+          .collection(year)
+          .doc(month)
+          .set({}, SetOptions(merge: true));
+
+      Fluttertoast.showToast(
+        msg: "Facebook login successful!",
+        backgroundColor: brandGreen,
+        textColor: Colors.white,
+      );
+
+      return userCredential;
+    } catch (e) {
+      print("Facebook login error💕💕: ${e.toString()}");
+      Fluttertoast.showToast(
+        msg: "Facebook login error: ${e.toString()}",
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
+      );
+      return null;
     }
   }
 

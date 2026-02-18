@@ -31,7 +31,6 @@ class _LoginState extends State<Login> {
 
   Future signin() async {
     if (_emailcontroller.text.isEmpty || _passwordcontroller.text.isEmpty) {
-      
       ToastService.showToast(
         context,
         backgroundColor: errorColor,
@@ -46,7 +45,9 @@ class _LoginState extends State<Login> {
           color: Theme.of(context).colorScheme.surface,
         ),
         slideCurve: Curves.easeInOut,
-        shadowColor: Theme.of(context).colorScheme.onSurface.withAlpha((255 * 0.5).round()),
+        shadowColor: Theme.of(
+          context,
+        ).colorScheme.onSurface.withAlpha((255 * 0.5).round()),
       );
       return;
     }
@@ -77,7 +78,9 @@ class _LoginState extends State<Login> {
           color: Theme.of(context).colorScheme.surface,
         ),
         slideCurve: Curves.easeInOut,
-        shadowColor: Theme.of(context).colorScheme.onSurface.withAlpha((255 * 0.5).round()),
+        shadowColor: Theme.of(
+          context,
+        ).colorScheme.onSurface.withAlpha((255 * 0.5).round()),
       );
 
       _emailcontroller.clear();
@@ -99,7 +102,7 @@ class _LoginState extends State<Login> {
               alignment: Alignment.center,
               height: 100,
               child: Text(
-                "Welcome Back",
+                "Welcome",
                 style: Theme.of(context).textTheme.displaySmall,
               ),
             ),
@@ -117,7 +120,7 @@ class _LoginState extends State<Login> {
                     mainAxisAlignment: MainAxisAlignment.start,
                     children: [
                       formLogo,
-
+                      /*
                       TextField(
                         controller: _emailcontroller,
                         decoration: InputDecoration(
@@ -125,9 +128,8 @@ class _LoginState extends State<Login> {
                           border: const OutlineInputBorder(
                             borderRadius: radiusMedium,
                           ),
-                          fillColor: Theme.of(
-                            context,
-                          ).colorScheme.onSurface.withAlpha((255 * 0.1).round()),
+                          fillColor: Theme.of(context).colorScheme.onSurface
+                              .withAlpha((255 * 0.1).round()),
                           filled: true,
                         ),
                       ),
@@ -143,9 +145,8 @@ class _LoginState extends State<Login> {
                           border: const OutlineInputBorder(
                             borderRadius: radiusMedium,
                           ),
-                          fillColor: Theme.of(
-                            context,
-                          ).colorScheme.onSurface.withAlpha((255 * 0.1).round()),
+                          fillColor: Theme.of(context).colorScheme.onSurface
+                              .withAlpha((255 * 0.1).round()),
                           filled: true,
                         ),
                       ),
@@ -168,8 +169,8 @@ class _LoginState extends State<Login> {
                                 ?.copyWith(color: accentColor),
                           ),
                         ),
-                      ),
-
+                      ),*/
+                      /*
                       sizedBoxHeightXLarge,
 
                       // SIGN IN BUTTON
@@ -197,7 +198,7 @@ class _LoginState extends State<Login> {
                           ),
                         ),
                       ),
-
+*/
                       sizedBoxHeightLarge,
 
                       //GOOGLE BUTTON
@@ -235,9 +236,10 @@ class _LoginState extends State<Login> {
                                     ).colorScheme.surface,
                                   ),
                               slideCurve: Curves.easeInOut,
-                              shadowColor: Theme.of(
-                                context,
-                              ).colorScheme.onSurface.withAlpha((255 * 0.5).round()),
+                              shadowColor: Theme.of(context)
+                                  .colorScheme
+                                  .onSurface
+                                  .withAlpha((255 * 0.5).round()),
                             );
                           }
                         },
@@ -259,7 +261,71 @@ class _LoginState extends State<Login> {
                               ),
                               sizedBoxWidthSmall,
                               Text(
-                                'Or Sign in with Google',
+                                'Sign in with Google',
+                                style: Theme.of(context).textTheme.bodyLarge,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      sizedBoxHeightXLarge,
+                      GestureDetector(
+                        onTap: () async {
+                          try {
+                            // Call the Facebook function
+                            final userCredential = await AuthService()
+                                .signInWithFacebook();
+
+                            // If userCredential is null, it means the user cancelled the login
+                            if (userCredential == null) return;
+
+                            if (!context.mounted) return;
+
+                            // Success! Navigate to Home
+                            Navigator.pushReplacement(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const BottomNav(),
+                              ),
+                            );
+                          } catch (e) {
+                            if (!context.mounted) return;
+
+                            // Show error toast
+                            ToastService.showToast(
+                              context,
+                              backgroundColor: errorColor,
+                              message:
+                                  'Facebook Login failed. Please try again!',
+                              leading: const Icon(Icons.error_outline),
+                              // ... include your other styling here ...
+                            );
+                            print(
+                              "Facebook Error✅✅✅: $e",
+                            ); // Helpful for debugging the Key Hash!
+                          }
+                        },
+                        child: Container(
+                          height: 50,
+                          width: double.infinity,
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.surface,
+                            borderRadius: radiusMedium,
+                            border: Border.all(
+                              color: Theme.of(context).colorScheme.onSurface,
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Image(
+                                image: AssetImage('assets/image/facebook.png'),
+                                width: 32,
+                                height: 32,
+                              ),
+                              sizedBoxWidthMedium,
+                              Text(
+                                'Sign in with Facebook',
                                 style: Theme.of(context).textTheme.bodyLarge,
                               ),
                             ],
@@ -267,7 +333,7 @@ class _LoginState extends State<Login> {
                         ),
                       ),
 
-                      sizedBoxHeightXLarge,
+                      /* sizedBoxHeightXLarge,
                       //  SIGNUP REDIRECT
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -286,7 +352,7 @@ class _LoginState extends State<Login> {
                             ),
                           ),
                         ],
-                      ),
+                      ),*/
                     ],
                   ),
                 ),

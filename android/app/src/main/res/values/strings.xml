@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Penny Wise</string>
+    <string name="facebook_app_id">891771300303338</string>
+    <string name="fb_login_protocol_scheme">fb891771300303338</string>
+    <string name="facebook_client_token">fd02d101ad045c5d5d32c3bac09b4e08</string>
+</resources>
