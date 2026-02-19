@@ -63,7 +63,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.surface,
         elevation: 0,
-        title: const Text("All Transactions"),
+        title: const Text("All Notifications"),
         centerTitle: true,
       ),
       body: StreamBuilder(
