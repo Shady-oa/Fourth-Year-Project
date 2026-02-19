@@ -6,7 +6,6 @@ import 'package:intl/intl.dart';
 enum _NotifType { budget, savings, streak, analysis, report, insight, system }
 
 extension _NotifTypeX on _NotifType {
-  // The canonical string stored in Firestore for each type
   String get firestoreValue {
     switch (this) {
       case _NotifType.budget:
@@ -48,19 +47,19 @@ extension _NotifTypeX on _NotifType {
   IconData get icon {
     switch (this) {
       case _NotifType.budget:
-        return Icons.account_balance_wallet_outlined;
+        return Icons.account_balance_wallet_rounded;
       case _NotifType.savings:
-        return Icons.savings_outlined;
+        return Icons.savings_rounded;
       case _NotifType.streak:
-        return Icons.local_fire_department_outlined;
+        return Icons.local_fire_department_rounded;
       case _NotifType.analysis:
         return Icons.bar_chart_rounded;
       case _NotifType.report:
-        return Icons.summarize_outlined;
+        return Icons.receipt_long_rounded;
       case _NotifType.insight:
-        return Icons.lightbulb_outline;
+        return Icons.lightbulb_rounded;
       case _NotifType.system:
-        return Icons.notifications_outlined;
+        return Icons.info_rounded;
     }
   }
 
@@ -103,19 +102,6 @@ extension _NotifTypeX on _NotifType {
   }
 }
 
-const _kAllFilter = 'all';
-
-const _filters = [
-  _kAllFilter,
-  'budget',
-  'savings',
-  'streak',
-  'insight',
-  'analysis',
-  'report',
-  'system',
-];
-
 // ─── Notifications Page ───────────────────────────────────────────────────────
 class NotificationsPage extends StatefulWidget {
   final String userId;
@@ -127,7 +113,6 @@ class NotificationsPage extends StatefulWidget {
 
 class _NotificationsPageState extends State<NotificationsPage>
     with SingleTickerProviderStateMixin {
-  String _activeFilter = _kAllFilter;
   late AnimationController _fadeCtrl;
 
   @override
@@ -215,19 +200,10 @@ class _NotificationsPageState extends State<NotificationsPage>
   }
 
   // ── Helpers ───────────────────────────────────────────────────────────────────
-
-  /// Read raw 'type' string directly from Firestore document data.
-  /// This is the KEY FIX — compare the raw string, not the enum, so we never
-  /// lose information through a fromString() round-trip.
-  String _rawTypeOf(QueryDocumentSnapshot doc) {
+  _NotifType _notifTypeOf(QueryDocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>?;
-    // If 'type' field is missing (old docs), treat as 'system'
-    return (data?['type'] as String?) ?? 'system';
+    return _NotifTypeX.fromString(data?['type'] as String?);
   }
-
-  /// Convert raw type string → _NotifType for display (icon, colour, label)
-  _NotifType _notifTypeOf(QueryDocumentSnapshot doc) =>
-      _NotifTypeX.fromString(_rawTypeOf(doc));
 
   bool _isRead(QueryDocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>?;
@@ -248,14 +224,6 @@ class _NotificationsPageState extends State<NotificationsPage>
 
   String _timeStr(Timestamp ts) => DateFormat('HH:mm').format(ts.toDate());
 
-  /// THE FIX: Compare _activeFilter directly against the raw Firestore
-  /// 'type' string — no enum conversion in the middle that could silently
-  /// map an unknown value to 'system' and break the filter.
-  List<QueryDocumentSnapshot> _applyFilter(List<QueryDocumentSnapshot> docs) {
-    if (_activeFilter == _kAllFilter) return docs;
-    return docs.where((doc) => _rawTypeOf(doc) == _activeFilter).toList();
-  }
-
   // ── Build ─────────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
@@ -263,12 +231,7 @@ class _NotificationsPageState extends State<NotificationsPage>
     return Scaffold(
       backgroundColor: theme.colorScheme.surface,
       appBar: _buildAppBar(theme),
-      body: Column(
-        children: [
-          _buildFilterBar(theme),
-          Expanded(child: _buildBody(theme)),
-        ],
-      ),
+      body: _buildBody(theme),
     );
   }
 
@@ -283,7 +246,6 @@ class _NotificationsPageState extends State<NotificationsPage>
         style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
       ),
       actions: [
-        // Mark-all-read — visible only when unread notifications exist
         StreamBuilder<QuerySnapshot>(
           stream: _col.where('isRead', isEqualTo: false).snapshots(),
           builder: (ctx, snap) {
@@ -306,87 +268,25 @@ class _NotificationsPageState extends State<NotificationsPage>
     );
   }
 
-  // ── Filter chip bar ───────────────────────────────────────────────────────────
-  Widget _buildFilterBar(ThemeData theme) {
-    return SizedBox(
-      height: 52,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-        itemCount: _filters.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 8),
-        itemBuilder: (ctx, i) {
-          final f = _filters[i];
-          final isSelected = _activeFilter == f;
-          final notifType = _NotifTypeX.fromString(f);
-          final label = f == _kAllFilter ? 'All' : notifType.label;
-          final color = f == _kAllFilter
-              ? theme.colorScheme.primary
-              : notifType.color;
-
-          return GestureDetector(
-            onTap: () {
-              setState(() {
-                _activeFilter = f; // store the raw filter string
-                _fadeCtrl
-                  ..reset()
-                  ..forward();
-              });
-            },
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 7),
-              decoration: BoxDecoration(
-                color: isSelected ? color : Colors.transparent,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: isSelected ? color : Colors.grey.shade300,
-                  width: 1.5,
-                ),
-              ),
-              child: Text(
-                label,
-                style: TextStyle(
-                  color: isSelected ? Colors.white : Colors.grey.shade600,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 13,
-                ),
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  // ── Body (StreamBuilder) ──────────────────────────────────────────────────────
+  // ── Body ─────────────────────────────────────────────────────────────────────
   Widget _buildBody(ThemeData theme) {
     return StreamBuilder<QuerySnapshot>(
-      // Single-field orderBy only — no composite index required
       stream: _col.orderBy('createdAt', descending: true).snapshots(),
       builder: (ctx, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
         }
-        if (snapshot.hasError) {
-          return _buildErrorState(theme);
-        }
+        if (snapshot.hasError) return _buildErrorState(theme);
         if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
           return _buildEmptyState(theme);
         }
 
         final allDocs = snapshot.data!.docs;
-
-        // Client-side filter using raw Firestore 'type' string comparison
-        final filtered = _applyFilter(allDocs);
-        if (filtered.isEmpty) return _buildEmptyState(theme);
-
-        // Count unread across ALL docs (regardless of active filter)
         final unreadCount = allDocs.where((d) => !_isRead(d)).length;
 
-        // Group filtered docs by human-readable date label
+        // Group by date
         final grouped = <String, List<QueryDocumentSnapshot>>{};
-        for (final doc in filtered) {
+        for (final doc in allDocs) {
           final data = doc.data() as Map<String, dynamic>?;
           final ts = data?['createdAt'] as Timestamp?;
           if (ts == null) continue;
@@ -523,7 +423,7 @@ class _NotificationsPageState extends State<NotificationsPage>
     );
   }
 
-  // ── Notification card — bold new look ────────────────────────────────────────
+  // ── Notification card ─────────────────────────────────────────────────────────
   Widget _buildCard(ThemeData theme, QueryDocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>? ?? {};
     final isRead = data['isRead'] as bool? ?? false;
@@ -536,7 +436,6 @@ class _NotificationsPageState extends State<NotificationsPage>
     final typeIcon = notifType.icon;
     final isDark = theme.brightness == Brightness.dark;
 
-    // Subtle tinted background color for the card
     final cardBg = isRead
         ? (isDark ? const Color(0xFF1C1C1E) : Colors.white)
         : (isDark
@@ -621,13 +520,12 @@ class _NotificationsPageState extends State<NotificationsPage>
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // ── Large icon bubble ───────────────────────────────────────────
+                // ── Type-specific icon bubble ─────────────────────────────────
                 AnimatedContainer(
                   duration: const Duration(milliseconds: 280),
                   width: 52,
                   height: 52,
                   decoration: BoxDecoration(
-                    // Unread: vivid solid. Read: very faint tint.
                     color: isRead
                         ? typeColor.withOpacity(isDark ? 0.12 : 0.08)
                         : typeColor,
@@ -644,22 +542,21 @@ class _NotificationsPageState extends State<NotificationsPage>
                   ),
                   child: Icon(
                     typeIcon,
-                    size: 24,
+                    size: 26,
                     color: isRead ? typeColor.withOpacity(0.55) : Colors.white,
                   ),
                 ),
 
                 const SizedBox(width: 14),
 
-                // ── Text content ────────────────────────────────────────────────
+                // ── Text content ──────────────────────────────────────────────
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // ── Top row: type pill + time ────────────────────────────
+                      // Type pill + time + unread dot
                       Row(
                         children: [
-                          // Category pill
                           Container(
                             padding: const EdgeInsets.symmetric(
                               horizontal: 8,
@@ -688,7 +585,6 @@ class _NotificationsPageState extends State<NotificationsPage>
                             ),
                           ),
                           const Spacer(),
-                          // Time
                           if (timeStr.isNotEmpty)
                             Text(
                               timeStr,
@@ -704,7 +600,6 @@ class _NotificationsPageState extends State<NotificationsPage>
                                       ),
                               ),
                             ),
-                          // Unread dot
                           if (!isRead) ...[
                             const SizedBox(width: 6),
                             Container(
@@ -727,7 +622,7 @@ class _NotificationsPageState extends State<NotificationsPage>
 
                       const SizedBox(height: 7),
 
-                      // ── Title ──────────────────────────────────────────────────
+                      // Title
                       Text(
                         title,
                         style: TextStyle(
@@ -743,7 +638,7 @@ class _NotificationsPageState extends State<NotificationsPage>
                         ),
                       ),
 
-                      // ── Message ────────────────────────────────────────────────
+                      // Message
                       if (message.isNotEmpty) ...[
                         const SizedBox(height: 5),
                         Text(
@@ -801,12 +696,6 @@ class _NotificationsPageState extends State<NotificationsPage>
 
   // ── Empty state ───────────────────────────────────────────────────────────────
   Widget _buildEmptyState(ThemeData theme) {
-    final isFiltered = _activeFilter != _kAllFilter;
-    // Get the label for the active filter chip
-    final filterLabel = isFiltered
-        ? _NotifTypeX.fromString(_activeFilter).label
-        : '';
-
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(40),
@@ -821,16 +710,14 @@ class _NotificationsPageState extends State<NotificationsPage>
                 shape: BoxShape.circle,
               ),
               child: Icon(
-                isFiltered
-                    ? Icons.filter_list_off_rounded
-                    : Icons.notifications_off_outlined,
+                Icons.notifications_off_outlined,
                 size: 42,
                 color: Colors.grey.shade300,
               ),
             ),
             const SizedBox(height: 20),
             Text(
-              isFiltered ? 'No $filterLabel Notifications' : 'All Caught Up!',
+              'All Caught Up!',
               style: TextStyle(
                 fontSize: 17,
                 fontWeight: FontWeight.bold,
@@ -839,25 +726,10 @@ class _NotificationsPageState extends State<NotificationsPage>
             ),
             const SizedBox(height: 8),
             Text(
-              isFiltered
-                  ? 'No $filterLabel notifications yet.\nTry a different filter.'
-                  : 'Smart notifications will appear here\nas you use the app.',
+              'Smart notifications will appear here\nas you use the app.',
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 13, color: Colors.grey.shade400),
             ),
-            if (isFiltered) ...[
-              const SizedBox(height: 20),
-              OutlinedButton.icon(
-                onPressed: () => setState(() => _activeFilter = _kAllFilter),
-                icon: const Icon(Icons.clear_all, size: 18),
-                label: const Text('Show All'),
-                style: OutlinedButton.styleFrom(
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-              ),
-            ],
           ],
         ),
       ),
