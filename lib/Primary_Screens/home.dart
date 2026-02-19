@@ -11,8 +11,6 @@ import 'package:final_project/Components/toast.dart';
 import 'package:final_project/Constants/colors.dart';
 import 'package:final_project/Constants/spacing.dart';
 import 'package:final_project/Firebase/cloudinary_service.dart';
-import 'package:final_project/Primary_Screens/Budgets/budget.dart';
-import 'package:final_project/Primary_Screens/Savings/savings.dart';
 import 'package:final_project/SecondaryScreens/all_transactions.dart';
 import 'package:final_project/SecondaryScreens/report_page.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -116,7 +114,6 @@ class _HomePageState extends State<HomePage> {
           type == 'budget_finalized' ||
           type == 'savings_deduction') {
         expenses += double.tryParse(tx['amount'].toString()) ?? 0.0;
-        // Also add transaction cost if present
         expenses +=
             double.tryParse(tx['transactionCost']?.toString() ?? '0') ?? 0.0;
       }
@@ -592,219 +589,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  void showSmartExpenseDialog() {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const SizedBox(height: 20),
-          Text("Expense for?", style: Theme.of(context).textTheme.titleLarge),
-          ListTile(
-            leading: const Icon(Icons.savings, color: brandGreen),
-            title: const Text("Savings Goal"),
-            onTap: () {
-              Navigator.pop(context);
-              handleSavingsExpense();
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.receipt_rounded, color: Colors.orange),
-            title: const Text("Existing Budget"),
-            onTap: () {
-              Navigator.pop(context);
-              handleBudgetExpense();
-            },
-          ),
-          ListTile(
-            leading: const Icon(
-              Icons.arrow_circle_up_rounded,
-              color: errorColor,
-            ),
-            title: const Text("Other Expense"),
-            onTap: () {
-              Navigator.pop(context);
-              showGeneralExpenseDialog();
-            },
-          ),
-          const SizedBox(height: 20),
-        ],
-      ),
-    );
-  }
-
-  void handleSavingsExpense() {
-    final activeSavings = savings.where((s) => !s.achieved).toList();
-    if (activeSavings.isEmpty) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (context) =>
-              SavingsPage(onTransactionAdded: onSavingsTransactionAdded),
-        ),
-      ).then((_) => refreshData());
-      return;
-    }
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text("Select Savings Goal"),
-        content: SizedBox(
-          width: double.maxFinite,
-          child: ListView.builder(
-            shrinkWrap: true,
-            itemCount: activeSavings.length,
-            itemBuilder: (context, index) {
-              final s = activeSavings[index];
-              return ListTile(
-                title: Text(s.name),
-                subtitle: Text(
-                  "Balance: ${CurrencyFormatter.format(s.balance)}",
-                ),
-                onTap: () {
-                  Navigator.pop(context);
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => SavingsPage(
-                        onTransactionAdded: onSavingsTransactionAdded,
-                      ),
-                    ),
-                  ).then((_) => refreshData());
-                },
-              );
-            },
-          ),
-        ),
-      ),
-    );
-  }
-
-  void handleBudgetExpense() {
-    // Filter out checked budgets
-    final activeBudgets = budgets.where((b) => !b.isChecked).toList();
-
-    if (budgets.isEmpty) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (context) => BudgetPage(
-            onTransactionAdded: onBudgetTransactionAdded,
-            onExpenseDeleted: onBudgetExpenseDeleted,
-          ),
-        ),
-      ).then((_) => refreshData());
-      return;
-    }
-
-    if (activeBudgets.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              const Icon(Icons.lock, color: Colors.white, size: 20),
-              const SizedBox(width: 8),
-              const Expanded(
-                child: Text(
-                  'All budgets are finalized. Unfinalize a budget to add expenses.',
-                  style: TextStyle(fontSize: 14),
-                ),
-              ),
-            ],
-          ),
-          backgroundColor: Colors.orange.shade700,
-          behavior: SnackBarBehavior.floating,
-          duration: const Duration(seconds: 4),
-        ),
-      );
-      return;
-    }
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text("Select Budget"),
-        content: SizedBox(
-          width: double.maxFinite,
-          child: ListView.builder(
-            shrinkWrap: true,
-            itemCount: activeBudgets.length,
-            itemBuilder: (context, index) {
-              final b = activeBudgets[index];
-              return ListTile(
-                title: Text(b.name),
-                onTap: () {
-                  Navigator.pop(context);
-                  showBudgetDetailEntryDialog(b);
-                },
-              );
-            },
-          ),
-        ),
-      ),
-    );
-  }
-
-  void showBudgetDetailEntryDialog(Budget budget) {
-    final titleCtrl = TextEditingController();
-    final amtCtrl = TextEditingController();
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text("Expense for ${budget.name}"),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: titleCtrl,
-              textCapitalization: TextCapitalization.words,
-              decoration: const InputDecoration(hintText: "Title (e.g. Lunch)"),
-            ),
-            TextField(
-              controller: amtCtrl,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(hintText: "Amount"),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Cancel"),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-            ),
-            onPressed: () async {
-              final amt = double.tryParse(amtCtrl.text) ?? 0;
-              if (amt > 0 && titleCtrl.text.isNotEmpty) {
-                budget.expenses.add(Expense(name: titleCtrl.text, amount: amt));
-                await syncBudgets();
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Budget expense added: ${titleCtrl.text}'),
-                    backgroundColor: brandGreen,
-                    behavior: SnackBarBehavior.floating,
-                    duration: const Duration(seconds: 2),
-                  ),
-                );
-                refreshData();
-              }
-            },
-            child: const Text("Save"),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// ✅ UPDATED: Other Expense now includes Transaction Cost field
+  // Directly shows the general expense dialog — no savings/budget routing
   void showGeneralExpenseDialog() {
     final titleCtrl = TextEditingController();
     final amtCtrl = TextEditingController();
@@ -813,7 +598,7 @@ class _HomePageState extends State<HomePage> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text("Other Expense"),
+        title: const Text("Add Expense"),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -887,7 +672,6 @@ class _HomePageState extends State<HomePage> {
               final amt = double.tryParse(amtCtrl.text) ?? 0;
               final txCost = double.tryParse(txCostCtrl.text) ?? 0;
               if (amt > 0 && titleCtrl.text.isNotEmpty) {
-                // Check if transaction cost is provided
                 if (txCostCtrl.text.trim().isEmpty) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
@@ -1103,7 +887,6 @@ class _HomePageState extends State<HomePage> {
                     ).toggleTheme();
                   },
                 ),
-
                 _buildModernSettingsCard(
                   context: context,
                   icon: Icons.info_outline,
@@ -1392,7 +1175,7 @@ class _HomePageState extends State<HomePage> {
         QuickActionCard(
           icon: Icons.remove,
           label: 'Add Expense',
-          onTap: showSmartExpenseDialog,
+          onTap: showGeneralExpenseDialog, // directly opens expense dialog
         ),
         QuickActionCard(
           icon: Icons.receipt_long,

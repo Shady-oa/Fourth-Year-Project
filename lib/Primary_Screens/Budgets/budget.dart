@@ -7,15 +7,17 @@ import 'package:final_project/Primary_Screens/Budgets/budget_detail.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
-// Currency formatting utility
+// ─── Currency Formatter ───────────────────────────────────────────────────────
 class CurrencyFormatter {
   static final NumberFormat _formatter = NumberFormat('#,##0', 'en_US');
   static String format(double amount) =>
       'Ksh ${_formatter.format(amount.round())}';
 }
 
+// ═══════════════════════════════════════════════════════════════════════════════
+//  BUDGET PAGE — Real-time Firestore StreamBuilder
+// ═══════════════════════════════════════════════════════════════════════════════
 class BudgetPage extends StatefulWidget {
   final Function(String, double, String)? onTransactionAdded;
   final Function(String, double)? onExpenseDeleted;
@@ -27,39 +29,22 @@ class BudgetPage extends StatefulWidget {
 }
 
 class _BudgetPageState extends State<BudgetPage> {
-  static const String keyBudgets = 'budgets';
+  final _uid = FirebaseAuth.instance.currentUser!.uid;
+  String _filter = 'all';
 
-  List<Budget> budgets = [];
-  String filter = 'all';
-  bool isLoading = true;
-  final userUid = FirebaseAuth.instance.currentUser!.uid;
+  // Firestore collection reference
+  CollectionReference<Map<String, dynamic>> get _budgetsRef =>
+      FirebaseFirestore.instance
+          .collection('users')
+          .doc(_uid)
+          .collection('budgets');
 
-  @override
-  void initState() {
-    super.initState();
-    loadBudgets();
-  }
-
-  Future<void> loadBudgets() async {
-    setState(() => isLoading = true);
-    final prefs = await SharedPreferences.getInstance();
-    final budgetStrings = prefs.getStringList(keyBudgets) ?? [];
-    budgets =
-        budgetStrings.map((s) => Budget.fromMap(json.decode(s))).toList();
-    setState(() => isLoading = false);
-  }
-
-  Future<void> saveBudgets() async {
-    final prefs = await SharedPreferences.getInstance();
-    final data = budgets.map((b) => json.encode(b.toMap())).toList();
-    await prefs.setStringList(keyBudgets, data);
-  }
-
-  Future<void> sendNotification(String title, String message) async {
+  // ── Firestore Helpers ─────────────────────────────────────────────────────
+  Future<void> _sendNotification(String title, String message) async {
     try {
       await FirebaseFirestore.instance
           .collection('users')
-          .doc(userUid)
+          .doc(_uid)
           .collection('notifications')
           .add({
         'title': title,
@@ -68,76 +53,68 @@ class _BudgetPageState extends State<BudgetPage> {
         'isRead': false,
       });
     } catch (e) {
-      debugPrint('Error sending notification: $e');
+      debugPrint('Notification error: $e');
     }
   }
 
-  void showCreateBudgetDialog() {
-    final nameCtrl = TextEditingController();
-    final amountCtrl = TextEditingController();
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Create Budget'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nameCtrl,
-              textCapitalization: TextCapitalization.words,
-              decoration: const InputDecoration(
-                hintText: 'Budget Name (e.g., Groceries)',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: amountCtrl,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                hintText: 'Budget Amount (Ksh)',
-                border: OutlineInputBorder(),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel')),
-          ElevatedButton(
-            onPressed: () async {
-              final name = nameCtrl.text.trim();
-              final amount = double.tryParse(amountCtrl.text) ?? 0;
-
-              if (name.isNotEmpty && amount > 0) {
-                final newBudget = Budget(name: name, total: amount);
-                budgets.add(newBudget);
-                await saveBudgets();
-                await sendNotification(
-                  '💼 Budget Created',
-                  'New budget "$name" created with ${CurrencyFormatter.format(amount)}',
-                );
-                Navigator.pop(context);
-                setState(() {});
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Budget "$name" created successfully'),
-                    backgroundColor: brandGreen,
-                  ),
-                );
-              }
-            },
-            child: const Text('Create'),
-          ),
-        ],
+  void _showSnack(String msg, {bool isError = false}) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(msg),
+        backgroundColor: isError ? errorColor : brandGreen,
+        behavior: SnackBarBehavior.floating,
       ),
     );
   }
 
-  /// ✅ UPDATED: Uses bottom sheet for edit, blocks editing if finalized
-  void showBudgetOptionsBottomSheet(Budget budget) {
+  // ── Filtered stream ───────────────────────────────────────────────────────
+  Stream<List<Budget>> _budgetStream(String filter) {
+    Query<Map<String, dynamic>> query =
+        _budgetsRef.orderBy('updatedAt', descending: true);
+
+    return query.snapshots().map((snap) {
+      final all = snap.docs
+          .map((d) => Budget.fromFirestore(d.id, d.data()))
+          .toList();
+
+      if (filter == 'checked') return all.where((b) => b.isChecked).toList();
+      if (filter == 'unchecked') return all.where((b) => !b.isChecked).toList();
+      return all;
+    });
+  }
+
+  // ── Create Budget Dialog ──────────────────────────────────────────────────
+  void _showCreateBudgetDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => _CreateBudgetDialog(
+        onSubmit: (name, amount) async {
+          // Check for duplicates
+          final existing = await _budgetsRef
+              .where('name', isEqualTo: name)
+              .limit(1)
+              .get();
+          if (existing.docs.isNotEmpty) {
+            _showSnack('A budget named "$name" already exists.', isError: true);
+            return;
+          }
+
+          final data = Budget.newBudgetMap(name, amount);
+          await _budgetsRef.add(data);
+          await _sendNotification(
+            '💼 Budget Created',
+            'New budget "$name" created with ${CurrencyFormatter.format(amount)}',
+          );
+          _showSnack('Budget "$name" created successfully');
+        },
+      ),
+    );
+  }
+
+  // ── Options Bottom Sheet ──────────────────────────────────────────────────
+  void _showOptionsSheet(Budget budget) {
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -149,7 +126,6 @@ class _BudgetPageState extends State<BudgetPage> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Handle bar
               Container(
                 width: 40,
                 height: 4,
@@ -159,12 +135,12 @@ class _BudgetPageState extends State<BudgetPage> {
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
-              // Budget name header
               Text(
                 budget.name,
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                style: Theme.of(context)
+                    .textTheme
+                    .titleMedium
+                    ?.copyWith(fontWeight: FontWeight.bold),
               ),
               if (budget.isChecked)
                 Padding(
@@ -185,7 +161,7 @@ class _BudgetPageState extends State<BudgetPage> {
               const SizedBox(height: 16),
               const Divider(height: 1),
               const SizedBox(height: 8),
-              // Edit option
+              // Edit
               ListTile(
                 leading: Container(
                   padding: const EdgeInsets.all(8),
@@ -216,10 +192,10 @@ class _BudgetPageState extends State<BudgetPage> {
                     ? null
                     : () {
                         Navigator.pop(ctx);
-                        _showEditBudgetDialog(budget);
+                        _showEditDialog(budget);
                       },
               ),
-              // Delete option
+              // Delete
               ListTile(
                 leading: Container(
                   padding: const EdgeInsets.all(8),
@@ -232,8 +208,8 @@ class _BudgetPageState extends State<BudgetPage> {
                 ),
                 title: const Text(
                   'Delete Budget',
-                  style: TextStyle(
-                      fontWeight: FontWeight.w600, color: errorColor),
+                  style:
+                      TextStyle(fontWeight: FontWeight.w600, color: errorColor),
                 ),
                 onTap: () {
                   Navigator.pop(ctx);
@@ -248,69 +224,30 @@ class _BudgetPageState extends State<BudgetPage> {
     );
   }
 
-  void _showEditBudgetDialog(Budget budget) {
-    final nameCtrl = TextEditingController(text: budget.name);
-    final amountCtrl = TextEditingController(text: budget.total.toString());
-
+  // ── Edit Dialog ───────────────────────────────────────────────────────────
+  void _showEditDialog(Budget budget) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Edit Budget'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nameCtrl,
-              textCapitalization: TextCapitalization.words,
-              decoration: const InputDecoration(
-                labelText: 'Budget Name',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: amountCtrl,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                labelText: 'Budget Amount',
-                border: OutlineInputBorder(),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel')),
-          ElevatedButton(
-            onPressed: () async {
-              final name = nameCtrl.text.trim();
-              final amount = double.tryParse(amountCtrl.text) ?? 0;
-              if (name.isNotEmpty && amount > 0) {
-                budget.name = name;
-                budget.total = amount;
-                await saveBudgets();
-                Navigator.pop(context);
-                setState(() {});
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Budget updated successfully'),
-                    backgroundColor: brandGreen,
-                  ),
-                );
-              }
-            },
-            child: const Text('Save'),
-          ),
-        ],
+      barrierDismissible: false,
+      builder: (_) => _EditBudgetDialog(
+        budget: budget,
+        onSubmit: (name, amount) async {
+          await _budgetsRef.doc(budget.id).update({
+            'name': name,
+            'total': amount,
+            'updatedAt': FieldValue.serverTimestamp(),
+          });
+          _showSnack('Budget updated successfully');
+        },
       ),
     );
   }
 
+  // ── Delete ────────────────────────────────────────────────────────────────
   Future<void> _deleteBudget(Budget budget) async {
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (ctx) => AlertDialog(
         title: const Text('Delete Budget'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -347,12 +284,12 @@ class _BudgetPageState extends State<BudgetPage> {
         ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(context, false),
+              onPressed: () => Navigator.pop(ctx, false),
               child: const Text('Cancel')),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
                 backgroundColor: errorColor, foregroundColor: Colors.white),
-            onPressed: () => Navigator.pop(context, true),
+            onPressed: () => Navigator.pop(ctx, true),
             child: const Text('Delete'),
           ),
         ],
@@ -360,30 +297,16 @@ class _BudgetPageState extends State<BudgetPage> {
     );
 
     if (confirmed == true) {
-      budgets.remove(budget);
-      await saveBudgets();
-      await sendNotification(
+      await _budgetsRef.doc(budget.id).delete();
+      await _sendNotification(
         '🗑️ Budget Deleted',
         'Budget "${budget.name}" has been deleted',
       );
-      setState(() {});
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Budget deleted successfully'),
-            backgroundColor: brandGreen,
-          ),
-        );
-      }
+      _showSnack('Budget deleted successfully');
     }
   }
 
-  List<Budget> get filteredBudgets {
-    if (filter == 'all') return budgets;
-    if (filter == 'checked') return budgets.where((b) => b.isChecked).toList();
-    return budgets.where((b) => !b.isChecked).toList();
-  }
-
+  // ── Build ─────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -392,79 +315,97 @@ class _BudgetPageState extends State<BudgetPage> {
       backgroundColor: theme.colorScheme.surface,
       appBar: AppBar(
         backgroundColor: theme.colorScheme.surface,
-        title: const CustomHeader(headerName: "Budgets"),
+        title: const CustomHeader(headerName: 'Budgets'),
         elevation: 0,
       ),
-      body: isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : Column(
+      body: Column(
+        children: [
+          // Filter chips
+          Padding(
+            padding:
+                const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+            child: Row(
               children: [
-                // Filter Tabs
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 16.0, vertical: 8.0),
-                  child: Row(
-                    children: [
-                      buildFilterChip('All', 'all', theme),
-                      const SizedBox(width: 8),
-                      buildFilterChip('Finalized', 'checked', theme),
-                      const SizedBox(width: 8),
-                      buildFilterChip('Active', 'unchecked', theme),
-                    ],
-                  ),
-                ),
-                Expanded(
-                  child: filteredBudgets.isEmpty
-                      ? Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                  Icons.account_balance_wallet_outlined,
-                                  size: 64,
-                                  color: Colors.grey.shade400),
-                              const SizedBox(height: 16),
-                              Text(
-                                'No budgets found',
-                                style: theme.textTheme.bodyLarge?.copyWith(
-                                    color: Colors.grey.shade600),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                'Tap + to create your first budget',
-                                style: theme.textTheme.bodySmall?.copyWith(
-                                    color: Colors.grey.shade500),
-                              ),
-                            ],
-                          ),
-                        )
-                      : RefreshIndicator(
-                          onRefresh: loadBudgets,
-                          child: ListView.builder(
-                            padding: const EdgeInsets.all(16),
-                            itemCount: filteredBudgets.length,
-                            itemBuilder: (context, index) {
-                              return buildBudgetCard(filteredBudgets[index]);
-                            },
-                          ),
-                        ),
-                ),
+                _filterChip('All', 'all', theme),
+                const SizedBox(width: 8),
+                _filterChip('Finalized', 'checked', theme),
+                const SizedBox(width: 8),
+                _filterChip('Active', 'unchecked', theme),
               ],
             ),
+          ),
+          // Live list
+          Expanded(
+            child: StreamBuilder<List<Budget>>(
+              stream: _budgetStream(_filter),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (snapshot.hasError) {
+                  return Center(
+                    child: Text(
+                      'Error loading budgets.\nPlease try again.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Colors.grey.shade600),
+                    ),
+                  );
+                }
+
+                final budgets = snapshot.data ?? [];
+
+                if (budgets.isEmpty) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.account_balance_wallet_outlined,
+                            size: 64, color: Colors.grey.shade400),
+                        const SizedBox(height: 16),
+                        Text(
+                          'No budgets found',
+                          style: theme.textTheme.bodyLarge
+                              ?.copyWith(color: Colors.grey.shade600),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Tap + to create your first budget',
+                          style: theme.textTheme.bodySmall
+                              ?.copyWith(color: Colors.grey.shade500),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+
+                return RefreshIndicator(
+                  onRefresh: () async {},
+                  child: ListView.builder(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: budgets.length,
+                    itemBuilder: (_, i) => _buildCard(budgets[i], theme),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
       floatingActionButton: FloatingActionButton(
-        onPressed: showCreateBudgetDialog,
+        onPressed: _showCreateBudgetDialog,
         backgroundColor: accentColor,
         child: const Icon(Icons.add, color: Colors.white),
       ),
     );
   }
 
-  Widget buildFilterChip(String label, String value, ThemeData theme) {
-    final isSelected = filter == value;
+  Widget _filterChip(String label, String value, ThemeData theme) {
+    final isSelected = _filter == value;
     return GestureDetector(
-      onTap: () => setState(() => filter = value),
+      onTap: () => setState(() => _filter = value),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        padding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
           color: isSelected
               ? theme.colorScheme.primary
@@ -491,26 +432,22 @@ class _BudgetPageState extends State<BudgetPage> {
     );
   }
 
-  Widget buildBudgetCard(Budget budget) {
-    final theme = Theme.of(context);
+  Widget _buildCard(Budget budget, ThemeData theme) {
     final totalSpent = budget.totalSpent;
     final amountLeft = budget.amountLeft;
     final progress = (totalSpent / budget.total).clamp(0.0, 1.0);
     final isOverBudget = totalSpent > budget.total;
 
     return GestureDetector(
-      onTap: () async {
-        await Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => BudgetDetailPage(
-              budgetId: budget.id,
-              onBudgetUpdated: loadBudgets,
-            ),
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => BudgetDetailPage(
+            budgetId: budget.id,
+            onBudgetUpdated: () {},
           ),
-        );
-        loadBudgets();
-      },
+        ),
+      ),
       child: Container(
         margin: const EdgeInsets.only(bottom: 16),
         padding: const EdgeInsets.all(16),
@@ -534,7 +471,7 @@ class _BudgetPageState extends State<BudgetPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header
+            // Header row
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -557,9 +494,8 @@ class _BudgetPageState extends State<BudgetPage> {
                           children: [
                             Text(
                               budget.name,
-                              style: theme.textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.bold,
-                              ),
+                              style: theme.textTheme.titleMedium
+                                  ?.copyWith(fontWeight: FontWeight.bold),
                               overflow: TextOverflow.ellipsis,
                             ),
                             if (budget.isChecked)
@@ -584,15 +520,15 @@ class _BudgetPageState extends State<BudgetPage> {
                     ],
                   ),
                 ),
-                // ✅ UPDATED: Three-dot opens bottom sheet
                 IconButton(
                   icon: Icon(Icons.more_vert,
                       color: theme.colorScheme.onSurface),
-                  onPressed: () => showBudgetOptionsBottomSheet(budget),
+                  onPressed: () => _showOptionsSheet(budget),
                 ),
               ],
             ),
             const SizedBox(height: 16),
+            // Amounts
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -602,7 +538,8 @@ class _BudgetPageState extends State<BudgetPage> {
                     Text(
                       'Budget',
                       style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurface.withAlpha(120)),
+                          color:
+                              theme.colorScheme.onSurface.withAlpha(120)),
                     ),
                     Text(
                       CurrencyFormatter.format(budget.total),
@@ -619,7 +556,8 @@ class _BudgetPageState extends State<BudgetPage> {
                     Text(
                       'Left',
                       style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurface.withAlpha(120)),
+                          color:
+                              theme.colorScheme.onSurface.withAlpha(120)),
                     ),
                     Text(
                       CurrencyFormatter.format(amountLeft),
@@ -633,6 +571,7 @@ class _BudgetPageState extends State<BudgetPage> {
               ],
             ),
             const SizedBox(height: 16),
+            // Progress
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -642,7 +581,8 @@ class _BudgetPageState extends State<BudgetPage> {
                     Text(
                       'Spent: ${CurrencyFormatter.format(totalSpent)}',
                       style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurface.withAlpha(120)),
+                          color:
+                              theme.colorScheme.onSurface.withAlpha(120)),
                     ),
                     Text(
                       '${(progress * 100).toStringAsFixed(0)}%',
@@ -675,61 +615,314 @@ class _BudgetPageState extends State<BudgetPage> {
   }
 }
 
-// Budget Model
+// ═══════════════════════════════════════════════════════════════════════════════
+//  CREATE BUDGET DIALOG — isolated widget with loading state
+// ═══════════════════════════════════════════════════════════════════════════════
+class _CreateBudgetDialog extends StatefulWidget {
+  final Future<void> Function(String name, double amount) onSubmit;
+  const _CreateBudgetDialog({required this.onSubmit});
+
+  @override
+  State<_CreateBudgetDialog> createState() => _CreateBudgetDialogState();
+}
+
+class _CreateBudgetDialogState extends State<_CreateBudgetDialog> {
+  final _nameCtrl = TextEditingController();
+  final _amountCtrl = TextEditingController();
+  bool _loading = false;
+
+  @override
+  void dispose() {
+    _nameCtrl.dispose();
+    _amountCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    final name = _nameCtrl.text.trim();
+    final amount = double.tryParse(_amountCtrl.text) ?? 0;
+
+    if (name.isEmpty) {
+      _snack('Enter a budget name', isError: true);
+      return;
+    }
+    if (amount <= 0) {
+      _snack('Enter a valid amount', isError: true);
+      return;
+    }
+
+    setState(() => _loading = true);
+    try {
+      await widget.onSubmit(name, amount);
+      if (mounted) Navigator.pop(context);
+    } catch (e) {
+      if (mounted) _snack('Error: ${e.toString()}', isError: true);
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  void _snack(String msg, {bool isError = false}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(msg),
+        backgroundColor: isError ? errorColor : brandGreen,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Create Budget'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextField(
+            controller: _nameCtrl,
+            textCapitalization: TextCapitalization.words,
+            enabled: !_loading,
+            decoration: const InputDecoration(
+              labelText: 'Budget Name',
+              hintText: 'e.g., Groceries',
+              prefixIcon: Icon(Icons.edit),
+              border: OutlineInputBorder(),
+            ),
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _amountCtrl,
+            keyboardType: TextInputType.number,
+            enabled: !_loading,
+            decoration: const InputDecoration(
+              labelText: 'Budget Amount (Ksh)',
+              hintText: '0',
+              prefixIcon: Icon(Icons.attach_money),
+              border: OutlineInputBorder(),
+            ),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: _loading ? null : () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        ElevatedButton(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: accentColor,
+            foregroundColor: Colors.white,
+            padding:
+                const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          ),
+          onPressed: _loading ? null : _submit,
+          child: _loading
+              ? const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(
+                      strokeWidth: 2, color: Colors.white),
+                )
+              : const Text('Create'),
+        ),
+      ],
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  EDIT BUDGET DIALOG — isolated widget with loading state
+// ═══════════════════════════════════════════════════════════════════════════════
+class _EditBudgetDialog extends StatefulWidget {
+  final Budget budget;
+  final Future<void> Function(String name, double amount) onSubmit;
+  const _EditBudgetDialog({required this.budget, required this.onSubmit});
+
+  @override
+  State<_EditBudgetDialog> createState() => _EditBudgetDialogState();
+}
+
+class _EditBudgetDialogState extends State<_EditBudgetDialog> {
+  late final TextEditingController _nameCtrl;
+  late final TextEditingController _amountCtrl;
+  bool _loading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _nameCtrl = TextEditingController(text: widget.budget.name);
+    _amountCtrl =
+        TextEditingController(text: widget.budget.total.toStringAsFixed(0));
+  }
+
+  @override
+  void dispose() {
+    _nameCtrl.dispose();
+    _amountCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    final name = _nameCtrl.text.trim();
+    final amount = double.tryParse(_amountCtrl.text) ?? 0;
+
+    if (name.isEmpty) {
+      _snack('Enter a budget name', isError: true);
+      return;
+    }
+    if (amount <= 0) {
+      _snack('Enter a valid amount', isError: true);
+      return;
+    }
+
+    setState(() => _loading = true);
+    try {
+      await widget.onSubmit(name, amount);
+      if (mounted) Navigator.pop(context);
+    } catch (e) {
+      if (mounted) _snack('Error: ${e.toString()}', isError: true);
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  void _snack(String msg, {bool isError = false}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(msg),
+        backgroundColor: isError ? errorColor : brandGreen,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Edit Budget'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextField(
+            controller: _nameCtrl,
+            textCapitalization: TextCapitalization.words,
+            enabled: !_loading,
+            decoration: const InputDecoration(
+              labelText: 'Budget Name',
+              prefixIcon: Icon(Icons.edit),
+              border: OutlineInputBorder(),
+            ),
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _amountCtrl,
+            keyboardType: TextInputType.number,
+            enabled: !_loading,
+            decoration: const InputDecoration(
+              labelText: 'Budget Amount (Ksh)',
+              prefixIcon: Icon(Icons.attach_money),
+              border: OutlineInputBorder(),
+            ),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: _loading ? null : () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        ElevatedButton(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: accentColor,
+            foregroundColor: Colors.white,
+            padding:
+                const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          ),
+          onPressed: _loading ? null : _submit,
+          child: _loading
+              ? const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(
+                      strokeWidth: 2, color: Colors.white),
+                )
+              : const Text('Save Changes'),
+        ),
+      ],
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  BUDGET MODEL — Firestore-backed
+// ═══════════════════════════════════════════════════════════════════════════════
 class Budget {
-  String id;
+  final String id;
   String name;
   double total;
   List<Expense> expenses;
   bool isChecked;
   DateTime? checkedDate;
-  DateTime createdDate;
+  DateTime createdAt;
 
   Budget({
-    String? id,
+    required this.id,
     required this.name,
     required this.total,
     List<Expense>? expenses,
     this.isChecked = false,
     this.checkedDate,
-    DateTime? createdDate,
+    DateTime? createdAt,
   })  : expenses = expenses ?? [],
-        id = id ?? DateTime.now().millisecondsSinceEpoch.toString(),
-        createdDate = createdDate ?? DateTime.now();
+        createdAt = createdAt ?? DateTime.now();
 
   double get totalSpent => expenses.fold(0.0, (sum, e) => sum + e.amount);
   double get amountLeft => total - totalSpent;
 
-  Map<String, dynamic> toMap() => {
-        'id': id,
+  /// Builds a fresh Firestore document map for a new budget.
+  static Map<String, dynamic> newBudgetMap(String name, double amount) => {
+        'name': name,
+        'total': amount,
+        'expenses': [],
+        'isChecked': false,
+        'checkedDate': null,
+        'createdAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      };
+
+  Map<String, dynamic> toFirestore() => {
         'name': name,
         'total': total,
         'expenses': expenses.map((e) => e.toMap()).toList(),
         'isChecked': isChecked,
         'checkedDate': checkedDate?.toIso8601String(),
-        'createdDate': createdDate.toIso8601String(),
+        'updatedAt': FieldValue.serverTimestamp(),
       };
 
-  factory Budget.fromMap(Map<String, dynamic> map) => Budget(
-        id: map['id'] ?? DateTime.now().millisecondsSinceEpoch.toString(),
-        name: map['name'],
-        total: (map['total'] as num).toDouble(),
-        expenses: (map['expenses'] as List?)
-                ?.map((e) => Expense.fromMap(e))
-                .toList() ??
-            [],
-        isChecked: map['isChecked'] ?? map['checked'] ?? false,
-        checkedDate: map['checkedDate'] != null
-            ? DateTime.parse(map['checkedDate'])
-            : null,
-        createdDate: map['createdDate'] != null
-            ? DateTime.parse(map['createdDate'])
-            : DateTime.now(),
-      );
+  factory Budget.fromFirestore(String docId, Map<String, dynamic> map) {
+    return Budget(
+      id: docId,
+      name: map['name'] ?? '',
+      total: (map['total'] as num?)?.toDouble() ?? 0,
+      expenses: (map['expenses'] as List?)
+              ?.map((e) => Expense.fromMap(Map<String, dynamic>.from(e)))
+              .toList() ??
+          [],
+      isChecked: map['isChecked'] ?? false,
+      checkedDate: map['checkedDate'] != null
+          ? DateTime.tryParse(map['checkedDate'])
+          : null,
+      createdAt: (map['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+    );
+  }
 }
 
+// ═══════════════════════════════════════════════════════════════════════════════
+//  EXPENSE MODEL
+// ═══════════════════════════════════════════════════════════════════════════════
 class Expense {
-  String id;
+  final String id;
   String name;
   double amount;
   DateTime createdDate;
@@ -751,10 +944,10 @@ class Expense {
 
   factory Expense.fromMap(Map<String, dynamic> map) => Expense(
         id: map['id'] ?? DateTime.now().millisecondsSinceEpoch.toString(),
-        name: map['name'],
-        amount: (map['amount'] as num).toDouble(),
+        name: map['name'] ?? '',
+        amount: (map['amount'] as num?)?.toDouble() ?? 0,
         createdDate: map['createdDate'] != null
-            ? DateTime.parse(map['createdDate'])
+            ? DateTime.tryParse(map['createdDate']) ?? DateTime.now()
             : DateTime.now(),
       );
 }
