@@ -11,6 +11,7 @@ import 'package:final_project/Components/toast.dart';
 import 'package:final_project/Constants/colors.dart';
 import 'package:final_project/Constants/spacing.dart';
 import 'package:final_project/Firebase/cloudinary_service.dart';
+import 'package:final_project/Primary_Screens/Savings/financial_service.dart';
 import 'package:final_project/SecondaryScreens/all_transactions.dart';
 import 'package:final_project/SecondaryScreens/report_page.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -64,6 +65,8 @@ class _HomePageState extends State<HomePage> {
 
   double totalIncome = 0.0;
   double totalExpenses = 0.0;
+  // displayedSavingsAmount: principal only (no fee) — for the statistics card.
+  double displayedSavingsAmount = 0.0;
   bool isLoading = true;
 
   @override
@@ -102,29 +105,23 @@ class _HomePageState extends State<HomePage> {
     budgets = budgetStrings.map((s) => Budget.fromMap(json.decode(s))).toList();
 
     final savingsStrings = prefs.getStringList(keySavings) ?? [];
-    savings = savingsStrings.map((s) => Saving.fromMap(json.decode(s))).toList();
+    savings = savingsStrings
+        .map((s) => Saving.fromMap(json.decode(s)))
+        .toList();
 
     totalIncome = prefs.getDouble(keyTotalIncome) ?? 0.0;
 
+    // Use centralized financial calculation.
+    final summary = FinancialService.recalculateFromPrefs(prefs);
+    totalIncome = summary.totalIncome;
+    totalExpenses = summary.totalExpenses;
+    displayedSavingsAmount = summary.displayedSavingsAmount;
+
     checkSavingsDeadlines();
-    calculateStats();
     setState(() => isLoading = false);
   }
 
-  void calculateStats() {
-    double expenses = 0.0;
-    for (var tx in transactions) {
-      final type = tx['type'];
-      if (type == 'expense' ||
-          type == 'budget_finalized' ||
-          type == 'savings_deduction') {
-        expenses += double.tryParse(tx['amount'].toString()) ?? 0.0;
-        expenses +=
-            double.tryParse(tx['transactionCost']?.toString() ?? '0') ?? 0.0;
-      }
-    }
-    totalExpenses = expenses;
-  }
+  // calculateStats() removed — centralized in FinancialService.recalculateFromPrefs().
 
   Future<void> saveTransaction(
     String title,
@@ -144,7 +141,11 @@ class _HomePageState extends State<HomePage> {
     };
     transactions.insert(0, newTx);
     await prefs.setString(keyTransactions, json.encode(transactions));
-    calculateStats();
+    // Recalculate using centralized service so all totals stay in sync.
+    final summary = FinancialService.recalculateFromPrefs(prefs);
+    totalIncome = summary.totalIncome;
+    totalExpenses = summary.totalExpenses;
+    displayedSavingsAmount = summary.displayedSavingsAmount;
     setState(() {});
     showTransactionToast(type, amount, transactionCost: transactionCost);
   }
@@ -222,12 +223,16 @@ class _HomePageState extends State<HomePage> {
   // ── Top 5 expenses ──────────────────────────────────────────────────────────
   List<Map<String, dynamic>> get top5Expenses {
     final expenses = transactions
-        .where((tx) => tx['type'] == 'expense' || tx['type'] == 'budget_finalized')
+        .where(
+          (tx) => tx['type'] == 'expense' || tx['type'] == 'budget_finalized',
+        )
         .toList();
     expenses.sort((a, b) {
-      final aTotal = (double.tryParse(a['amount'].toString()) ?? 0) +
+      final aTotal =
+          (double.tryParse(a['amount'].toString()) ?? 0) +
           (double.tryParse(a['transactionCost']?.toString() ?? '0') ?? 0);
-      final bTotal = (double.tryParse(b['amount'].toString()) ?? 0) +
+      final bTotal =
+          (double.tryParse(b['amount'].toString()) ?? 0) +
           (double.tryParse(b['transactionCost']?.toString() ?? '0') ?? 0);
       return bTotal.compareTo(aTotal);
     });
@@ -396,20 +401,24 @@ class _HomePageState extends State<HomePage> {
             onPressed: () async {
               final amt = double.tryParse(amountCtrl.text) ?? 0;
               final reason = reasonCtrl.text.trim();
-              if (amt > 0 &&
-                  titleCtrl.text.isNotEmpty &&
-                  reason.isNotEmpty) {
+              if (amt > 0 && titleCtrl.text.isNotEmpty && reason.isNotEmpty) {
                 final prefs = await SharedPreferences.getInstance();
                 totalIncome += amt;
                 await prefs.setDouble(keyTotalIncome, totalIncome);
-                await saveTransaction(titleCtrl.text, amt, 'income',
-                    reason: reason);
+                await saveTransaction(
+                  titleCtrl.text,
+                  amt,
+                  'income',
+                  reason: reason,
+                );
                 Navigator.pop(context);
                 refreshData();
               } else {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
-                    content: Text('Please fill all fields (amount, source & reason)'),
+                    content: Text(
+                      'Please fill all fields (amount, source & reason)',
+                    ),
                     backgroundColor: Colors.orange,
                     behavior: SnackBarBehavior.floating,
                   ),
@@ -654,9 +663,7 @@ class _HomePageState extends State<HomePage> {
                           children: [
                             Text(
                               username ?? 'Penny User',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .headlineSmall
+                              style: Theme.of(context).textTheme.headlineSmall
                                   ?.copyWith(
                                     color: Colors.white,
                                     fontWeight: FontWeight.bold,
@@ -665,8 +672,11 @@ class _HomePageState extends State<HomePage> {
                             const SizedBox(height: 6),
                             const Row(
                               children: [
-                                Icon(Icons.location_on_rounded,
-                                    size: 16, color: Colors.white70),
+                                Icon(
+                                  Icons.location_on_rounded,
+                                  size: 16,
+                                  color: Colors.white70,
+                                ),
                                 SizedBox(width: 4),
                                 Text(
                                   'Kisii, Kenya',
@@ -694,20 +704,25 @@ class _HomePageState extends State<HomePage> {
                   icon: Icons.dark_mode_outlined,
                   title: 'Dark Mode',
                   trailing: Switch(
-                    value: Provider.of<ThemeProvider>(
-                              context, listen: true)
-                          .currentTheme
-                          .brightness ==
+                    value:
+                        Provider.of<ThemeProvider>(
+                          context,
+                          listen: true,
+                        ).currentTheme.brightness ==
                         Brightness.dark,
                     onChanged: (_) {
-                      Provider.of<ThemeProvider>(context, listen: false)
-                          .toggleTheme();
+                      Provider.of<ThemeProvider>(
+                        context,
+                        listen: false,
+                      ).toggleTheme();
                     },
                     activeTrackColor: brandGreen.withOpacity(0.4),
                     activeThumbColor: brandGreen,
                   ),
-                  onTap: () => Provider.of<ThemeProvider>(context, listen: false)
-                      .toggleTheme(),
+                  onTap: () => Provider.of<ThemeProvider>(
+                    context,
+                    listen: false,
+                  ).toggleTheme(),
                 ),
                 _buildModernSettingsCard(
                   context: context,
@@ -739,7 +754,8 @@ class _HomePageState extends State<HomePage> {
                     Navigator.pushReplacement(
                       context,
                       MaterialPageRoute(
-                          builder: (_) => Login(showSignupPage: () {})),
+                        builder: (_) => Login(showSignupPage: () {}),
+                      ),
                     );
                   },
                 ),
@@ -782,12 +798,14 @@ class _HomePageState extends State<HomePage> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color:
-                    Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
                 borderRadius: radiusMedium,
               ),
-              child: Icon(icon, size: 24,
-                  color: Theme.of(context).colorScheme.onSurface),
+              child: Icon(
+                icon,
+                size: 24,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
             ),
             const SizedBox(width: 18),
             Expanded(
@@ -797,20 +815,25 @@ class _HomePageState extends State<HomePage> {
                   Text(
                     title,
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                   if (subtitle != null) ...[
                     const SizedBox(height: 4),
-                    Text(subtitle,
-                        style: Theme.of(context).textTheme.bodySmall),
+                    Text(
+                      subtitle,
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
                   ],
                 ],
               ),
             ),
             trailing ??
-                Icon(Icons.chevron_right_rounded, size: 26,
-                    color: Theme.of(context).colorScheme.onSurface),
+                Icon(
+                  Icons.chevron_right_rounded,
+                  size: 26,
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
           ],
         ),
       ),
@@ -850,18 +873,21 @@ class _HomePageState extends State<HomePage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(greetings(),
-                  style: Theme.of(context).textTheme.headlineSmall),
-              Text(username ?? 'Penny User',
-                  style: Theme.of(context).textTheme.bodyLarge),
+              Text(
+                greetings(),
+                style: Theme.of(context).textTheme.headlineSmall,
+              ),
+              Text(
+                username ?? 'Penny User',
+                style: Theme.of(context).textTheme.bodyLarge,
+              ),
             ],
           ),
         ),
         actions: [
           Padding(
             padding: paddingAllTiny,
-            child: Row(
-                children: [const ThemeToggleIcon(), NotificationIcon()]),
+            child: Row(children: [const ThemeToggleIcon(), NotificationIcon()]),
           ),
         ],
       ),
@@ -877,8 +903,10 @@ class _HomePageState extends State<HomePage> {
                   children: [
                     buildBalanceCard(),
                     sizedBoxHeightLarge,
-                    Text('Quick Actions',
-                        style: Theme.of(context).textTheme.titleLarge),
+                    Text(
+                      'Quick Actions',
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
                     sizedBoxHeightSmall,
                     buildQuickActions(),
                     sizedBoxHeightLarge,
@@ -895,9 +923,11 @@ class _HomePageState extends State<HomePage> {
   //  REDESIGNED BALANCE CARD
   // ═══════════════════════════════════════════════════════════════════════════
   Widget buildBalanceCard() {
-    final balance = totalIncome - totalExpenses;
+    // Balance comes from FinancialService (clamps to 0, includes all fees).
+    final balance = (totalIncome - totalExpenses).clamp(0.0, double.infinity);
     final isNegative = balance < 0;
-    final savingsTotal = savings.fold<double>(0, (s, g) => s + g.savedAmount);
+    // Use displayedSavingsAmount (principal only, no fee) for the stats card.
+    final savingsTotal = displayedSavingsAmount;
 
     return Container(
       width: double.infinity,
@@ -955,7 +985,9 @@ class _HomePageState extends State<HomePage> {
                   children: [
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 4),
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.white.withOpacity(0.18),
                         borderRadius: BorderRadius.circular(20),
@@ -985,8 +1017,7 @@ class _HomePageState extends State<HomePage> {
                 ),
                 const SizedBox(height: 20),
                 // Divider
-                Divider(
-                    color: Colors.white.withOpacity(0.2), height: 1),
+                Divider(color: Colors.white.withOpacity(0.2), height: 1),
                 const SizedBox(height: 16),
                 // Stats row
                 Row(
@@ -1034,17 +1065,23 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _balanceStat(String label, double amount, IconData icon,
-      {bool center = false}) {
+  Widget _balanceStat(
+    String label,
+    double amount,
+    IconData icon, {
+    bool center = false,
+  }) {
     return Padding(
       padding: EdgeInsets.only(left: center ? 0 : 0),
       child: Column(
-        crossAxisAlignment:
-            center ? CrossAxisAlignment.center : CrossAxisAlignment.start,
+        crossAxisAlignment: center
+            ? CrossAxisAlignment.center
+            : CrossAxisAlignment.start,
         children: [
           Row(
-            mainAxisAlignment:
-                center ? MainAxisAlignment.center : MainAxisAlignment.start,
+            mainAxisAlignment: center
+                ? MainAxisAlignment.center
+                : MainAxisAlignment.start,
             children: [
               Icon(icon, size: 14, color: Colors.white70),
               const SizedBox(width: 4),
@@ -1091,8 +1128,7 @@ class _HomePageState extends State<HomePage> {
           onTap: () async {
             await Navigator.push(
               context,
-              MaterialPageRoute(
-                  builder: (context) => const TransactionsPage()),
+              MaterialPageRoute(builder: (context) => const TransactionsPage()),
             );
             refreshData();
           },
@@ -1147,25 +1183,23 @@ class _HomePageState extends State<HomePage> {
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: Theme.of(context)
-                  .colorScheme
-                  .surface,
+              color: Theme.of(context).colorScheme.surface,
               borderRadius: BorderRadius.circular(14),
               border: Border.all(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .onSurface
-                      .withAlpha(15)),
+                color: Theme.of(context).colorScheme.onSurface.withAlpha(15),
+              ),
             ),
             child: Row(
               children: [
-                Icon(Icons.bar_chart_rounded,
-                    size: 32, color: Colors.grey.shade300),
+                Icon(
+                  Icons.bar_chart_rounded,
+                  size: 32,
+                  color: Colors.grey.shade300,
+                ),
                 const SizedBox(width: 12),
                 Text(
                   'No expenses yet. Add some transactions!',
-                  style: TextStyle(
-                      color: Colors.grey.shade500, fontSize: 13),
+                  style: TextStyle(color: Colors.grey.shade500, fontSize: 13),
                 ),
               ],
             ),
@@ -1174,10 +1208,9 @@ class _HomePageState extends State<HomePage> {
           ...top.asMap().entries.map((entry) {
             final idx = entry.key;
             final tx = entry.value;
-            final amount =
-                double.tryParse(tx['amount'].toString()) ?? 0.0;
-            final fee = double.tryParse(
-                    tx['transactionCost']?.toString() ?? '0') ??
+            final amount = double.tryParse(tx['amount'].toString()) ?? 0.0;
+            final fee =
+                double.tryParse(tx['transactionCost']?.toString() ?? '0') ??
                 0.0;
             final total = amount + fee;
 
@@ -1196,10 +1229,8 @@ class _HomePageState extends State<HomePage> {
                 color: Theme.of(context).colorScheme.surface,
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(
-                    color: Theme.of(context)
-                        .colorScheme
-                        .onSurface
-                        .withAlpha(12)),
+                  color: Theme.of(context).colorScheme.onSurface.withAlpha(12),
+                ),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withOpacity(0.04),
@@ -1276,7 +1307,6 @@ class _HomePageState extends State<HomePage> {
       ],
     );
   }
-
 }
 
 // ─── Models ────────────────────────────────────────────────────────────────────
@@ -1296,39 +1326,38 @@ class Budget {
     this.isChecked = false,
     this.checkedDate,
     DateTime? createdDate,
-  })  : expenses = expenses ?? [],
-        id = id ?? DateTime.now().millisecondsSinceEpoch.toString(),
-        createdDate = createdDate ?? DateTime.now();
+  }) : expenses = expenses ?? [],
+       id = id ?? DateTime.now().millisecondsSinceEpoch.toString(),
+       createdDate = createdDate ?? DateTime.now();
 
   double get totalSpent => expenses.fold(0.0, (s, e) => s + e.amount);
   double get amountLeft => total - totalSpent;
 
   Map<String, dynamic> toMap() => {
-        'id': id,
-        'name': name,
-        'total': total,
-        'expenses': expenses.map((e) => e.toMap()).toList(),
-        'isChecked': isChecked,
-        'checkedDate': checkedDate?.toIso8601String(),
-        'createdDate': createdDate.toIso8601String(),
-      };
+    'id': id,
+    'name': name,
+    'total': total,
+    'expenses': expenses.map((e) => e.toMap()).toList(),
+    'isChecked': isChecked,
+    'checkedDate': checkedDate?.toIso8601String(),
+    'createdDate': createdDate.toIso8601String(),
+  };
 
   factory Budget.fromMap(Map<String, dynamic> map) => Budget(
-        id: map['id'] ?? DateTime.now().millisecondsSinceEpoch.toString(),
-        name: map['name'],
-        total: (map['total'] as num).toDouble(),
-        expenses: (map['expenses'] as List?)
-                ?.map((e) => Expense.fromMap(e))
-                .toList() ??
-            [],
-        isChecked: map['isChecked'] ?? map['checked'] ?? false,
-        checkedDate: map['checkedDate'] != null
-            ? DateTime.parse(map['checkedDate'])
-            : null,
-        createdDate: map['createdDate'] != null
-            ? DateTime.parse(map['createdDate'])
-            : DateTime.now(),
-      );
+    id: map['id'] ?? DateTime.now().millisecondsSinceEpoch.toString(),
+    name: map['name'],
+    total: (map['total'] as num).toDouble(),
+    expenses:
+        (map['expenses'] as List?)?.map((e) => Expense.fromMap(e)).toList() ??
+        [],
+    isChecked: map['isChecked'] ?? map['checked'] ?? false,
+    checkedDate: map['checkedDate'] != null
+        ? DateTime.parse(map['checkedDate'])
+        : null,
+    createdDate: map['createdDate'] != null
+        ? DateTime.parse(map['createdDate'])
+        : DateTime.now(),
+  );
 }
 
 class Expense {
@@ -1341,24 +1370,24 @@ class Expense {
     required this.name,
     required this.amount,
     DateTime? createdDate,
-  })  : id = id ?? DateTime.now().millisecondsSinceEpoch.toString(),
-        createdDate = createdDate ?? DateTime.now();
+  }) : id = id ?? DateTime.now().millisecondsSinceEpoch.toString(),
+       createdDate = createdDate ?? DateTime.now();
 
   Map<String, dynamic> toMap() => {
-        'id': id,
-        'name': name,
-        'amount': amount,
-        'createdDate': createdDate.toIso8601String(),
-      };
+    'id': id,
+    'name': name,
+    'amount': amount,
+    'createdDate': createdDate.toIso8601String(),
+  };
 
   factory Expense.fromMap(Map<String, dynamic> map) => Expense(
-        id: map['id'] ?? DateTime.now().millisecondsSinceEpoch.toString(),
-        name: map['name'],
-        amount: (map['amount'] as num).toDouble(),
-        createdDate: map['createdDate'] != null
-            ? DateTime.parse(map['createdDate'])
-            : DateTime.now(),
-      );
+    id: map['id'] ?? DateTime.now().millisecondsSinceEpoch.toString(),
+    name: map['name'],
+    amount: (map['amount'] as num).toDouble(),
+    createdDate: map['createdDate'] != null
+        ? DateTime.parse(map['createdDate'])
+        : DateTime.now(),
+  );
 }
 
 class Saving {
@@ -1384,32 +1413,32 @@ class Saving {
   double get balance => targetAmount - savedAmount;
 
   Map<String, dynamic> toMap() => {
-        'name': name,
-        'savedAmount': savedAmount,
-        'targetAmount': targetAmount,
-        'deadline': deadline.toIso8601String(),
-        'achieved': achieved,
-        'walletType': walletType,
-        'walletName': walletName,
-        'lastUpdated': lastUpdated.toIso8601String(),
-      };
+    'name': name,
+    'savedAmount': savedAmount,
+    'targetAmount': targetAmount,
+    'deadline': deadline.toIso8601String(),
+    'achieved': achieved,
+    'walletType': walletType,
+    'walletName': walletName,
+    'lastUpdated': lastUpdated.toIso8601String(),
+  };
 
   factory Saving.fromMap(Map<String, dynamic> map) => Saving(
-        name: map['name'] ?? 'Unnamed',
-        savedAmount: map['savedAmount'] is String
-            ? double.tryParse(map['savedAmount']) ?? 0.0
-            : (map['savedAmount'] as num?)?.toDouble() ?? 0.0,
-        targetAmount: map['targetAmount'] is String
-            ? double.tryParse(map['targetAmount']) ?? 0.0
-            : (map['targetAmount'] as num?)?.toDouble() ?? 0.0,
-        deadline: map['deadline'] != null
-            ? DateTime.parse(map['deadline'])
-            : DateTime.now().add(const Duration(days: 30)),
-        achieved: map['achieved'] ?? false,
-        walletType: map['walletType'] ?? 'M-Pesa',
-        walletName: map['walletName'],
-        lastUpdated: map['lastUpdated'] != null
-            ? DateTime.parse(map['lastUpdated'])
-            : DateTime.now(),
-      );
+    name: map['name'] ?? 'Unnamed',
+    savedAmount: map['savedAmount'] is String
+        ? double.tryParse(map['savedAmount']) ?? 0.0
+        : (map['savedAmount'] as num?)?.toDouble() ?? 0.0,
+    targetAmount: map['targetAmount'] is String
+        ? double.tryParse(map['targetAmount']) ?? 0.0
+        : (map['targetAmount'] as num?)?.toDouble() ?? 0.0,
+    deadline: map['deadline'] != null
+        ? DateTime.parse(map['deadline'])
+        : DateTime.now().add(const Duration(days: 30)),
+    achieved: map['achieved'] ?? false,
+    walletType: map['walletType'] ?? 'M-Pesa',
+    walletName: map['walletName'],
+    lastUpdated: map['lastUpdated'] != null
+        ? DateTime.parse(map['lastUpdated'])
+        : DateTime.now(),
+  );
 }

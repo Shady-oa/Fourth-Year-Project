@@ -46,7 +46,13 @@ import 'package:shared_preferences/shared_preferences.dart';
 class FinancialSummary {
   final double totalIncome;
   final double totalExpenses;
+
+  /// Total deducted for savings (amount + fee) — used in balance/expenses.
   final double totalSavingsDeducted;
+
+  /// The *displayed* saved amount — principal only, fees excluded.
+  /// Use this for the statistics card on Home/Analytics/Reports pages.
+  final double displayedSavingsAmount;
   final double totalFees;
   final double balance;
   final int transactionCount;
@@ -55,6 +61,7 @@ class FinancialSummary {
     required this.totalIncome,
     required this.totalExpenses,
     required this.totalSavingsDeducted,
+    required this.displayedSavingsAmount,
     required this.totalFees,
     required this.balance,
     required this.transactionCount,
@@ -63,7 +70,8 @@ class FinancialSummary {
   @override
   String toString() =>
       'FinancialSummary(income=$totalIncome, expenses=$totalExpenses, '
-      'savings=$totalSavingsDeducted, fees=$totalFees, balance=$balance)';
+      'savings=$totalSavingsDeducted, displayedSavings=$displayedSavingsAmount, '
+      'fees=$totalFees, balance=$balance)';
 }
 
 class FinancialService {
@@ -91,18 +99,18 @@ class FinancialService {
 
   static FinancialSummary _compute(SharedPreferences prefs) {
     final raw = prefs.getString(_keyTransactions) ?? '[]';
-    final transactions =
-        List<Map<String, dynamic>>.from(json.decode(raw));
+    final transactions = List<Map<String, dynamic>>.from(json.decode(raw));
     final totalIncome = prefs.getDouble(_keyTotalIncome) ?? 0.0;
 
     double totalExpenses = 0.0;
     double totalSavingsDeducted = 0.0;
+    // Principal only (no fee) — for the statistics card display.
+    double displayedSavingsAmount = 0.0;
     double totalFees = 0.0;
 
     for (final tx in transactions) {
       final type = (tx['type'] as String?) ?? '';
-      final amount =
-          double.tryParse(tx['amount']?.toString() ?? '0') ?? 0.0;
+      final amount = double.tryParse(tx['amount']?.toString() ?? '0') ?? 0.0;
       final fee =
           double.tryParse(tx['transactionCost']?.toString() ?? '0') ?? 0.0;
 
@@ -112,18 +120,26 @@ class FinancialService {
       totalFees += fee;
 
       if (type == 'savings_deduction' || type == 'saving_deposit') {
+        // totalSavingsDeducted = principal + fee (affects balance / expenses).
         totalSavingsDeducted += amount + fee;
+        // displayedSavingsAmount = principal only (shown in statistics card).
+        // The transaction stores totalDeduct = principal + fee in 'amount',
+        // so we subtract the fee to recover the true principal.
+        displayedSavingsAmount += amount - fee;
       }
     }
 
     // Guard: balance cannot go below zero
-    final balance =
-        (totalIncome - totalExpenses).clamp(0.0, double.infinity);
+    final balance = (totalIncome - totalExpenses).clamp(0.0, double.infinity);
 
     return FinancialSummary(
       totalIncome: totalIncome,
       totalExpenses: totalExpenses,
       totalSavingsDeducted: totalSavingsDeducted,
+      displayedSavingsAmount: displayedSavingsAmount.clamp(
+        0.0,
+        double.infinity,
+      ),
       totalFees: totalFees,
       balance: balance,
       transactionCount: transactions.length,

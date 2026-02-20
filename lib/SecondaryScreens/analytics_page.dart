@@ -151,13 +151,25 @@ class _AnalyticsPageState extends State<AnalyticsPage>
       .fold(0.0, (s, tx) => s + _amt(tx));
   double get filteredExpenses => filteredTransactions
       .where((tx) => tx['type'] != 'income')
-      .fold(0.0, (s, tx) => s + _amt(tx) + _fee(tx));
+      .fold(0.0, (s, tx) {
+        final type = (tx['type'] ?? '') as String;
+        // For savings_deduction/saving_deposit: 'amount' already = principal+fee.
+        // Do NOT add _fee(tx) again to avoid double-counting.
+        if (type == 'savings_deduction' || type == 'saving_deposit') {
+          return s + _amt(tx);
+        }
+        return s + _amt(tx) + _fee(tx);
+      });
+  // filteredSavings: principal only (no fee) for the statistics card display.
   double get filteredSavings => filteredTransactions
       .where(
         (tx) =>
             tx['type'] == 'savings_deduction' || tx['type'] == 'saving_deposit',
       )
-      .fold(0.0, (s, tx) => s + _amt(tx));
+      .fold(
+        0.0,
+        (s, tx) => (s + _amt(tx) - _fee(tx)).clamp(0.0, double.infinity),
+      );
   double get totalFeesPaid => filteredTransactions
       .where((tx) => tx['type'] != 'income')
       .fold(0.0, (s, tx) => s + _fee(tx));
@@ -193,8 +205,14 @@ class _AnalyticsPageState extends State<AnalyticsPage>
     final map = <String, double>{};
     for (var tx in filteredTransactions) {
       if (tx['type'] == 'income') continue;
+      final type = (tx['type'] ?? '') as String;
       final cat = _categoriseTitle(tx['title'] ?? '');
-      map[cat] = (map[cat] ?? 0) + _amt(tx) + _fee(tx);
+      // For savings: amount already includes fee; do NOT add _fee again.
+      if (type == 'savings_deduction' || type == 'saving_deposit') {
+        map[cat] = (map[cat] ?? 0) + _amt(tx);
+      } else {
+        map[cat] = (map[cat] ?? 0) + _amt(tx) + _fee(tx);
+      }
     }
     return Map.fromEntries(
       map.entries.toList()..sort((a, b) => b.value.compareTo(a.value)),
@@ -266,8 +284,9 @@ class _AnalyticsPageState extends State<AnalyticsPage>
           income += _amt(tx);
         } else if (tx['type'] == 'savings_deduction' ||
             tx['type'] == 'saving_deposit') {
-          savings += _amt(tx);
-          expenses += _amt(tx) + _fee(tx);
+          // _amt already = principal + fee; do NOT add _fee again.
+          savings += (_amt(tx) - _fee(tx)).clamp(0.0, double.infinity);
+          expenses += _amt(tx);
         } else {
           expenses += _amt(tx) + _fee(tx);
         }
@@ -299,10 +318,14 @@ class _AnalyticsPageState extends State<AnalyticsPage>
         } else if (d.isAfter(lastMonthStart) && d.isBefore(lastMonthEnd))
           lastMonthInc += _amt(tx);
       } else {
+        // For savings: amount already = principal+fee; do NOT add _fee again.
+        final isS =
+            tx['type'] == 'savings_deduction' || tx['type'] == 'saving_deposit';
+        final cost = isS ? _amt(tx) : _amt(tx) + _fee(tx);
         if (d.isAfter(thisMonthStart)) {
-          thisMonthExp += _amt(tx) + _fee(tx);
+          thisMonthExp += cost;
         } else if (d.isAfter(lastMonthStart) && d.isBefore(lastMonthEnd))
-          lastMonthExp += _amt(tx) + _fee(tx);
+          lastMonthExp += cost;
       }
     }
 
@@ -1166,9 +1189,7 @@ class _AnalyticsPageState extends State<AnalyticsPage>
               ),
             ),
             sizedBoxHeightMedium,
-            ...insights
-                .map((insight) => _buildInsightCard(theme, insight))
-                ,
+            ...insights.map((insight) => _buildInsightCard(theme, insight)),
             sizedBoxHeightLarge,
             _buildSpendingCategoryTable(theme),
             sizedBoxHeightLarge,

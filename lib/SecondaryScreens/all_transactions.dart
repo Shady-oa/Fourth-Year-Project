@@ -4,7 +4,6 @@ import 'package:final_project/Constants/colors.dart';
 import 'package:final_project/Constants/spacing.dart';
 import 'package:final_project/SecondaryScreens/Transactions/edit_transaction.dart';
 import 'package:final_project/SecondaryScreens/Transactions/transaction_card.dart';
-
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -63,36 +62,28 @@ class _TransactionsPageState extends State<TransactionsPage> {
     totalIncome = prefs.getDouble(keyTotalIncome) ?? 0.0;
 
     final budgetStrings = prefs.getStringList(keyBudgets) ?? [];
-    budgets =
-        budgetStrings.map((s) => Budget.fromMap(json.decode(s))).toList();
+    budgets = budgetStrings.map((s) => Budget.fromMap(json.decode(s))).toList();
 
     final savingsStrings = prefs.getStringList(keySavings) ?? [];
-    savings =
-        savingsStrings.map((s) => Saving.fromMap(json.decode(s))).toList();
+    savings = savingsStrings
+        .map((s) => Saving.fromMap(json.decode(s)))
+        .toList();
 
     setState(() => isLoading = false);
   }
 
-  bool isTransactionLinkedToAchievedGoal(Map<String, dynamic> tx) {
-    if (tx['type'] != 'savings_deduction' &&
-        tx['type'] != 'savings_withdrawal') {
-      return false;
-    }
-    final title = tx['title'] ?? '';
-    for (var saving in savings) {
-      if (title.contains(saving.name) && saving.achieved) return true;
-    }
-    return false;
-  }
-
-  bool isTransactionLinkedToCheckedBudget(Map<String, dynamic> tx) {
-    if (tx['type'] != 'budget_finalized') return false;
-    final budgetId = tx['budgetId'];
-    if (budgetId == null) return false;
-    for (var budget in budgets) {
-      if (budget.id == budgetId && budget.isChecked) return true;
-    }
-    return false;
+  /// Returns true for any transaction type that should be locked (read-only).
+  /// Savings and budget transactions are always locked to protect financial
+  /// history — regardless of whether the linked goal/budget is achieved.
+  bool isSavingsOrBudgetTransaction(Map<String, dynamic> tx) {
+    const lockedTypes = {
+      'savings_deduction',
+      'saving_deposit',
+      'savings_withdrawal',
+      'budget_finalized',
+      'budget_expense',
+    };
+    return lockedTypes.contains(tx['type'] ?? '');
   }
 
   // ── Filtering ─────────────────────────────────────────────────────────────
@@ -187,7 +178,9 @@ class _TransactionsPageState extends State<TransactionsPage> {
                 // Filter chips
                 Padding(
                   padding: const EdgeInsets.symmetric(
-                      horizontal: 16.0, vertical: 8.0),
+                    horizontal: 16.0,
+                    vertical: 8.0,
+                  ),
                   child: Row(
                     children: [
                       buildFilterChip('All', 'all', theme),
@@ -204,13 +197,14 @@ class _TransactionsPageState extends State<TransactionsPage> {
                 // Info bar
                 Container(
                   margin: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 4),
+                    horizontal: 16,
+                    vertical: 4,
+                  ),
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
                     color: accentColor.withOpacity(0.08),
                     borderRadius: BorderRadius.circular(8),
-                    border:
-                        Border.all(color: accentColor.withOpacity(0.25)),
+                    border: Border.all(color: accentColor.withOpacity(0.25)),
                   ),
                   child: Row(
                     children: [
@@ -220,7 +214,9 @@ class _TransactionsPageState extends State<TransactionsPage> {
                         child: Text(
                           'Tap any transaction to view details. Income & expense transactions can be edited.',
                           style: TextStyle(
-                              fontSize: 12, color: Colors.grey.shade700),
+                            fontSize: 12,
+                            color: Colors.grey.shade700,
+                          ),
                         ),
                       ),
                     ],
@@ -233,16 +229,19 @@ class _TransactionsPageState extends State<TransactionsPage> {
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Icon(Icons.receipt_long_outlined,
-                                  size: 64,
-                                  color: Colors.grey.shade400),
+                              Icon(
+                                Icons.receipt_long_outlined,
+                                size: 64,
+                                color: Colors.grey.shade400,
+                              ),
                               const SizedBox(height: 16),
                               Text(
                                 _searchQuery.isNotEmpty
                                     ? 'No results for "$_searchQuery"'
                                     : 'No transactions found',
                                 style: theme.textTheme.bodyLarge?.copyWith(
-                                    color: Colors.grey.shade600),
+                                  color: Colors.grey.shade600,
+                                ),
                               ),
                               if (_searchQuery.isNotEmpty)
                                 TextButton(
@@ -258,21 +257,19 @@ class _TransactionsPageState extends State<TransactionsPage> {
                       : RefreshIndicator(
                           onRefresh: loadTransactions,
                           child: ListView.builder(
-                            padding:
-                                const EdgeInsets.symmetric(horizontal: 16),
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
                             itemCount: groupedTx.length,
                             itemBuilder: (context, index) {
-                              final dateKey =
-                                  groupedTx.keys.elementAt(index);
+                              final dateKey = groupedTx.keys.elementAt(index);
                               final txList = groupedTx[dateKey]!;
 
                               return Column(
-                                crossAxisAlignment:
-                                    CrossAxisAlignment.start,
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Padding(
                                     padding: const EdgeInsets.symmetric(
-                                        vertical: 12.0),
+                                      vertical: 12.0,
+                                    ),
                                     child: Text(
                                       getDateLabel(dateKey),
                                       style: Theme.of(context)
@@ -287,13 +284,12 @@ class _TransactionsPageState extends State<TransactionsPage> {
                                     ),
                                   ),
                                   ...txList.map((tx) {
-                                    final originalIndex =
-                                        transactions.indexOf(tx);
+                                    final originalIndex = transactions.indexOf(
+                                      tx,
+                                    );
+                                    // Lock ALL savings and budget transactions.
                                     final isLocked =
-                                        isTransactionLinkedToAchievedGoal(
-                                                tx) ||
-                                            isTransactionLinkedToCheckedBudget(
-                                                tx);
+                                        isSavingsOrBudgetTransaction(tx);
 
                                     return TransactionCard(
                                       transaction: tx,
@@ -400,8 +396,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
             Icons.arrow_circle_down_rounded,
             theme.colorScheme.onSurface,
           ),
-          Container(
-              height: 40, width: 1, color: Colors.white.withOpacity(0.3)),
+          Container(height: 40, width: 1, color: Colors.white.withOpacity(0.3)),
           buildSummaryStat(
             'Expenses',
             totalExpenseFiltered,
@@ -414,7 +409,11 @@ class _TransactionsPageState extends State<TransactionsPage> {
   }
 
   Widget buildSummaryStat(
-      String label, double amount, IconData icon, Color color) {
+    String label,
+    double amount,
+    IconData icon,
+    Color color,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -425,8 +424,8 @@ class _TransactionsPageState extends State<TransactionsPage> {
             Text(
               label,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurface,
-                  ),
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
             ),
           ],
         ),
@@ -434,8 +433,8 @@ class _TransactionsPageState extends State<TransactionsPage> {
         Text(
           CurrencyFormatter.format(amount),
           style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                color: Theme.of(context).colorScheme.onSurface,
-              ),
+            color: Theme.of(context).colorScheme.onSurface,
+          ),
         ),
       ],
     );
@@ -489,39 +488,38 @@ class Budget {
     this.isChecked = false,
     this.checkedDate,
     DateTime? createdDate,
-  })  : expenses = expenses ?? [],
-        id = id ?? DateTime.now().millisecondsSinceEpoch.toString(),
-        createdDate = createdDate ?? DateTime.now();
+  }) : expenses = expenses ?? [],
+       id = id ?? DateTime.now().millisecondsSinceEpoch.toString(),
+       createdDate = createdDate ?? DateTime.now();
 
   double get totalSpent => expenses.fold(0.0, (s, e) => s + e.amount);
   double get amountLeft => total - totalSpent;
 
   Map<String, dynamic> toMap() => {
-        'id': id,
-        'name': name,
-        'total': total,
-        'expenses': expenses.map((e) => e.toMap()).toList(),
-        'isChecked': isChecked,
-        'checkedDate': checkedDate?.toIso8601String(),
-        'createdDate': createdDate.toIso8601String(),
-      };
+    'id': id,
+    'name': name,
+    'total': total,
+    'expenses': expenses.map((e) => e.toMap()).toList(),
+    'isChecked': isChecked,
+    'checkedDate': checkedDate?.toIso8601String(),
+    'createdDate': createdDate.toIso8601String(),
+  };
 
   factory Budget.fromMap(Map<String, dynamic> map) => Budget(
-        id: map['id'] ?? DateTime.now().millisecondsSinceEpoch.toString(),
-        name: map['name'],
-        total: (map['total'] as num).toDouble(),
-        expenses: (map['expenses'] as List?)
-                ?.map((e) => Expense.fromMap(e))
-                .toList() ??
-            [],
-        isChecked: map['isChecked'] ?? map['checked'] ?? false,
-        checkedDate: map['checkedDate'] != null
-            ? DateTime.parse(map['checkedDate'])
-            : null,
-        createdDate: map['createdDate'] != null
-            ? DateTime.parse(map['createdDate'])
-            : DateTime.now(),
-      );
+    id: map['id'] ?? DateTime.now().millisecondsSinceEpoch.toString(),
+    name: map['name'],
+    total: (map['total'] as num).toDouble(),
+    expenses:
+        (map['expenses'] as List?)?.map((e) => Expense.fromMap(e)).toList() ??
+        [],
+    isChecked: map['isChecked'] ?? map['checked'] ?? false,
+    checkedDate: map['checkedDate'] != null
+        ? DateTime.parse(map['checkedDate'])
+        : null,
+    createdDate: map['createdDate'] != null
+        ? DateTime.parse(map['createdDate'])
+        : DateTime.now(),
+  );
 }
 
 class Expense {
@@ -534,24 +532,24 @@ class Expense {
     required this.name,
     required this.amount,
     DateTime? createdDate,
-  })  : id = id ?? DateTime.now().millisecondsSinceEpoch.toString(),
-        createdDate = createdDate ?? DateTime.now();
+  }) : id = id ?? DateTime.now().millisecondsSinceEpoch.toString(),
+       createdDate = createdDate ?? DateTime.now();
 
   Map<String, dynamic> toMap() => {
-        'id': id,
-        'name': name,
-        'amount': amount,
-        'createdDate': createdDate.toIso8601String(),
-      };
+    'id': id,
+    'name': name,
+    'amount': amount,
+    'createdDate': createdDate.toIso8601String(),
+  };
 
   factory Expense.fromMap(Map<String, dynamic> map) => Expense(
-        id: map['id'] ?? DateTime.now().millisecondsSinceEpoch.toString(),
-        name: map['name'],
-        amount: (map['amount'] as num).toDouble(),
-        createdDate: map['createdDate'] != null
-            ? DateTime.parse(map['createdDate'])
-            : DateTime.now(),
-      );
+    id: map['id'] ?? DateTime.now().millisecondsSinceEpoch.toString(),
+    name: map['name'],
+    amount: (map['amount'] as num).toDouble(),
+    createdDate: map['createdDate'] != null
+        ? DateTime.parse(map['createdDate'])
+        : DateTime.now(),
+  );
 }
 
 class Saving {
@@ -575,32 +573,32 @@ class Saving {
   }) : lastUpdated = lastUpdated ?? DateTime.now();
 
   Map<String, dynamic> toMap() => {
-        'name': name,
-        'savedAmount': savedAmount,
-        'targetAmount': targetAmount,
-        'deadline': deadline.toIso8601String(),
-        'achieved': achieved,
-        'walletType': walletType,
-        'walletName': walletName,
-        'lastUpdated': lastUpdated.toIso8601String(),
-      };
+    'name': name,
+    'savedAmount': savedAmount,
+    'targetAmount': targetAmount,
+    'deadline': deadline.toIso8601String(),
+    'achieved': achieved,
+    'walletType': walletType,
+    'walletName': walletName,
+    'lastUpdated': lastUpdated.toIso8601String(),
+  };
 
   factory Saving.fromMap(Map<String, dynamic> map) => Saving(
-        name: map['name'] ?? 'Unnamed',
-        savedAmount: map['savedAmount'] is String
-            ? double.tryParse(map['savedAmount']) ?? 0.0
-            : (map['savedAmount'] as num?)?.toDouble() ?? 0.0,
-        targetAmount: map['targetAmount'] is String
-            ? double.tryParse(map['targetAmount']) ?? 0.0
-            : (map['targetAmount'] as num?)?.toDouble() ?? 0.0,
-        deadline: map['deadline'] != null
-            ? DateTime.parse(map['deadline'])
-            : DateTime.now().add(const Duration(days: 30)),
-        achieved: map['achieved'] ?? false,
-        walletType: map['walletType'] ?? 'M-Pesa',
-        walletName: map['walletName'],
-        lastUpdated: map['lastUpdated'] != null
-            ? DateTime.parse(map['lastUpdated'])
-            : DateTime.now(),
-      );
+    name: map['name'] ?? 'Unnamed',
+    savedAmount: map['savedAmount'] is String
+        ? double.tryParse(map['savedAmount']) ?? 0.0
+        : (map['savedAmount'] as num?)?.toDouble() ?? 0.0,
+    targetAmount: map['targetAmount'] is String
+        ? double.tryParse(map['targetAmount']) ?? 0.0
+        : (map['targetAmount'] as num?)?.toDouble() ?? 0.0,
+    deadline: map['deadline'] != null
+        ? DateTime.parse(map['deadline'])
+        : DateTime.now().add(const Duration(days: 30)),
+    achieved: map['achieved'] ?? false,
+    walletType: map['walletType'] ?? 'M-Pesa',
+    walletName: map['walletName'],
+    lastUpdated: map['lastUpdated'] != null
+        ? DateTime.parse(map['lastUpdated'])
+        : DateTime.now(),
+  );
 }

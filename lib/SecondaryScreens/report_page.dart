@@ -237,13 +237,25 @@ class _ReportPageState extends State<ReportPage>
       .fold(0.0, (s, tx) => s + _amt(tx));
   double get filteredExpenses => filteredTransactions
       .where((tx) => tx['type'] != 'income')
-      .fold(0.0, (s, tx) => s + _amt(tx) + _fee(tx));
+      .fold(0.0, (s, tx) {
+        final type = (tx['type'] ?? '') as String;
+        // For savings_deduction/saving_deposit: 'amount' already = principal+fee.
+        // Do NOT add _fee(tx) again to avoid double-counting.
+        if (type == 'savings_deduction' || type == 'saving_deposit') {
+          return s + _amt(tx);
+        }
+        return s + _amt(tx) + _fee(tx);
+      });
+  // filteredSavings: principal only (no fee) for the statistics card display.
   double get filteredSavings => filteredTransactions
       .where(
         (tx) =>
             tx['type'] == 'savings_deduction' || tx['type'] == 'saving_deposit',
       )
-      .fold(0.0, (s, tx) => s + _amt(tx));
+      .fold(
+        0.0,
+        (s, tx) => (s + _amt(tx) - _fee(tx)).clamp(0.0, double.infinity),
+      );
   double get totalFeesPaid => filteredTransactions
       .where((tx) => tx['type'] != 'income')
       .fold(0.0, (s, tx) => s + _fee(tx));
@@ -277,8 +289,14 @@ class _ReportPageState extends State<ReportPage>
     final map = <String, double>{};
     for (final tx in filteredTransactions) {
       if (tx['type'] == 'income') continue;
+      final type = (tx['type'] ?? '') as String;
       final label = _getTypeLabel(tx['type']);
-      map[label] = (map[label] ?? 0) + _amt(tx) + _fee(tx);
+      // For savings: amount already = principal+fee; do NOT add _fee again.
+      if (type == 'savings_deduction' || type == 'saving_deposit') {
+        map[label] = (map[label] ?? 0) + _amt(tx);
+      } else {
+        map[label] = (map[label] ?? 0) + _amt(tx) + _fee(tx);
+      }
     }
     return Map.fromEntries(
       map.entries.toList()..sort((a, b) => b.value.compareTo(a.value)),
@@ -290,8 +308,14 @@ class _ReportPageState extends State<ReportPage>
     final map = <String, double>{};
     for (final tx in filteredTransactions) {
       if (tx['type'] == 'income') continue;
+      final type = (tx['type'] ?? '') as String;
       final key = DateFormat('dd/MM').format(DateTime.parse(tx['date']));
-      map[key] = (map[key] ?? 0) + _amt(tx) + _fee(tx);
+      // For savings: amount already = principal+fee; do NOT add _fee again.
+      if (type == 'savings_deduction' || type == 'saving_deposit') {
+        map[key] = (map[key] ?? 0) + _amt(tx);
+      } else {
+        map[key] = (map[key] ?? 0) + _amt(tx) + _fee(tx);
+      }
     }
     final days = endDate!.difference(startDate!).inDays + 1;
     final result = <_DailyTotal>[];
@@ -1042,9 +1066,8 @@ class _ReportPageState extends State<ReportPage>
                       ),
                       margin: const EdgeInsets.only(bottom: 8),
                       decoration: BoxDecoration(
-                        color: theme.colorScheme.surfaceContainerHighest.withOpacity(
-                          0.5,
-                        ),
+                        color: theme.colorScheme.surfaceContainerHighest
+                            .withOpacity(0.5),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Row(

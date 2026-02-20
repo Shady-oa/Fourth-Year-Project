@@ -90,13 +90,19 @@ class _SavingsPageState extends State<SavingsPage> {
     _filtered = list;
   }
 
-  Future<void> _logGlobal(String title, double amount, String type) async {
+  Future<void> _logGlobal(
+    String title,
+    double amount,
+    String type, {
+    double transactionCost = 0.0,
+  }) async {
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getString(_keyTransactions) ?? '[]';
     final list = List<Map<String, dynamic>>.from(json.decode(raw));
     list.insert(0, {
       'title': title,
       'amount': amount,
+      'transactionCost': transactionCost,
       'type': type,
       'date': DateTime.now().toIso8601String(),
     });
@@ -120,7 +126,8 @@ class _SavingsPageState extends State<SavingsPage> {
     list.removeWhere((tx) {
       final type = tx['type'] ?? '';
       final title = (tx['title'] ?? '').toString();
-      final isLinked = title.contains(goalName) &&
+      final isLinked =
+          title.contains(goalName) &&
           (type == 'savings_deduction' || type == 'saving_deposit');
       return isLinked;
     });
@@ -139,8 +146,10 @@ class _SavingsPageState extends State<SavingsPage> {
       _streakLevel = 'Base';
       await prefs.setInt(_keyStreakCount, 0);
       await prefs.setString(_keyStreakLevel, 'Base');
-      _notify('💔 Streak Lost',
-          'Streak reset due to inactivity. Start saving again!');
+      _notify(
+        '💔 Streak Lost',
+        'Streak reset due to inactivity. Start saving again!',
+      );
     }
   }
 
@@ -172,8 +181,10 @@ class _SavingsPageState extends State<SavingsPage> {
     await prefs2.setString(_keyStreakLevel, _streakLevel);
     await prefs2.setString(_keyLastSaveDate, today);
     if (_streakCount % 7 == 0) {
-      _notify('🔥 Streak Milestone!',
-          'Amazing! $_streakCount day streak at $_streakLevel level!');
+      _notify(
+        '🔥 Streak Milestone!',
+        'Amazing! $_streakCount day streak at $_streakLevel level!',
+      );
     }
   }
 
@@ -184,11 +195,11 @@ class _SavingsPageState extends State<SavingsPage> {
           .doc(_uid)
           .collection('notifications')
           .add({
-        'title': title,
-        'message': body,
-        'createdAt': FieldValue.serverTimestamp(),
-        'isRead': false,
-      });
+            'title': title,
+            'message': body,
+            'createdAt': FieldValue.serverTimestamp(),
+            'isRead': false,
+          });
     } catch (_) {}
   }
 
@@ -233,15 +244,16 @@ class _SavingsPageState extends State<SavingsPage> {
                   contentPadding: EdgeInsets.zero,
                   leading: const Icon(Icons.calendar_today),
                   title: const Text('Due Date'),
-                  subtitle: Text(DateFormat('dd MMM yyyy').format(selectedDate)),
+                  subtitle: Text(
+                    DateFormat('dd MMM yyyy').format(selectedDate),
+                  ),
                   trailing: const Icon(Icons.arrow_forward_ios, size: 16),
                   onTap: () async {
                     final picked = await showDatePicker(
                       context: ctx,
                       initialDate: selectedDate,
                       firstDate: DateTime.now(),
-                      lastDate:
-                          DateTime.now().add(const Duration(days: 3650)),
+                      lastDate: DateTime.now().add(const Duration(days: 3650)),
                     );
                     if (picked != null) setSt(() => selectedDate = picked);
                   },
@@ -259,7 +271,9 @@ class _SavingsPageState extends State<SavingsPage> {
                 backgroundColor: brandGreen,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(
-                    horizontal: 24, vertical: 12),
+                  horizontal: 24,
+                  vertical: 12,
+                ),
               ),
               onPressed: () async {
                 final target = double.tryParse(targetCtrl.text) ?? 0;
@@ -271,15 +285,19 @@ class _SavingsPageState extends State<SavingsPage> {
                   _snack('Enter a valid target amount', isError: true);
                   return;
                 }
-                _savings.add(Saving(
-                  name: nameCtrl.text.trim(),
-                  savedAmount: 0,
-                  targetAmount: target,
-                  deadline: selectedDate,
-                ));
+                _savings.add(
+                  Saving(
+                    name: nameCtrl.text.trim(),
+                    savedAmount: 0,
+                    targetAmount: target,
+                    deadline: selectedDate,
+                  ),
+                );
                 await _sync();
-                await _notify('🎯 New Goal Created',
-                    'Goal: ${nameCtrl.text} — Target: ${_Fmt.ksh(target)}');
+                await _notify(
+                  '🎯 New Goal Created',
+                  'Goal: ${nameCtrl.text} — Target: ${_Fmt.ksh(target)}',
+                );
                 if (mounted) Navigator.pop(ctx);
                 await _load();
               },
@@ -338,8 +356,7 @@ class _SavingsPageState extends State<SavingsPage> {
             style: ElevatedButton.styleFrom(
               backgroundColor: brandGreen,
               foregroundColor: Colors.white,
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
             ),
             onPressed: () async {
               final amount = double.tryParse(amountCtrl.text) ?? 0;
@@ -370,15 +387,18 @@ class _SavingsPageState extends State<SavingsPage> {
               final wasAchieved = saving.achieved;
               if (saving.savedAmount >= saving.targetAmount && !wasAchieved) {
                 saving.achieved = true;
-                await _notify('🎉 Goal Achieved!',
-                    'You reached ${saving.name}: ${_Fmt.ksh(saving.targetAmount)}!');
+                await _notify(
+                  '🎉 Goal Achieved!',
+                  'You reached ${saving.name}: ${_Fmt.ksh(saving.targetAmount)}!',
+                );
               }
 
               await _sync();
               await _logGlobal(
-                'Saved for ${saving.name} (fee: ${_Fmt.ksh(cost)})',
+                'Saved for ${saving.name}',
                 totalDeduct,
                 'savings_deduction',
+                transactionCost: cost,
               );
               widget.onTransactionAdded?.call(
                 'Saved for ${saving.name}',
@@ -390,7 +410,8 @@ class _SavingsPageState extends State<SavingsPage> {
               await _load();
               if (mounted) {
                 _snack(
-                    '✅ Added ${_Fmt.ksh(amount)} · Deducted ${_Fmt.ksh(totalDeduct)}');
+                  '✅ Added ${_Fmt.ksh(amount)} · Deducted ${_Fmt.ksh(totalDeduct)}',
+                );
               }
             },
             child: const Text('Add Funds'),
@@ -434,8 +455,7 @@ class _SavingsPageState extends State<SavingsPage> {
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.orange,
               foregroundColor: Colors.white,
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
             ),
             onPressed: () async {
               final amount = double.tryParse(amountCtrl.text) ?? 0;
@@ -469,7 +489,10 @@ class _SavingsPageState extends State<SavingsPage> {
               await _sync();
               await _adjustIncome(amount);
               await _logGlobal(
-                  'Withdrawal from ${saving.name}', amount, 'savings_withdrawal');
+                'Withdrawal from ${saving.name}',
+                amount,
+                'savings_withdrawal',
+              );
               widget.onTransactionAdded?.call(
                 'Withdrawal from ${saving.name}',
                 amount,
@@ -493,7 +516,8 @@ class _SavingsPageState extends State<SavingsPage> {
   Future<void> _editGoal(Saving saving) async {
     final nameCtrl = TextEditingController(text: saving.name);
     final targetCtrl = TextEditingController(
-        text: saving.targetAmount.toStringAsFixed(0));
+      text: saving.targetAmount.toStringAsFixed(0),
+    );
     DateTime selectedDate = saving.deadline;
 
     await showDialog(
@@ -529,15 +553,16 @@ class _SavingsPageState extends State<SavingsPage> {
                   contentPadding: EdgeInsets.zero,
                   leading: const Icon(Icons.calendar_today),
                   title: const Text('Due Date'),
-                  subtitle: Text(DateFormat('dd MMM yyyy').format(selectedDate)),
+                  subtitle: Text(
+                    DateFormat('dd MMM yyyy').format(selectedDate),
+                  ),
                   trailing: const Icon(Icons.arrow_forward_ios, size: 16),
                   onTap: () async {
                     final picked = await showDatePicker(
                       context: ctx,
                       initialDate: selectedDate,
                       firstDate: DateTime.now(),
-                      lastDate:
-                          DateTime.now().add(const Duration(days: 3650)),
+                      lastDate: DateTime.now().add(const Duration(days: 3650)),
                     );
                     if (picked != null) setSt(() => selectedDate = picked);
                   },
@@ -555,7 +580,9 @@ class _SavingsPageState extends State<SavingsPage> {
                 backgroundColor: brandGreen,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(
-                    horizontal: 24, vertical: 12),
+                  horizontal: 24,
+                  vertical: 12,
+                ),
               ),
               onPressed: () async {
                 final target = double.tryParse(targetCtrl.text) ?? 0;
@@ -577,7 +604,9 @@ class _SavingsPageState extends State<SavingsPage> {
                   if (!saving.achieved) {
                     saving.achieved = true;
                     await _notify(
-                        '🎉 Goal Achieved!', 'You reached ${saving.name}!');
+                      '🎉 Goal Achieved!',
+                      'You reached ${saving.name}!',
+                    );
                   }
                 } else {
                   saving.achieved = false;
@@ -630,14 +659,15 @@ class _SavingsPageState extends State<SavingsPage> {
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.check_circle,
-                        color: brandGreen, size: 18),
+                    const Icon(Icons.check_circle, color: brandGreen, size: 18),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         'This goal is achieved. Transaction history will be preserved. No refund will be made.',
                         style: TextStyle(
-                            fontSize: 13, color: Colors.grey.shade800),
+                          fontSize: 13,
+                          color: Colors.grey.shade800,
+                        ),
                       ),
                     ),
                   ],
@@ -662,14 +692,18 @@ class _SavingsPageState extends State<SavingsPage> {
                     Text(
                       'Transaction fees paid on deposits are non-refundable.',
                       style: TextStyle(
-                          fontSize: 12, color: Colors.grey.shade600),
+                        fontSize: 12,
+                        color: Colors.grey.shade600,
+                      ),
                     ),
                     if (saving.savedAmount > 0) ...[
                       const SizedBox(height: 4),
                       Text(
                         'All related saving transactions will also be removed.',
                         style: TextStyle(
-                            fontSize: 12, color: Colors.grey.shade600),
+                          fontSize: 12,
+                          color: Colors.grey.shade600,
+                        ),
                       ),
                     ],
                   ],
@@ -686,8 +720,7 @@ class _SavingsPageState extends State<SavingsPage> {
             style: ElevatedButton.styleFrom(
               backgroundColor: errorColor,
               foregroundColor: Colors.white,
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
             ),
             onPressed: () => Navigator.pop(ctx, true),
             child: const Text('Delete'),
@@ -701,8 +734,10 @@ class _SavingsPageState extends State<SavingsPage> {
         // ── Achieved goal: just remove from list, no refund, keep transactions
         _savings.remove(saving);
         await _sync();
-        await _notify('🗑️ Goal Removed',
-            '${saving.name} (achieved) has been removed from your goals.');
+        await _notify(
+          '🗑️ Goal Removed',
+          '${saving.name} (achieved) has been removed from your goals.',
+        );
       } else {
         // ── Unachieved goal: restore balance through transaction-list surgery.
         //
@@ -753,7 +788,8 @@ class _SavingsPageState extends State<SavingsPage> {
       }
 
       await _load();
-      if (mounted) _snack(isAchieved ? 'Goal removed' : 'Goal deleted & refund applied');
+      if (mounted)
+        _snack(isAchieved ? 'Goal removed' : 'Goal deleted & refund applied');
     }
   }
 
@@ -787,14 +823,20 @@ class _SavingsPageState extends State<SavingsPage> {
                       color: brandGreen.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: const Icon(Icons.savings, color: brandGreen, size: 20),
+                    child: const Icon(
+                      Icons.savings,
+                      color: brandGreen,
+                      size: 20,
+                    ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
                       saving.name,
                       style: const TextStyle(
-                          fontWeight: FontWeight.bold, fontSize: 16),
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -803,13 +845,30 @@ class _SavingsPageState extends State<SavingsPage> {
               ),
             ),
             Divider(color: Colors.grey.shade200, height: 24),
-            _bsTile(ctx, Icons.remove_circle_outline, Colors.orange,
-                'Remove Fund', 'Withdraw money from this goal',
-                () => _removeFunds(saving)),
-            _bsTile(ctx, Icons.edit_outlined, Colors.blue, 'Edit Goal',
-                'Modify name, target or deadline', () => _editGoal(saving)),
-            _bsTile(ctx, Icons.delete_outline, errorColor, 'Delete Goal',
-                'Permanently remove this goal', () => _deleteGoal(saving)),
+            _bsTile(
+              ctx,
+              Icons.remove_circle_outline,
+              Colors.orange,
+              'Remove Fund',
+              'Withdraw money from this goal',
+              () => _removeFunds(saving),
+            ),
+            _bsTile(
+              ctx,
+              Icons.edit_outlined,
+              Colors.blue,
+              'Edit Goal',
+              'Modify name, target or deadline',
+              () => _editGoal(saving),
+            ),
+            _bsTile(
+              ctx,
+              Icons.delete_outline,
+              errorColor,
+              'Delete Goal',
+              'Permanently remove this goal',
+              () => _deleteGoal(saving),
+            ),
             const SizedBox(height: 8),
           ],
         ),
@@ -817,11 +876,16 @@ class _SavingsPageState extends State<SavingsPage> {
     );
   }
 
-  Widget _bsTile(BuildContext ctx, IconData icon, Color color, String label,
-      String sub, VoidCallback onTap) {
+  Widget _bsTile(
+    BuildContext ctx,
+    IconData icon,
+    Color color,
+    String label,
+    String sub,
+    VoidCallback onTap,
+  ) {
     return ListTile(
-      contentPadding:
-          const EdgeInsets.symmetric(horizontal: 20, vertical: 2),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 2),
       leading: Container(
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
@@ -830,10 +894,11 @@ class _SavingsPageState extends State<SavingsPage> {
         ),
         child: Icon(icon, color: color, size: 20),
       ),
-      title: Text(label,
-          style: const TextStyle(fontWeight: FontWeight.w600)),
-      subtitle: Text(sub,
-          style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
+      title: Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
+      subtitle: Text(
+        sub,
+        style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+      ),
       onTap: () {
         Navigator.pop(ctx);
         onTap();
@@ -937,8 +1002,9 @@ class _SavingsPageState extends State<SavingsPage> {
               color: color.withOpacity(0.12),
               borderRadius: BorderRadius.circular(14),
             ),
-            child:
-                Center(child: Text(emoji, style: const TextStyle(fontSize: 26))),
+            child: Center(
+              child: Text(emoji, style: const TextStyle(fontSize: 26)),
+            ),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -954,16 +1020,18 @@ class _SavingsPageState extends State<SavingsPage> {
                   ),
                 ),
                 const SizedBox(height: 2),
-                Text('$_streakLevel Saver',
-                    style: theme.textTheme.bodySmall
-                        ?.copyWith(color: Colors.grey.shade500)),
+                Text(
+                  '$_streakLevel Saver',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: Colors.grey.shade500,
+                  ),
+                ),
               ],
             ),
           ),
           if (_streakCount > 0)
             Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
                 color: color.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(20),
@@ -1012,8 +1080,10 @@ class _SavingsPageState extends State<SavingsPage> {
             borderRadius: BorderRadius.circular(12),
             borderSide: BorderSide(color: Colors.grey.shade300),
           ),
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 10,
+          ),
           filled: true,
           fillColor: theme.colorScheme.surface,
         ),
@@ -1069,17 +1139,17 @@ class _SavingsPageState extends State<SavingsPage> {
     final msg = _search.isNotEmpty
         ? 'No results for "$_search"'
         : _filter == 'active'
-            ? 'No active goals'
-            : _filter == 'achieved'
-                ? 'No achieved goals yet'
-                : 'No savings goals yet';
+        ? 'No active goals'
+        : _filter == 'achieved'
+        ? 'No achieved goals yet'
+        : 'No savings goals yet';
     final sub = _search.isNotEmpty
         ? 'Try a different search'
         : _filter == 'active'
-            ? 'All goals achieved! Create a new one.'
-            : _filter == 'achieved'
-                ? 'Keep saving to reach your goals!'
-                : 'Tap + New Goal to get started';
+        ? 'All goals achieved! Create a new one.'
+        : _filter == 'achieved'
+        ? 'Keep saving to reach your goals!'
+        : 'Tap + New Goal to get started';
 
     return Center(
       child: Column(
@@ -1087,14 +1157,20 @@ class _SavingsPageState extends State<SavingsPage> {
         children: [
           Icon(Icons.savings_outlined, size: 64, color: Colors.grey.shade300),
           const SizedBox(height: 16),
-          Text(msg,
-              style: theme.textTheme.titleMedium
-                  ?.copyWith(color: Colors.grey.shade600)),
+          Text(
+            msg,
+            style: theme.textTheme.titleMedium?.copyWith(
+              color: Colors.grey.shade600,
+            ),
+          ),
           const SizedBox(height: 6),
-          Text(sub,
-              style: theme.textTheme.bodyMedium
-                  ?.copyWith(color: Colors.grey.shade400),
-              textAlign: TextAlign.center),
+          Text(
+            sub,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: Colors.grey.shade400,
+            ),
+            textAlign: TextAlign.center,
+          ),
         ],
       ),
     );
@@ -1131,8 +1207,8 @@ class _SavingsPageState extends State<SavingsPage> {
             color: saving.achieved
                 ? brandGreen.withOpacity(0.45)
                 : overdue
-                    ? errorColor.withOpacity(0.35)
-                    : Colors.grey.shade200,
+                ? errorColor.withOpacity(0.35)
+                : Colors.grey.shade200,
             width: saving.achieved ? 2 : 1,
           ),
           boxShadow: [
@@ -1158,8 +1234,7 @@ class _SavingsPageState extends State<SavingsPage> {
                       color: statusColor.withOpacity(0.12),
                       borderRadius: BorderRadius.circular(13),
                     ),
-                    child:
-                        Icon(Icons.savings, color: statusColor, size: 24),
+                    child: Icon(Icons.savings, color: statusColor, size: 24),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -1190,9 +1265,11 @@ class _SavingsPageState extends State<SavingsPage> {
                         const SizedBox(height: 5),
                         Row(
                           children: [
-                            Icon(Icons.calendar_today_outlined,
-                                size: 12,
-                                color: statusColor.withOpacity(0.8)),
+                            Icon(
+                              Icons.calendar_today_outlined,
+                              size: 12,
+                              color: statusColor.withOpacity(0.8),
+                            ),
                             const SizedBox(width: 4),
                             Text(
                               DateFormat('dd MMM yyyy').format(saving.deadline),
@@ -1205,7 +1282,9 @@ class _SavingsPageState extends State<SavingsPage> {
                             const SizedBox(width: 8),
                             Container(
                               padding: const EdgeInsets.symmetric(
-                                  horizontal: 7, vertical: 2),
+                                horizontal: 7,
+                                vertical: 2,
+                              ),
                               decoration: BoxDecoration(
                                 color: statusColor.withOpacity(0.1),
                                 borderRadius: BorderRadius.circular(6),
@@ -1214,8 +1293,8 @@ class _SavingsPageState extends State<SavingsPage> {
                                 saving.achieved
                                     ? 'Goal met!'
                                     : overdue
-                                        ? '${daysLeft.abs()}d overdue'
-                                        : '$daysLeft days left',
+                                    ? '${daysLeft.abs()}d overdue'
+                                    : '$daysLeft days left',
                                 style: TextStyle(
                                   fontSize: 11,
                                   color: statusColor,
@@ -1229,13 +1308,18 @@ class _SavingsPageState extends State<SavingsPage> {
                     ),
                   ),
                   IconButton(
-                    icon: Icon(Icons.more_vert,
-                        size: 20, color: Colors.grey.shade500),
+                    icon: Icon(
+                      Icons.more_vert,
+                      size: 20,
+                      color: Colors.grey.shade500,
+                    ),
                     onPressed: () => _showOptions(saving),
                     splashRadius: 18,
                     padding: EdgeInsets.zero,
-                    constraints:
-                        const BoxConstraints(minWidth: 32, minHeight: 32),
+                    constraints: const BoxConstraints(
+                      minWidth: 32,
+                      minHeight: 32,
+                    ),
                   ),
                 ],
               ),
@@ -1258,12 +1342,20 @@ class _SavingsPageState extends State<SavingsPage> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('${(pct * 100).toStringAsFixed(0)}% saved',
-                          style: TextStyle(
-                              fontSize: 11, color: Colors.grey.shade500)),
-                      Text('${_Fmt.ksh(saving.balance)} left',
-                          style: TextStyle(
-                              fontSize: 11, color: Colors.grey.shade500)),
+                      Text(
+                        '${(pct * 100).toStringAsFixed(0)}% saved',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Colors.grey.shade500,
+                        ),
+                      ),
+                      Text(
+                        '${_Fmt.ksh(saving.balance)} left',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Colors.grey.shade500,
+                        ),
+                      ),
                     ],
                   ),
                 ],
@@ -1276,20 +1368,21 @@ class _SavingsPageState extends State<SavingsPage> {
                 children: [
                   Expanded(
                     child: _amountBlock(
-                        label: 'Saved',
-                        amount: saving.savedAmount,
-                        color: brandGreen,
-                        theme: theme),
+                      label: 'Saved',
+                      amount: saving.savedAmount,
+                      color: brandGreen,
+                      theme: theme,
+                    ),
                   ),
-                  Container(
-                      width: 1, height: 36, color: Colors.grey.shade200),
+                  Container(width: 1, height: 36, color: Colors.grey.shade200),
                   Expanded(
                     child: _amountBlock(
-                        label: 'Target',
-                        amount: saving.targetAmount,
-                        color: Colors.grey.shade700,
-                        theme: theme,
-                        alignRight: true),
+                      label: 'Target',
+                      amount: saving.targetAmount,
+                      color: Colors.grey.shade700,
+                      theme: theme,
+                      alignRight: true,
+                    ),
                   ),
                 ],
               ),
@@ -1308,12 +1401,17 @@ class _SavingsPageState extends State<SavingsPage> {
                       elevation: 0,
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
                     icon: const Icon(Icons.add_circle_outline, size: 18),
-                    label: const Text('Add Fund',
-                        style: TextStyle(
-                            fontWeight: FontWeight.w600, fontSize: 14)),
+                    label: const Text(
+                      'Add Fund',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                      ),
+                    ),
                   ),
                 ),
               )
@@ -1323,7 +1421,9 @@ class _SavingsPageState extends State<SavingsPage> {
                 child: Container(
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(
-                      horizontal: 14, vertical: 10),
+                    horizontal: 14,
+                    vertical: 10,
+                  ),
                   decoration: BoxDecoration(
                     color: brandGreen.withOpacity(0.08),
                     borderRadius: BorderRadius.circular(12),
@@ -1331,14 +1431,20 @@ class _SavingsPageState extends State<SavingsPage> {
                   child: const Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.celebration_outlined,
-                          size: 16, color: brandGreen),
+                      Icon(
+                        Icons.celebration_outlined,
+                        size: 16,
+                        color: brandGreen,
+                      ),
                       SizedBox(width: 6),
-                      Text('Goal achieved! Great work 🎉',
-                          style: TextStyle(
-                              fontSize: 13,
-                              color: brandGreen,
-                              fontWeight: FontWeight.w600)),
+                      Text(
+                        'Goal achieved! Great work 🎉',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: brandGreen,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -1350,17 +1456,16 @@ class _SavingsPageState extends State<SavingsPage> {
   }
 
   Widget _statusBadge(String label, Color color) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-        decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Text(label,
-            style: TextStyle(
-                color: color,
-                fontSize: 11,
-                fontWeight: FontWeight.bold)),
-      );
+    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+    decoration: BoxDecoration(
+      color: color.withOpacity(0.1),
+      borderRadius: BorderRadius.circular(8),
+    ),
+    child: Text(
+      label,
+      style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.bold),
+    ),
+  );
 
   Widget _amountBlock({
     required String label,
@@ -1370,56 +1475,74 @@ class _SavingsPageState extends State<SavingsPage> {
     bool alignRight = false,
   }) {
     return Column(
-      crossAxisAlignment:
-          alignRight ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+      crossAxisAlignment: alignRight
+          ? CrossAxisAlignment.end
+          : CrossAxisAlignment.start,
       children: [
         Padding(
           padding: EdgeInsets.only(
-              left: alignRight ? 0 : 12, right: alignRight ? 12 : 0),
-          child: Text(label,
-              style: TextStyle(fontSize: 11, color: Colors.grey.shade500)),
+            left: alignRight ? 0 : 12,
+            right: alignRight ? 12 : 0,
+          ),
+          child: Text(
+            label,
+            style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+          ),
         ),
         const SizedBox(height: 3),
         Padding(
           padding: EdgeInsets.only(
-              left: alignRight ? 0 : 12, right: alignRight ? 12 : 0),
-          child: Text(_Fmt.ksh(amount),
-              style: TextStyle(
-                  fontSize: 16, fontWeight: FontWeight.bold, color: color)),
+            left: alignRight ? 0 : 12,
+            right: alignRight ? 12 : 0,
+          ),
+          child: Text(
+            _Fmt.ksh(amount),
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
+          ),
         ),
       ],
     );
   }
 
   Widget _summaryBox(Saving saving) => Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: brandGreen.withOpacity(0.07),
-          borderRadius: BorderRadius.circular(10),
+    padding: const EdgeInsets.all(12),
+    decoration: BoxDecoration(
+      color: brandGreen.withOpacity(0.07),
+      borderRadius: BorderRadius.circular(10),
+    ),
+    child: Column(
+      children: [
+        _sumRow('Saved', _Fmt.ksh(saving.savedAmount)),
+        const SizedBox(height: 4),
+        _sumRow('Target', _Fmt.ksh(saving.targetAmount)),
+        const SizedBox(height: 4),
+        _sumRow(
+          'Remaining',
+          _Fmt.ksh(saving.balance),
+          valueColor: Colors.orange,
         ),
-        child: Column(
-          children: [
-            _sumRow('Saved', _Fmt.ksh(saving.savedAmount)),
-            const SizedBox(height: 4),
-            _sumRow('Target', _Fmt.ksh(saving.targetAmount)),
-            const SizedBox(height: 4),
-            _sumRow('Remaining', _Fmt.ksh(saving.balance),
-                valueColor: Colors.orange),
-          ],
-        ),
-      );
+      ],
+    ),
+  );
 
   Widget _sumRow(String label, String value, {Color? valueColor}) => Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label, style: const TextStyle(fontSize: 13)),
-          Text(value,
-              style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.bold,
-                  color: valueColor)),
-        ],
-      );
+    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    children: [
+      Text(label, style: const TextStyle(fontSize: 13)),
+      Text(
+        value,
+        style: TextStyle(
+          fontSize: 13,
+          fontWeight: FontWeight.bold,
+          color: valueColor,
+        ),
+      ),
+    ],
+  );
 }
 
 // ─── Saving History Screen (unchanged) ───────────────────────────────────────
@@ -1438,8 +1561,10 @@ class SavingHistoryPage extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: theme.colorScheme.surface,
         elevation: 0,
-        title: Text(saving.name,
-            style: const TextStyle(fontWeight: FontWeight.bold)),
+        title: Text(
+          saving.name,
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
         centerTitle: true,
       ),
       body: CustomScrollView(
@@ -1453,9 +1578,12 @@ class SavingHistoryPage extends StatelessWidget {
                   children: [
                     Icon(Icons.history, size: 56, color: Colors.grey.shade300),
                     const SizedBox(height: 12),
-                    Text('No transactions yet',
-                        style: theme.textTheme.bodyLarge
-                            ?.copyWith(color: Colors.grey.shade500)),
+                    Text(
+                      'No transactions yet',
+                      style: theme.textTheme.bodyLarge?.copyWith(
+                        color: Colors.grey.shade500,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -1508,9 +1636,12 @@ class SavingHistoryPage extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(saving.name,
-                        style: theme.textTheme.titleLarge
-                            ?.copyWith(fontWeight: FontWeight.bold)),
+                    Text(
+                      saving.name,
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                     const SizedBox(height: 4),
                     _StatusBadge(achieved: saving.achieved),
                   ],
@@ -1523,12 +1654,20 @@ class SavingHistoryPage extends StatelessWidget {
             children: [
               Expanded(
                 child: _statCard(
-                    'Saved', _ksh(saving.savedAmount), brandGreen, theme),
+                  'Saved',
+                  _ksh(saving.savedAmount),
+                  brandGreen,
+                  theme,
+                ),
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: _statCard('Target', _ksh(saving.targetAmount),
-                    Colors.grey.shade700, theme),
+                child: _statCard(
+                  'Target',
+                  _ksh(saving.targetAmount),
+                  Colors.grey.shade700,
+                  theme,
+                ),
               ),
             ],
           ),
@@ -1543,19 +1682,23 @@ class SavingHistoryPage extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 6),
-          Text('${(pct * 100).toStringAsFixed(0)}% of goal reached',
-              style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
+          Text(
+            '${(pct * 100).toStringAsFixed(0)}% of goal reached',
+            style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+          ),
           const SizedBox(height: 16),
-          Text('Transaction History',
-              style: theme.textTheme.titleSmall
-                  ?.copyWith(fontWeight: FontWeight.bold)),
+          Text(
+            'Transaction History',
+            style: theme.textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _statCard(
-          String label, String value, Color color, ThemeData theme) =>
+  Widget _statCard(String label, String value, Color color, ThemeData theme) =>
       Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
@@ -1565,12 +1708,19 @@ class SavingHistoryPage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(label,
-                style: TextStyle(fontSize: 11, color: Colors.grey.shade500)),
+            Text(
+              label,
+              style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+            ),
             const SizedBox(height: 4),
-            Text(value,
-                style: TextStyle(
-                    fontSize: 15, fontWeight: FontWeight.bold, color: color)),
+            Text(
+              value,
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.bold,
+                color: color,
+              ),
+            ),
           ],
         ),
       );
@@ -1598,8 +1748,7 @@ class SavingHistoryPage extends StatelessWidget {
         ],
       ),
       child: ListTile(
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
         leading: Container(
           width: 42,
           height: 42,
@@ -1609,26 +1758,32 @@ class SavingHistoryPage extends StatelessWidget {
           ),
           child: Icon(icon, color: color, size: 20),
         ),
-        title: Text(isDeposit ? 'Deposit' : 'Withdrawal',
-            style: const TextStyle(
-                fontWeight: FontWeight.w600, fontSize: 14)),
+        title: Text(
+          isDeposit ? 'Deposit' : 'Withdrawal',
+          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+        ),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(DateFormat('dd MMM yyyy, HH:mm').format(tx.date),
-                style: TextStyle(
-                    fontSize: 11, color: Colors.grey.shade500)),
+            Text(
+              DateFormat('dd MMM yyyy, HH:mm').format(tx.date),
+              style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+            ),
             if (isDeposit && tx.transactionCost > 0)
-              Text('Fee: ${_ksh(tx.transactionCost)}',
-                  style: TextStyle(
-                      fontSize: 11, color: Colors.orange.shade600)),
+              Text(
+                'Fee: ${_ksh(tx.transactionCost)}',
+                style: TextStyle(fontSize: 11, color: Colors.orange.shade600),
+              ),
           ],
         ),
-        trailing: Text('$sign ${_ksh(tx.amount)}',
-            style: TextStyle(
-                color: color,
-                fontWeight: FontWeight.bold,
-                fontSize: 15)),
+        trailing: Text(
+          '$sign ${_ksh(tx.amount)}',
+          style: TextStyle(
+            color: color,
+            fontWeight: FontWeight.bold,
+            fontSize: 15,
+          ),
+        ),
       ),
     );
   }
@@ -1650,14 +1805,20 @@ class _StatusBadge extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(achieved ? Icons.check_circle : Icons.timelapse,
-              size: 13, color: color),
+          Icon(
+            achieved ? Icons.check_circle : Icons.timelapse,
+            size: 13,
+            color: color,
+          ),
           const SizedBox(width: 4),
-          Text(achieved ? 'Achieved' : 'In Progress',
-              style: TextStyle(
-                  color: color,
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold)),
+          Text(
+            achieved ? 'Achieved' : 'In Progress',
+            style: TextStyle(
+              color: color,
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
         ],
       ),
     );
