@@ -254,7 +254,7 @@ class _SavingsPageState extends State<SavingsPage> {
                   vertical: 12,
                 ),
               ),
-              onPressed: () async {
+              onPressed: () {
                 final target = double.tryParse(targetCtrl.text) ?? 0;
                 if (nameCtrl.text.trim().isEmpty) {
                   _snack('Enter a goal name', isError: true);
@@ -264,23 +264,46 @@ class _SavingsPageState extends State<SavingsPage> {
                   _snack('Enter a valid target amount', isError: true);
                   return;
                 }
-                _savings.add(
-                  Saving(
-                    name: nameCtrl.text.trim(),
-                    savedAmount: 0,
-                    targetAmount: target,
-                    deadline: selectedDate,
-                  ),
+                final name = nameCtrl.text.trim();
+                final deadline = selectedDate;
+                Navigator.pop(ctx);
+                _showSavingsConfirmSheet(
+                  title: 'Confirm New Goal',
+                  icon: Icons.flag_outlined,
+                  iconColor: brandGreen,
+                  rows: [
+                    _ConfirmRow('Goal Name', name),
+                    _ConfirmRow(
+                      'Target Amount',
+                      _Fmt.ksh(target),
+                      highlight: true,
+                    ),
+                    _ConfirmRow(
+                      'Due Date',
+                      DateFormat('dd MMM yyyy').format(deadline),
+                    ),
+                  ],
+                  confirmLabel: 'Create Goal',
+                  confirmColor: brandGreen,
+                  onConfirm: () async {
+                    _savings.add(
+                      Saving(
+                        name: name,
+                        savedAmount: 0,
+                        targetAmount: target,
+                        deadline: deadline,
+                      ),
+                    );
+                    await _sync();
+                    await _notify(
+                      '🎯 New Goal Created',
+                      'Goal: $name — Target: ${_Fmt.ksh(target)}',
+                    );
+                    await _load();
+                  },
                 );
-                await _sync();
-                await _notify(
-                  '🎯 New Goal Created',
-                  'Goal: ${nameCtrl.text} — Target: ${_Fmt.ksh(target)}',
-                );
-                if (mounted) Navigator.pop(ctx);
-                await _load();
               },
-              child: const Text('Create Goal'),
+              child: const Text('Continue ›'),
             ),
           ],
         ),
@@ -337,7 +360,7 @@ class _SavingsPageState extends State<SavingsPage> {
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
             ),
-            onPressed: () async {
+            onPressed: () {
               final amount = double.tryParse(amountCtrl.text) ?? 0;
               final cost = double.tryParse(costCtrl.text) ?? 0;
               if (amount <= 0) {
@@ -348,52 +371,71 @@ class _SavingsPageState extends State<SavingsPage> {
                 _snack('Transaction cost cannot be negative', isError: true);
                 return;
               }
-
               final totalDeduct = amount + cost;
-              saving.savedAmount += amount;
-              saving.lastUpdated = DateTime.now();
-              saving.transactions.insert(
-                0,
-                SavingTransaction(
-                  type: 'deposit',
-                  amount: amount,
-                  transactionCost: cost,
-                  date: DateTime.now(),
-                  goalName: saving.name,
-                ),
+              Navigator.pop(ctx);
+              _showSavingsConfirmSheet(
+                title: 'Confirm Deposit',
+                icon: Icons.savings,
+                iconColor: brandGreen,
+                rows: [
+                  _ConfirmRow('Goal', saving.name),
+                  _ConfirmRow('Amount Added', _Fmt.ksh(amount)),
+                  if (cost > 0) _ConfirmRow('Transaction Fee', _Fmt.ksh(cost)),
+                  _ConfirmRow(
+                    'Total Deducted',
+                    _Fmt.ksh(totalDeduct),
+                    highlight: cost > 0,
+                  ),
+                ],
+                note: cost > 0 ? 'Transaction fees are non-refundable.' : null,
+                noteColor: Colors.orange,
+                confirmLabel: 'Confirm Deposit',
+                confirmColor: brandGreen,
+                onConfirm: () async {
+                  saving.savedAmount += amount;
+                  saving.lastUpdated = DateTime.now();
+                  saving.transactions.insert(
+                    0,
+                    SavingTransaction(
+                      type: 'deposit',
+                      amount: amount,
+                      transactionCost: cost,
+                      date: DateTime.now(),
+                      goalName: saving.name,
+                    ),
+                  );
+                  final wasAchieved = saving.achieved;
+                  if (saving.savedAmount >= saving.targetAmount &&
+                      !wasAchieved) {
+                    saving.achieved = true;
+                    await _notify(
+                      '🎉 Goal Achieved!',
+                      'You reached ${saving.name}: ${_Fmt.ksh(saving.targetAmount)}!',
+                    );
+                  }
+                  await _sync();
+                  await _logGlobal(
+                    'Saved for ${saving.name}',
+                    totalDeduct,
+                    'savings_deduction',
+                    transactionCost: cost,
+                  );
+                  widget.onTransactionAdded?.call(
+                    'Saved for ${saving.name}',
+                    totalDeduct,
+                    'savings_deduction',
+                  );
+                  await _updateStreak();
+                  await _load();
+                  if (mounted) {
+                    _snack(
+                      '✅ Added ${_Fmt.ksh(amount)} · Deducted ${_Fmt.ksh(totalDeduct)}',
+                    );
+                  }
+                },
               );
-
-              final wasAchieved = saving.achieved;
-              if (saving.savedAmount >= saving.targetAmount && !wasAchieved) {
-                saving.achieved = true;
-                await _notify(
-                  '🎉 Goal Achieved!',
-                  'You reached ${saving.name}: ${_Fmt.ksh(saving.targetAmount)}!',
-                );
-              }
-
-              await _sync();
-              await _logGlobal(
-                'Saved for ${saving.name}',
-                totalDeduct,
-                'savings_deduction',
-                transactionCost: cost,
-              );
-              widget.onTransactionAdded?.call(
-                'Saved for ${saving.name}',
-                totalDeduct,
-                'savings_deduction',
-              );
-              await _updateStreak();
-              if (mounted) Navigator.pop(ctx);
-              await _load();
-              if (mounted) {
-                _snack(
-                  '✅ Added ${_Fmt.ksh(amount)} · Deducted ${_Fmt.ksh(totalDeduct)}',
-                );
-              }
             },
-            child: const Text('Add Funds'),
+            child: const Text('Continue ›'),
           ),
         ],
       ),
@@ -448,7 +490,7 @@ class _SavingsPageState extends State<SavingsPage> {
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
             ),
-            onPressed: () async {
+            onPressed: () {
               final amount = double.tryParse(amountCtrl.text) ?? 0;
               if (amount <= 0) {
                 _snack('Enter a valid amount', isError: true);
@@ -461,47 +503,59 @@ class _SavingsPageState extends State<SavingsPage> {
                 );
                 return;
               }
-
-              // 1. Update local savings object
-              saving.savedAmount -= amount;
-              saving.lastUpdated = DateTime.now();
-              saving.transactions.insert(
-                0,
-                SavingTransaction(
-                  type: 'withdrawal',
-                  amount: amount,
-                  date: DateTime.now(),
-                  goalName: saving.name,
-                ),
+              Navigator.pop(ctx);
+              _showSavingsConfirmSheet(
+                title: 'Confirm Withdrawal',
+                icon: Icons.remove_circle_outline,
+                iconColor: Colors.orange,
+                rows: [
+                  _ConfirmRow('Goal', saving.name),
+                  _ConfirmRow('Withdraw Amount', _Fmt.ksh(amount)),
+                  _ConfirmRow(
+                    'Remaining in Goal',
+                    _Fmt.ksh(saving.savedAmount - amount),
+                  ),
+                ],
+                note:
+                    'Withdrawal restores the principal to your balance. Transaction fees already paid are non-refundable.',
+                noteColor: Colors.orange,
+                confirmLabel: 'Confirm Withdrawal',
+                confirmColor: Colors.orange,
+                onConfirm: () async {
+                  saving.savedAmount -= amount;
+                  saving.lastUpdated = DateTime.now();
+                  saving.transactions.insert(
+                    0,
+                    SavingTransaction(
+                      type: 'withdrawal',
+                      amount: amount,
+                      date: DateTime.now(),
+                      goalName: saving.name,
+                    ),
+                  );
+                  if (saving.savedAmount < saving.targetAmount) {
+                    saving.achieved = false;
+                  }
+                  await _sync();
+                  await FinancialService.processWithdrawal(
+                    goalName: saving.name,
+                    withdrawAmount: amount,
+                  );
+                  widget.onTransactionAdded?.call(
+                    'Withdrawal from ${saving.name}',
+                    amount,
+                    'savings_withdrawal',
+                  );
+                  await _load();
+                  if (mounted) {
+                    _snack(
+                      '✅ Withdrew ${_Fmt.ksh(amount)} from ${saving.name}',
+                    );
+                  }
+                },
               );
-              if (saving.savedAmount < saving.targetAmount) {
-                saving.achieved = false;
-              }
-
-              await _sync();
-
-              // 2. Use FinancialService to correctly remove deduction rows
-              //    and add a display-only withdrawal record.
-              //    total_income is NEVER modified.
-              await FinancialService.processWithdrawal(
-                goalName: saving.name,
-                withdrawAmount: amount,
-              );
-
-              // 3. Notify parent so Home Page refreshes its balance card
-              widget.onTransactionAdded?.call(
-                'Withdrawal from ${saving.name}',
-                amount,
-                'savings_withdrawal',
-              );
-
-              if (mounted) Navigator.pop(ctx);
-              await _load();
-              if (mounted) {
-                _snack('✅ Withdrew ${_Fmt.ksh(amount)} from ${saving.name}');
-              }
             },
-            child: const Text('Withdraw'),
+            child: const Text('Continue ›'),
           ),
         ],
       ),
@@ -621,156 +675,237 @@ class _SavingsPageState extends State<SavingsPage> {
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
-  //  DELETE GOAL — UPDATED LOGIC
-  //
-  //  ✅ Achieved goal deleted:
-  //    - Remove from savings list only.
-  //    - Do NOT refund balance.
-  //    - Do NOT delete existing transactions (keep financial history intact).
-  //
-  //  ✅ Unachieved goal deleted:
-  //    - Refund savedAmount to income balance.
-  //    - Delete all related savings_deduction / saving_deposit transactions.
-  //    - Log a refund transaction for transparency.
+  //  DELETE GOAL
   // ═══════════════════════════════════════════════════════════════════════════
   Future<void> _deleteGoal(Saving saving) async {
     final isAchieved = saving.achieved;
-    final confirmed = await showDialog<bool>(
+    _showSavingsConfirmSheet(
+      title: 'Delete Savings Goal',
+      icon: Icons.delete_outline,
+      iconColor: errorColor,
+      rows: [
+        _ConfirmRow('Goal', saving.name),
+        _ConfirmRow('Saved Amount', _Fmt.ksh(saving.savedAmount)),
+      ],
+      note: isAchieved
+          ? 'This goal is achieved. Transaction history will be preserved. No refund will be made.'
+          : saving.savedAmount > 0
+          ? '${_Fmt.ksh(saving.savedAmount)} (saved principal) will be refunded to your balance. Transaction fees paid on deposits are non-refundable.'
+          : 'This goal has no saved amount. It will simply be removed.',
+      noteColor: isAchieved ? brandGreen : Colors.orange,
+      confirmLabel: isAchieved ? 'Remove Goal' : 'Delete & Refund',
+      confirmColor: errorColor,
+      onConfirm: () async {
+        if (isAchieved) {
+          _savings.remove(saving);
+          await _sync();
+          await _notify(
+            '🗑️ Goal Removed',
+            '${saving.name} (achieved) has been removed from your goals.',
+          );
+        } else {
+          await FinancialService.refundSavingsPrincipal(goalName: saving.name);
+          _savings.remove(saving);
+          await _sync();
+          await _notify(
+            '🗑️ Goal Deleted',
+            saving.savedAmount > 0
+                ? '${saving.name} deleted. ${_Fmt.ksh(saving.savedAmount)} refunded to balance.'
+                : '${saving.name} deleted.',
+          );
+        }
+        await _load();
+        if (mounted) {
+          _snack(isAchieved ? 'Goal removed' : 'Goal deleted & refund applied');
+        }
+      },
+    );
+  }
+
+  // ── SAVINGS CONFIRMATION BOTTOM SHEET ─────────────────────────────────────
+  //
+  // Shared helper for _addFunds, _removeFunds, _deleteGoal.
+  // onConfirm is only called when user taps the action button.
+  void _showSavingsConfirmSheet({
+    required String title,
+    required IconData icon,
+    required Color iconColor,
+    required List<_ConfirmRow> rows,
+    String? note,
+    Color noteColor = Colors.orange,
+    required String confirmLabel,
+    required Color confirmColor,
+    required Future<void> Function() onConfirm,
+  }) {
+    showModalBottomSheet(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Delete Savings Goal'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Delete "${saving.name}"?'),
-            const SizedBox(height: 12),
-            if (isAchieved)
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: brandGreen.withOpacity(0.08),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: brandGreen.withOpacity(0.3)),
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        bool isSaving = false;
+        return StatefulBuilder(
+          builder: (ctx, setSheet) => Container(
+            padding: EdgeInsets.only(
+              left: 24,
+              right: 24,
+              top: 24,
+              bottom: MediaQuery.of(ctx).viewInsets.bottom + 32,
+            ),
+            decoration: BoxDecoration(
+              color: Theme.of(ctx).colorScheme.surface,
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(24),
+              ),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Handle bar
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade300,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
                 ),
-                child: Row(
+                const SizedBox(height: 20),
+                // Header
+                Row(
                   children: [
-                    const Icon(Icons.check_circle, color: brandGreen, size: 18),
-                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: iconColor.withOpacity(0.12),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(icon, color: iconColor, size: 26),
+                    ),
+                    const SizedBox(width: 14),
                     Expanded(
                       child: Text(
-                        'This goal is achieved. Transaction history will be preserved. No refund will be made.',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Colors.grey.shade800,
+                        title,
+                        style: Theme.of(ctx).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
                     ),
                   ],
                 ),
-              )
-            else
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.orange.shade50,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.orange.shade200),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                const SizedBox(height: 20),
+                const Divider(),
+                const SizedBox(height: 12),
+                // Detail rows
+                for (final row in rows)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 5),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          row.label,
+                          style: TextStyle(
+                            color: Colors.grey.shade600,
+                            fontSize: 13,
+                          ),
+                        ),
+                        Text(
+                          row.value,
+                          style: TextStyle(
+                            fontWeight: row.highlight
+                                ? FontWeight.bold
+                                : FontWeight.w600,
+                            fontSize: row.highlight ? 15 : 13,
+                            color: row.highlight ? iconColor : null,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                if (note != null) ...[
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: noteColor.withOpacity(0.08),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: noteColor.withOpacity(0.3)),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(Icons.info_outline, color: noteColor, size: 16),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            note,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey.shade700,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 24),
+                // Action buttons
+                Row(
                   children: [
-                    Text(
-                      '⚠️ ${_Fmt.ksh(saving.savedAmount)} (saved principal) will be refunded to your balance.',
-                      style: const TextStyle(fontSize: 13),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      'Transaction fees paid on deposits are non-refundable.',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey.shade600,
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.pop(ctx),
+                        child: const Text('Go Back'),
                       ),
                     ),
-                    if (saving.savedAmount > 0) ...[
-                      const SizedBox(height: 4),
-                      Text(
-                        'All related saving transactions will also be removed.',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey.shade600,
+                    const SizedBox(width: 12),
+                    Expanded(
+                      flex: 2,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: confirmColor,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
                         ),
+                        onPressed: isSaving
+                            ? null
+                            : () async {
+                                setSheet(() => isSaving = true);
+                                await onConfirm();
+                                if (ctx.mounted) Navigator.pop(ctx);
+                              },
+                        child: isSaving
+                            ? const SizedBox(
+                                height: 18,
+                                width: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : Text(
+                                confirmLabel,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
                       ),
-                    ],
+                    ),
                   ],
                 ),
-              ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: errorColor,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              ],
             ),
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Delete'),
           ),
-        ],
-      ),
+        );
+      },
     );
-
-    if (confirmed == true) {
-      if (isAchieved) {
-        // ── Achieved goal: just remove from list, no refund, keep transactions
-        _savings.remove(saving);
-        await _sync();
-        await _notify(
-          '🗑️ Goal Removed',
-          '${saving.name} (achieved) has been removed from your goals.',
-        );
-      } else {
-        // ── Unachieved goal: restore balance through transaction-list surgery.
-        //
-        //    MATH (balance = totalIncome − totalExpenses):
-        //    ─────────────────────────────────────────────────────────────────
-        //    Each deposit was logged as a 'savings_deduction' with
-        //      amount = savedPrincipal + fee  (e.g. 105 for 100 + 5 deposit)
-        //
-        //    Step 1 – _deleteRelatedTransactions removes those entries
-        //             → totalExpenses drops by (savedAmount + totalFeesPaid)
-        //    Step 2 – Re-log fees as a permanent 'expense'
-        //             → totalExpenses rises back by totalFeesPaid
-        //    Net    – totalExpenses drops by savedAmount
-        //             balance increases by savedAmount  ✓
-        //             totalIncome is NEVER changed       ✓
-        //    ─────────────────────────────────────────────────────────────────
-
-        // FinancialService reads fees directly from the global ledger —
-        // immune to in-memory drift after partial withdrawals.
-        // total_income is NEVER modified.
-        await FinancialService.refundSavingsPrincipal(goalName: saving.name);
-
-        _savings.remove(saving);
-        await _sync();
-        await _notify(
-          '🗑️ Goal Deleted',
-          saving.savedAmount > 0
-              ? '${saving.name} deleted. ${_Fmt.ksh(saving.savedAmount)} refunded to balance.'
-              : '${saving.name} deleted.',
-        );
-      }
-
-      await _load();
-      if (mounted) {
-        _snack(isAchieved ? 'Goal removed' : 'Goal deleted & refund applied');
-      }
-    }
   }
 
   void _showOptions(Saving saving) {
@@ -1803,4 +1938,12 @@ class _StatusBadge extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Simple data class used by [_SavingsPageState._showSavingsConfirmSheet].
+class _ConfirmRow {
+  final String label;
+  final String value;
+  final bool highlight;
+  const _ConfirmRow(this.label, this.value, {this.highlight = false});
 }
