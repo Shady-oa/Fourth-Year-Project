@@ -579,193 +579,122 @@ class _BudgetDetailPageState extends State<BudgetDetailPage> {
     }
   }
 
-  /// ✅ UPDATED: Called from toggle switch
+  /// Called from toggle switch — replaces AlertDialog with bottom sheet.
   Future<void> toggleCheckBudget(bool newValue) async {
     if (budget == null || _isToggling) return;
     setState(() => _isToggling = true);
 
-    final prefs = await SharedPreferences.getInstance();
-
     if (newValue) {
-      // Finalize budget
-      final confirmed = await showDialog<bool>(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Finalize Budget'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'This will create a collective transaction and deduct the total spent amount from your balance.',
-              ),
-              const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: accentColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: accentColor),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text('Amount to deduct:'),
-                    Text(
-                      CurrencyFormatter.format(budget!.totalSpent),
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 12),
-              const Text(
-                '⚠️ You will not be able to add, edit, or delete expenses until toggled off.',
-                style: TextStyle(fontSize: 12, color: Colors.orange),
-              ),
-            ],
+      // ── Finalize ────────────────────────────────────────────────────────────
+      _showBudgetDetailConfirmSheet(
+        title: 'Finalize Budget',
+        icon: Icons.check_circle_outline,
+        iconColor: brandGreen,
+        rows: [
+          _BudgetDetailRow('Budget', budget!.name),
+          _BudgetDetailRow(
+            'Amount to Deduct',
+            CurrencyFormatter.format(budget!.totalSpent),
+            highlight: true,
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
+        ],
+        note:
+            'This will create a collective transaction and remove the total spent from your balance. '
+            'You will not be able to add, edit, or delete expenses until toggled off.',
+        noteColor: Colors.orange,
+        confirmLabel: 'Finalize Budget',
+        confirmColor: brandGreen,
+        onConfirm: () async {
+          final prefs = await SharedPreferences.getInstance();
+          final txString = prefs.getString(keyTransactions) ?? '[]';
+          final transactions = List<Map<String, dynamic>>.from(
+            json.decode(txString),
+          );
+          final collectiveTransaction = {
+            'title': 'Budget: ${budget!.name} (Finalized)',
+            'amount': budget!.totalSpent,
+            'type': 'budget_finalized',
+            'transactionCost': 0.0,
+            'date': DateTime.now().toIso8601String(),
+            'budgetId': budget!.id,
+          };
+          transactions.insert(0, collectiveTransaction);
+          await prefs.setString(keyTransactions, json.encode(transactions));
+
+          budget!.isChecked = true;
+          budget!.checkedDate = DateTime.now();
+          await saveBudgets();
+
+          await sendNotification(
+            '✓ Budget Finalized',
+            'Budget "${budget!.name}" has been finalized. ${CurrencyFormatter.format(budget!.totalSpent)} deducted from balance.',
+          );
+          setState(() {});
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  'Budget finalized. ${CurrencyFormatter.format(budget!.totalSpent)} deducted',
+                ),
                 backgroundColor: brandGreen,
-                foregroundColor: Colors.white,
               ),
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text('Finalize'),
-            ),
-          ],
-        ),
+            );
+          }
+        },
       );
-
-      if (confirmed == true) {
-        final txString = prefs.getString(keyTransactions) ?? '[]';
-        final transactions = List<Map<String, dynamic>>.from(
-          json.decode(txString),
-        );
-        final collectiveTransaction = {
-          'title': 'Budget: ${budget!.name} (Finalized)',
-          'amount': budget!.totalSpent,
-          'type': 'budget_finalized',
-          'transactionCost': 0.0,
-          'date': DateTime.now().toIso8601String(),
-          'budgetId': budget!.id,
-        };
-        transactions.insert(0, collectiveTransaction);
-        await prefs.setString(keyTransactions, json.encode(transactions));
-
-        budget!.isChecked = true;
-        budget!.checkedDate = DateTime.now();
-        await saveBudgets();
-
-        await sendNotification(
-          '✓ Budget Finalized',
-          'Budget "${budget!.name}" has been finalized. ${CurrencyFormatter.format(budget!.totalSpent)} deducted from balance.',
-        );
-        setState(() {});
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                'Budget finalized. ${CurrencyFormatter.format(budget!.totalSpent)} deducted',
-              ),
-              backgroundColor: brandGreen,
-            ),
-          );
-        }
-      }
     } else {
-      // Un-finalize budget
-      final confirmed = await showDialog<bool>(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Unfinalize Budget'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'This will remove the collective transaction and restore the deducted amount back to your balance.',
-              ),
-              const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: brandGreen.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: brandGreen),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text('Amount to restore:'),
-                    Text(
-                      CurrencyFormatter.format(budget!.totalSpent),
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+      // ── Unfinalize ──────────────────────────────────────────────────────────
+      _showBudgetDetailConfirmSheet(
+        title: 'Unfinalize Budget',
+        icon: Icons.undo_rounded,
+        iconColor: Colors.orange,
+        rows: [
+          _BudgetDetailRow('Budget', budget!.name),
+          _BudgetDetailRow(
+            'Amount to Restore',
+            CurrencyFormatter.format(budget!.totalSpent),
+            highlight: true,
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.orange,
-                foregroundColor: Colors.white,
-              ),
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text('Unfinalize'),
-            ),
-          ],
-        ),
-      );
-
-      if (confirmed == true) {
-        final txString = prefs.getString(keyTransactions) ?? '[]';
-        final transactions = List<Map<String, dynamic>>.from(
-          json.decode(txString),
-        );
-        transactions.removeWhere(
-          (tx) =>
-              tx['type'] == 'budget_finalized' && tx['budgetId'] == budget!.id,
-        );
-        await prefs.setString(keyTransactions, json.encode(transactions));
-
-        budget!.isChecked = false;
-        budget!.checkedDate = null;
-        await saveBudgets();
-
-        await sendNotification(
-          '○ Budget Unfinalized',
-          'Budget "${budget!.name}" has been unfinalized. ${CurrencyFormatter.format(budget!.totalSpent)} restored to balance.',
-        );
-        setState(() {});
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                'Budget unfinalized. ${CurrencyFormatter.format(budget!.totalSpent)} restored',
-              ),
-              backgroundColor: brandGreen,
-            ),
+        ],
+        note:
+            'This will remove the collective transaction and restore the deducted amount back to your balance.',
+        noteColor: Colors.blue,
+        confirmLabel: 'Unfinalize Budget',
+        confirmColor: Colors.orange,
+        onConfirm: () async {
+          final prefs = await SharedPreferences.getInstance();
+          final txString = prefs.getString(keyTransactions) ?? '[]';
+          final transactions = List<Map<String, dynamic>>.from(
+            json.decode(txString),
           );
-        }
-      }
+          transactions.removeWhere(
+            (tx) =>
+                tx['type'] == 'budget_finalized' &&
+                tx['budgetId'] == budget!.id,
+          );
+          await prefs.setString(keyTransactions, json.encode(transactions));
+
+          budget!.isChecked = false;
+          budget!.checkedDate = null;
+          await saveBudgets();
+
+          await sendNotification(
+            '○ Budget Unfinalized',
+            'Budget "${budget!.name}" has been unfinalized. ${CurrencyFormatter.format(budget!.totalSpent)} restored to balance.',
+          );
+          setState(() {});
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  'Budget unfinalized. ${CurrencyFormatter.format(budget!.totalSpent)} restored',
+                ),
+                backgroundColor: brandGreen,
+              ),
+            );
+          }
+        },
+      );
     }
 
     setState(() => _isToggling = false);

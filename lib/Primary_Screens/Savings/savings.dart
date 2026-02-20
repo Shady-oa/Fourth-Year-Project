@@ -2154,38 +2154,240 @@ class _EditSavingTxSheetState extends State<_EditSavingTxSheet> {
     super.dispose();
   }
 
+  static final _numFmt = NumberFormat('#,##0', 'en_US');
+  static String _ksh(double v) => 'Ksh ${_numFmt.format(v.round())}';
+
   Future<void> _save() async {
     final newAmount = double.tryParse(_amountCtrl.text) ?? 0;
-    final newCost = double.tryParse(_costCtrl.text) ?? 0;
+    // Fee is always the original (read-only), not re-parsed from the locked field.
+    final newCost = widget.tx.transactionCost;
 
     if (newAmount <= 0) {
       _snack('Please enter a valid amount');
       return;
     }
-    if (newCost < 0) {
-      _snack('Transaction fee cannot be negative');
-      return;
-    }
 
-    setState(() => _saving = true);
-    try {
-      await widget.onSaved(newAmount, newCost);
-      if (mounted) {
-        Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Deposit updated'),
-            backgroundColor: brandGreen,
-            behavior: SnackBarBehavior.floating,
-            duration: const Duration(seconds: 2),
+    // Pop the edit sheet first, then show a confirmation bottom sheet.
+    if (!mounted) return;
+    Navigator.pop(context);
+
+    final oldAmount = widget.tx.amount;
+    final oldCost = widget.tx.transactionCost;
+    final newTotal = newAmount + newCost;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        bool isBusy = false;
+        return StatefulBuilder(
+          builder: (ctx, setSheet) => Container(
+            padding: EdgeInsets.only(
+              left: 24,
+              right: 24,
+              top: 24,
+              bottom: MediaQuery.of(ctx).viewInsets.bottom + 32,
+            ),
+            decoration: BoxDecoration(
+              color: Theme.of(ctx).colorScheme.surface,
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(24),
+              ),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Handle bar
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade300,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                // Header
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: brandGreen.withOpacity(0.12),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(
+                        Icons.savings_outlined,
+                        color: brandGreen,
+                        size: 26,
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Text(
+                        'Confirm Deposit Edit',
+                        style: Theme.of(ctx).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                const Divider(),
+                const SizedBox(height: 12),
+                // Rows
+                _confirmRowWidget(ctx, 'Goal', widget.saving.name),
+                _confirmRowWidget(ctx, 'Old Amount', _ksh(oldAmount)),
+                _confirmRowWidget(
+                  ctx,
+                  'New Amount',
+                  _ksh(newAmount),
+                  highlight: true,
+                  accent: brandGreen,
+                ),
+                if (oldCost > 0)
+                  _confirmRowWidget(
+                    ctx,
+                    'Fee (locked)',
+                    _ksh(oldCost),
+                    valueColor: Colors.orange,
+                  ),
+                _confirmRowWidget(
+                  ctx,
+                  'New Total',
+                  _ksh(newTotal),
+                  highlight: newCost > 0,
+                  accent: brandGreen,
+                ),
+                // Note
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.withOpacity(0.08),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: Colors.orange.withOpacity(0.3)),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(Icons.info_outline, color: Colors.orange, size: 16),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Saving fees are non-refundable and cannot be changed. '
+                          'Only the deposit amount can be edited.',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey.shade700,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24),
+                // Buttons
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.pop(ctx),
+                        child: const Text('Go Back'),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      flex: 2,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: brandGreen,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        onPressed: isBusy
+                            ? null
+                            : () async {
+                                setSheet(() => isBusy = true);
+                                await widget.onSaved(newAmount, newCost);
+                                // Recalculate all financial statistics so
+                                // Home / Analytics / Reports pages update.
+                                final prefs =
+                                    await SharedPreferences.getInstance();
+                                FinancialService.recalculateFromPrefs(prefs);
+                                if (ctx.mounted) Navigator.pop(ctx);
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Deposit updated'),
+                                      backgroundColor: brandGreen,
+                                      behavior: SnackBarBehavior.floating,
+                                      duration: Duration(seconds: 2),
+                                    ),
+                                  );
+                                }
+                              },
+                        child: isBusy
+                            ? const SizedBox(
+                                height: 18,
+                                width: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : const Text(
+                                'Confirm Changes',
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         );
-      }
-    } catch (e) {
-      if (mounted) _snack('Error: $e');
-    } finally {
-      if (mounted) setState(() => _saving = false);
-    }
+      },
+    );
+  }
+
+  Widget _confirmRowWidget(
+    BuildContext ctx,
+    String label,
+    String value, {
+    bool highlight = false,
+    Color? accent,
+    Color? valueColor,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 5),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+          ),
+          Text(
+            value,
+            style: TextStyle(
+              fontWeight: highlight ? FontWeight.bold : FontWeight.w600,
+              fontSize: highlight ? 15 : 13,
+              color: valueColor ?? (highlight ? (accent ?? brandGreen) : null),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   void _snack(String msg) {
@@ -2361,28 +2563,35 @@ class _EditSavingTxSheetState extends State<_EditSavingTxSheet> {
 
             const SizedBox(height: 14),
 
-            // Fee field
+            // Fee field — read-only (non-refundable; changing it would skew stats)
             TextField(
               controller: _costCtrl,
               keyboardType: TextInputType.number,
+              readOnly: true,
               decoration: InputDecoration(
-                labelText: 'Transaction Fee (Ksh)',
-                hintText: 'e.g. M-Pesa fee — enter 0 if none',
+                labelText: 'Transaction Fee (Ksh) — Non-refundable',
                 prefixIcon: const Icon(Icons.receipt_outlined, size: 20),
+                suffixIcon: const Icon(
+                  Icons.lock_outline,
+                  size: 16,
+                  color: Colors.orange,
+                ),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: Colors.grey.shade300),
+                  borderSide: BorderSide(color: Colors.orange.shade200),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide(
-                    color: theme.colorScheme.primary,
+                    color: Colors.orange.shade300,
                     width: 2,
                   ),
                 ),
+                filled: true,
+                fillColor: Colors.orange.shade50,
                 contentPadding: const EdgeInsets.symmetric(
                   horizontal: 14,
                   vertical: 14,

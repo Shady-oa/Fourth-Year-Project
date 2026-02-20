@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:final_project/Constants/colors.dart';
+import 'package:final_project/Primary_Screens/Savings/financial_service.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -7,13 +8,13 @@ import 'package:shared_preferences/shared_preferences.dart';
 // ─────────────────────────────────────────────────────────────────────────────
 //  EditTransactionSheet
 //
-//  Opened by tapping a TransactionCard.
+//  Opened by tapping a TransactionCard (via the detail sheet in all_transactions).
 //
 //  ✅ Income / Expense → full edit form
-//  🔒 Budget / Savings / other → read-only detail view
+//  🔒 Budget / Savings / Saving-fee re-logs / other → read-only detail view
 //
-//  Fees are NOT included in income refund when editing amounts (only the
-//  net amount change is adjusted).
+//  After every save the app recalculates via FinancialService so that
+//  Home / Analytics / Reports / Transactions pages all stay in sync.
 // ─────────────────────────────────────────────────────────────────────────────
 
 class EditTransactionSheet extends StatefulWidget {
@@ -64,9 +65,12 @@ class _EditTransactionSheetState extends State<EditTransactionSheet> {
   String get _type => (widget.transaction['type'] ?? 'expense') as String;
   bool get _isIncome => _type == 'income';
 
-  /// Income and expense transactions (home-page entries) are editable.
-  /// All other types (savings, budget, etc.) remain read-only.
-  bool get _isEditable => _type == 'income' || _type == 'expense';
+  /// Returns true only for income/expense entries that aren't saving-fee re-logs.
+  bool get _isEditable {
+    final title = (widget.transaction['title'] ?? '').toString();
+    if (title.startsWith('Saving fees (non-refundable)')) return false;
+    return _type == 'income' || _type == 'expense';
+  }
 
   @override
   void initState() {
@@ -124,7 +128,7 @@ class _EditTransactionSheetState extends State<EditTransactionSheet> {
         final oldAmount =
             double.tryParse(list[widget.index]['amount'].toString()) ?? 0.0;
 
-        // Adjust total_income only for the NET amount change (fees excluded).
+        // Adjust total_income for the NET amount change (income only).
         if (_isIncome && oldAmount != newAmount) {
           final oldIncome = prefs.getDouble('total_income') ?? 0.0;
           await prefs.setDouble(
@@ -141,6 +145,11 @@ class _EditTransactionSheetState extends State<EditTransactionSheet> {
           'reason': reason,
         };
         await prefs.setString('transactions', json.encode(list));
+
+        // ── Recalculate all financial statistics ──────────────────────────
+        // This ensures Home / Analytics / Reports / Transactions pages all
+        // reflect the edit immediately.
+        FinancialService.recalculateFromPrefs(prefs);
       }
 
       if (mounted) {
@@ -365,28 +374,39 @@ class _EditTransactionSheetState extends State<EditTransactionSheet> {
     TextCapitalization capitalize = TextCapitalization.none,
     int maxLines = 1,
     String? hint,
+    bool readOnly = false,
   }) {
     return TextField(
       controller: controller,
       keyboardType: keyboardType,
       textCapitalization: capitalize,
       maxLines: maxLines,
+      readOnly: readOnly,
       decoration: InputDecoration(
         labelText: label,
         hintText: hint,
         prefixIcon: Icon(icon, size: 20),
+        suffixIcon: readOnly
+            ? const Icon(Icons.lock_outline, size: 16, color: Colors.orange)
+            : null,
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.grey.shade300),
+          borderSide: BorderSide(
+            color: readOnly ? Colors.orange.shade200 : Colors.grey.shade300,
+          ),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(
-            color: Theme.of(context).colorScheme.primary,
+            color: readOnly
+                ? Colors.orange.shade300
+                : Theme.of(context).colorScheme.primary,
             width: 2,
           ),
         ),
+        filled: readOnly,
+        fillColor: readOnly ? Colors.orange.shade50 : null,
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 14,
           vertical: 14,
