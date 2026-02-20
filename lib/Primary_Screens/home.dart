@@ -67,6 +67,8 @@ class _HomePageState extends State<HomePage> {
   double totalExpenses = 0.0;
   // displayedSavingsAmount: principal only (no fee) — for the statistics card.
   double displayedSavingsAmount = 0.0;
+  // balance is stored directly from FinancialService to avoid re-derivation.
+  double _balance = 0.0;
   bool isLoading = true;
 
   @override
@@ -116,6 +118,7 @@ class _HomePageState extends State<HomePage> {
     totalIncome = summary.totalIncome;
     totalExpenses = summary.totalExpenses;
     displayedSavingsAmount = summary.displayedSavingsAmount;
+    _balance = summary.balance;
 
     checkSavingsDeadlines();
     setState(() => isLoading = false);
@@ -146,6 +149,7 @@ class _HomePageState extends State<HomePage> {
     totalIncome = summary.totalIncome;
     totalExpenses = summary.totalExpenses;
     displayedSavingsAmount = summary.displayedSavingsAmount;
+    _balance = summary.balance;
     setState(() {});
     showTransactionToast(type, amount, transactionCost: transactionCost);
   }
@@ -923,8 +927,8 @@ class _HomePageState extends State<HomePage> {
   //  REDESIGNED BALANCE CARD
   // ═══════════════════════════════════════════════════════════════════════════
   Widget buildBalanceCard() {
-    // Balance comes from FinancialService (clamps to 0, includes all fees).
-    final balance = (totalIncome - totalExpenses).clamp(0.0, double.infinity);
+    // _balance comes directly from FinancialService — never re-derived locally.
+    final balance = _balance;
     final isNegative = balance < 0;
     // Use displayedSavingsAmount (principal only, no fee) for the stats card.
     final savingsTotal = displayedSavingsAmount;

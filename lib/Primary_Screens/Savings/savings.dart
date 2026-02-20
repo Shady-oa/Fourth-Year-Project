@@ -6,6 +6,7 @@ import 'package:final_project/Components/Custom_header.dart';
 import 'package:final_project/Constants/colors.dart';
 import 'package:final_project/Constants/spacing.dart';
 import 'package:final_project/Models/models.dart';
+import 'package:final_project/Primary_Screens/Savings/financial_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -109,31 +110,9 @@ class _SavingsPageState extends State<SavingsPage> {
     await prefs.setString(_keyTransactions, json.encode(list));
   }
 
-  Future<void> _adjustIncome(double delta) async {
-    final prefs = await SharedPreferences.getInstance();
-    final cur = prefs.getDouble(_keyTotalIncome) ?? 0.0;
-    await prefs.setDouble(_keyTotalIncome, cur + delta);
-  }
-
-  /// Removes all global transactions related to an unachieved saving goal.
-  /// Does NOT touch transactions for achieved goals.
-  Future<void> _deleteRelatedTransactions(String goalName) async {
-    final prefs = await SharedPreferences.getInstance();
-    final raw = prefs.getString(_keyTransactions) ?? '[]';
-    final list = List<Map<String, dynamic>>.from(json.decode(raw));
-
-    // Only remove savings_deduction / saving_deposit linked to this goal
-    list.removeWhere((tx) {
-      final type = tx['type'] ?? '';
-      final title = (tx['title'] ?? '').toString();
-      final isLinked =
-          title.contains(goalName) &&
-          (type == 'savings_deduction' || type == 'saving_deposit');
-      return isLinked;
-    });
-
-    await prefs.setString(_keyTransactions, json.encode(list));
-  }
+  // _adjustIncome and _deleteRelatedTransactions removed.
+  // Use FinancialService.processWithdrawal / FinancialService.refundSavingsPrincipal
+  // so that all balance arithmetic is centralised in one place.
 
   Future<void> _checkStreakExpiry(SharedPreferences prefs) async {
     final lastStr = prefs.getString(_keyLastSaveDate) ?? '';
@@ -422,6 +401,18 @@ class _SavingsPageState extends State<SavingsPage> {
   }
 
   // ── REMOVE FUNDS ───────────────────────────────────────────────────────────
+  //
+  //  Withdrawal logic (CORRECT — no income mutation):
+  //  ─────────────────────────────────────────────────
+  //  1. Reduce saving.savedAmount by the withdrawn amount.
+  //  2. Call FinancialService.processWithdrawal which:
+  //       a. Removes matching savings_deduction rows (FIFO newest-first) until
+  //          the withdrawn principal is accounted for.
+  //       b. Re-logs any fees from removed rows as permanent non-refundable
+  //          expenses (so fees are never silently refunded).
+  //       c. Appends a display-only 'savings_withdrawal' record.
+  //  3. _compute() skips 'savings_withdrawal' → balance rises automatically
+  //     because the deduction rows are gone, without touching total_income.
   Future<void> _removeFunds(Saving saving) async {
     final amountCtrl = TextEditingController();
     await showDialog(
@@ -471,6 +462,7 @@ class _SavingsPageState extends State<SavingsPage> {
                 return;
               }
 
+              // 1. Update local savings object
               saving.savedAmount -= amount;
               saving.lastUpdated = DateTime.now();
               saving.transactions.insert(
@@ -487,12 +479,16 @@ class _SavingsPageState extends State<SavingsPage> {
               }
 
               await _sync();
-              await _adjustIncome(amount);
-              await _logGlobal(
-                'Withdrawal from ${saving.name}',
-                amount,
-                'savings_withdrawal',
+
+              // 2. Use FinancialService to correctly remove deduction rows
+              //    and add a display-only withdrawal record.
+              //    total_income is NEVER modified.
+              await FinancialService.processWithdrawal(
+                goalName: saving.name,
+                withdrawAmount: amount,
               );
+
+              // 3. Notify parent so Home Page refreshes its balance card
               widget.onTransactionAdded?.call(
                 'Withdrawal from ${saving.name}',
                 amount,
@@ -755,27 +751,20 @@ class _SavingsPageState extends State<SavingsPage> {
         //             totalIncome is NEVER changed       ✓
         //    ─────────────────────────────────────────────────────────────────
 
-        // Sum fees paid across every deposit in this goal's history
+        // Collect total fees from this goal's deposit history
         final totalFeesPaid = saving.transactions
             .where((t) => t.type == 'deposit')
             .fold(0.0, (s, t) => s + t.transactionCost);
 
-        // Step 1: Remove savings_deduction / saving_deposit transactions
-        await _deleteRelatedTransactions(saving.name);
-
-        // Step 2: Re-log fees as a permanent non-refundable expense
-        if (totalFeesPaid > 0) {
-          await _logGlobal(
-            'Saving fees (non-refundable): ${saving.name}',
-            totalFeesPaid,
-            'expense',
-          );
-        }
-
-        // NOTE: _adjustIncome is intentionally NOT called.
-        // All pages derive expenses from the transactions list, so
-        // removing savings_deduction entries automatically corrects
-        // Balance, Analytics, and Reports without inflating income.
+        // Centralised service handles:
+        //   1. Remove savings_deduction / saving_deposit rows for this goal
+        //   2. Re-log fees as a permanent non-refundable 'expense'
+        // Net: expenses drop by savedPrincipal; balance rises accordingly.
+        // total_income is NEVER modified.
+        await FinancialService.refundSavingsPrincipal(
+          goalName: saving.name,
+          totalFeesPaid: totalFeesPaid,
+        );
 
         _savings.remove(saving);
         await _sync();
@@ -788,8 +777,9 @@ class _SavingsPageState extends State<SavingsPage> {
       }
 
       await _load();
-      if (mounted)
+      if (mounted) {
         _snack(isAchieved ? 'Goal removed' : 'Goal deleted & refund applied');
+      }
     }
   }
 

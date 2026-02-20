@@ -236,7 +236,9 @@ class _ReportPageState extends State<ReportPage>
       .where((tx) => tx['type'] == 'income')
       .fold(0.0, (s, tx) => s + _amt(tx));
   double get filteredExpenses => filteredTransactions
-      .where((tx) => tx['type'] != 'income')
+      .where(
+        (tx) => tx['type'] != 'income' && tx['type'] != 'savings_withdrawal',
+      )
       .fold(0.0, (s, tx) {
         final type = (tx['type'] ?? '') as String;
         // For savings_deduction/saving_deposit: 'amount' already = principal+fee.
@@ -257,7 +259,9 @@ class _ReportPageState extends State<ReportPage>
         (s, tx) => (s + _amt(tx) - _fee(tx)).clamp(0.0, double.infinity),
       );
   double get totalFeesPaid => filteredTransactions
-      .where((tx) => tx['type'] != 'income')
+      .where(
+        (tx) => tx['type'] != 'income' && tx['type'] != 'savings_withdrawal',
+      )
       .fold(0.0, (s, tx) => s + _fee(tx));
   double get netBalance => filteredIncome - filteredExpenses;
   double get savingsRate =>
@@ -278,7 +282,9 @@ class _ReportPageState extends State<ReportPage>
 
   Map<String, dynamic>? get biggestExpense {
     final exp = filteredTransactions
-        .where((tx) => tx['type'] != 'income')
+        .where(
+          (tx) => tx['type'] != 'income' && tx['type'] != 'savings_withdrawal',
+        )
         .toList();
     if (exp.isEmpty) return null;
     exp.sort((a, b) => (_amt(b) + _fee(b)).compareTo(_amt(a) + _fee(a)));
@@ -289,6 +295,7 @@ class _ReportPageState extends State<ReportPage>
     final map = <String, double>{};
     for (final tx in filteredTransactions) {
       if (tx['type'] == 'income') continue;
+      if (tx['type'] == 'savings_withdrawal') continue; // display-only, no cost
       final type = (tx['type'] ?? '') as String;
       final label = _getTypeLabel(tx['type']);
       // For savings: amount already = principal+fee; do NOT add _fee again.
@@ -308,6 +315,7 @@ class _ReportPageState extends State<ReportPage>
     final map = <String, double>{};
     for (final tx in filteredTransactions) {
       if (tx['type'] == 'income') continue;
+      if (tx['type'] == 'savings_withdrawal') continue; // display-only, no cost
       final type = (tx['type'] ?? '') as String;
       final key = DateFormat('dd/MM').format(DateTime.parse(tx['date']));
       // For savings: amount already = principal+fee; do NOT add _fee again.
@@ -337,7 +345,12 @@ class _ReportPageState extends State<ReportPage>
 
   List<Map<String, dynamic>> get topExpenses {
     final exp =
-        filteredTransactions.where((tx) => tx['type'] != 'income').toList()
+        filteredTransactions
+            .where(
+              (tx) =>
+                  tx['type'] != 'income' && tx['type'] != 'savings_withdrawal',
+            )
+            .toList()
           ..sort((a, b) => (_amt(b) + _fee(b)).compareTo(_amt(a) + _fee(a)));
     return exp.take(5).toList();
   }

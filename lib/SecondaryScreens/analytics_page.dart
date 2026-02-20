@@ -150,7 +150,9 @@ class _AnalyticsPageState extends State<AnalyticsPage>
       .where((tx) => tx['type'] == 'income')
       .fold(0.0, (s, tx) => s + _amt(tx));
   double get filteredExpenses => filteredTransactions
-      .where((tx) => tx['type'] != 'income')
+      .where(
+        (tx) => tx['type'] != 'income' && tx['type'] != 'savings_withdrawal',
+      )
       .fold(0.0, (s, tx) {
         final type = (tx['type'] ?? '') as String;
         // For savings_deduction/saving_deposit: 'amount' already = principal+fee.
@@ -171,7 +173,9 @@ class _AnalyticsPageState extends State<AnalyticsPage>
         (s, tx) => (s + _amt(tx) - _fee(tx)).clamp(0.0, double.infinity),
       );
   double get totalFeesPaid => filteredTransactions
-      .where((tx) => tx['type'] != 'income')
+      .where(
+        (tx) => tx['type'] != 'income' && tx['type'] != 'savings_withdrawal',
+      )
       .fold(0.0, (s, tx) => s + _fee(tx));
   double get netBalance => filteredIncome - filteredExpenses;
   double get savingsRate =>
@@ -282,6 +286,9 @@ class _AnalyticsPageState extends State<AnalyticsPage>
         if (d.isBefore(month) || d.isAfter(monthEnd)) continue;
         if (tx['type'] == 'income') {
           income += _amt(tx);
+        } else if (tx['type'] == 'savings_withdrawal') {
+          // savings_withdrawal is display-only; skip from expense totals
+          continue;
         } else if (tx['type'] == 'savings_deduction' ||
             tx['type'] == 'saving_deposit') {
           // _amt already = principal + fee; do NOT add _fee again.
@@ -317,6 +324,9 @@ class _AnalyticsPageState extends State<AnalyticsPage>
           thisMonthInc += _amt(tx);
         } else if (d.isAfter(lastMonthStart) && d.isBefore(lastMonthEnd))
           lastMonthInc += _amt(tx);
+      } else if (tx['type'] == 'savings_withdrawal') {
+        // savings_withdrawal is display-only; skip from expense totals
+        continue;
       } else {
         // For savings: amount already = principal+fee; do NOT add _fee again.
         final isS =

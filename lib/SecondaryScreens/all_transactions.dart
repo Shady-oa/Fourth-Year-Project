@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:final_project/Constants/colors.dart';
 import 'package:final_project/Constants/spacing.dart';
+import 'package:final_project/Primary_Screens/Savings/financial_service.dart';
 import 'package:final_project/SecondaryScreens/Transactions/edit_transaction.dart';
 import 'package:final_project/SecondaryScreens/Transactions/transaction_card.dart';
 import 'package:flutter/material.dart';
@@ -34,6 +35,8 @@ class _TransactionsPageState extends State<TransactionsPage> {
   String filter = 'all';
   bool isLoading = true;
   double totalIncome = 0.0;
+  // Cached financial summary from FinancialService — always in sync with prefs.
+  FinancialSummary? _summary;
 
   final TextEditingController _searchCtrl = TextEditingController();
   String _searchQuery = '';
@@ -68,6 +71,9 @@ class _TransactionsPageState extends State<TransactionsPage> {
     savings = savingsStrings
         .map((s) => Saving.fromMap(json.decode(s)))
         .toList();
+
+    // Use centralised FinancialService so totals match Home / Analytics / Reports
+    _summary = FinancialService.recalculateFromPrefs(prefs);
 
     setState(() => isLoading = false);
   }
@@ -351,24 +357,21 @@ class _TransactionsPageState extends State<TransactionsPage> {
     );
   }
 
+  // ── Summary card ──────────────────────────────────────────────────────────
+  //
+  // Uses FinancialService totals (identical to Home / Analytics / Reports).
+  // Shows: Income · Expenses · Saved (principal, no fees) · Balance.
   Widget buildSummaryCard(ThemeData theme) {
-    double totalIncomeFiltered = 0;
-    double totalExpenseFiltered = 0;
-
-    for (var tx in filteredTransactions) {
-      final amount = double.tryParse(tx['amount'].toString()) ?? 0.0;
-      final fee =
-          double.tryParse(tx['transactionCost']?.toString() ?? '0') ?? 0.0;
-      if (tx['type'] == 'income') {
-        totalIncomeFiltered += amount;
-      } else {
-        totalExpenseFiltered += amount + fee;
-      }
-    }
+    final s = _summary;
+    final income = s?.totalIncome ?? 0.0;
+    final expenses = s?.totalExpenses ?? 0.0;
+    final saved = s?.displayedSavingsAmount ?? 0.0;
+    final balance =
+        s?.balance ?? (income - expenses).clamp(0.0, double.infinity);
 
     return Container(
       margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
@@ -387,21 +390,54 @@ class _TransactionsPageState extends State<TransactionsPage> {
           ),
         ],
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
+      child: Column(
         children: [
-          buildSummaryStat(
-            'Income',
-            totalIncomeFiltered,
-            Icons.arrow_circle_down_rounded,
-            theme.colorScheme.onSurface,
+          // Row 1: Income | Expenses
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              buildSummaryStat(
+                'Income',
+                income,
+                Icons.arrow_circle_down_rounded,
+                theme.colorScheme.onSurface,
+              ),
+              Container(
+                height: 40,
+                width: 1,
+                color: Colors.white.withOpacity(0.3),
+              ),
+              buildSummaryStat(
+                'Expenses',
+                expenses,
+                Icons.arrow_circle_up_rounded,
+                theme.colorScheme.onSurface,
+              ),
+            ],
           ),
-          Container(height: 40, width: 1, color: Colors.white.withOpacity(0.3)),
-          buildSummaryStat(
-            'Expenses',
-            totalExpenseFiltered,
-            Icons.arrow_circle_up_rounded,
-            theme.colorScheme.onSurface,
+          Divider(color: Colors.white.withOpacity(0.2), height: 16),
+          // Row 2: Saved | Balance
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              buildSummaryStat(
+                'Saved',
+                saved,
+                Icons.savings_outlined,
+                theme.colorScheme.onSurface,
+              ),
+              Container(
+                height: 40,
+                width: 1,
+                color: Colors.white.withOpacity(0.3),
+              ),
+              buildSummaryStat(
+                'Balance',
+                balance,
+                Icons.account_balance_wallet_outlined,
+                theme.colorScheme.onSurface,
+              ),
+            ],
           ),
         ],
       ),
