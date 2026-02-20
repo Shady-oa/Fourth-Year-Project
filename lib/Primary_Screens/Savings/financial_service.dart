@@ -161,12 +161,16 @@ class FinancialService {
       }
     }
 
-    final balance = (totalIncome - totalExpenses).clamp(0.0, double.infinity);
+    // NOTE: balance is intentionally NOT clamped to zero.
+    // Negative balance is a valid financial state (overspent) and must be
+    // surfaced on all pages (Home, Transactions, Analytics, Reports).
+    final balance = totalIncome - totalExpenses;
 
     return FinancialSummary(
       totalIncome: totalIncome,
       totalExpenses: totalExpenses,
       totalSavingsDeducted: totalSavingsDeducted,
+      // displayedSavingsAmount is always ≥ 0 (principal accrued so far).
       displayedSavingsAmount: displayedSavingsAmount.clamp(
         0.0,
         double.infinity,
@@ -180,33 +184,55 @@ class FinancialService {
   // ── Deletion helper ─────────────────────────────────────────────────────────
 
   /// For UNACHIEVED goal deletion:
-  /// 1. Removes all savings_deduction / saving_deposit rows for [goalName].
-  /// 2. Re-logs [totalFeesPaid] as a non-refundable 'expense' so that fees
-  ///    remain permanently in the books.
+  /// 1. Scans the global transaction list and collects the total fees that
+  ///    were paid for [goalName] deposits (reads from the ledger — immune to
+  ///    in-memory history drift after partial withdrawals).
+  /// 2. Removes all savings_deduction / saving_deposit rows for [goalName].
+  /// 3. Re-logs the collected fees as a single non-refundable 'expense' so
+  ///    that fees stay permanently in the books.
   ///
   /// Net effect: expenses drop by the saved principal, balance rises by the
   ///             same amount.  total_income is NEVER changed.
-  static Future<void> refundSavingsPrincipal({
-    required String goalName,
-    required double totalFeesPaid,
-  }) async {
+  ///
+  /// IMPORTANT: The [goalName] parameter is the ONLY input.  Fees are always
+  /// derived from the global ledger — never passed in by the caller — so
+  /// the re-logged amount can never be stale, duplicated, or mutated.
+  static Future<void> refundSavingsPrincipal({required String goalName}) async {
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getString(_keyTransactions) ?? '[]';
     final list = List<Map<String, dynamic>>.from(json.decode(raw));
 
-    // 1. Remove savings_deduction / saving_deposit for this goal
+    // 1. Collect total fees actually recorded in the GLOBAL ledger for this
+    //    goal. This is the authoritative figure — it accounts for any partial
+    //    withdrawals that may have already re-logged some fees.
+    double totalFeesInLedger = 0.0;
+    for (final tx in list) {
+      final type = (tx['type'] ?? '') as String;
+      final title = (tx['title'] ?? '').toString();
+      if (title.contains(goalName) &&
+          (type == 'savings_deduction' || type == 'saving_deposit')) {
+        final fee =
+            double.tryParse(tx['transactionCost']?.toString() ?? '0') ?? 0.0;
+        totalFeesInLedger += fee;
+      }
+    }
+
+    // 2. Remove savings_deduction / saving_deposit rows for this goal.
+    //    NEVER touch savings_withdrawal rows — they are display-only and have
+    //    no financial effect.
     list.removeWhere((tx) {
-      final type = tx['type'] ?? '';
+      final type = (tx['type'] ?? '') as String;
       final title = (tx['title'] ?? '').toString();
       return title.contains(goalName) &&
           (type == 'savings_deduction' || type == 'saving_deposit');
     });
 
-    // 2. Re-log fees as a permanent non-refundable expense
-    if (totalFeesPaid > 0) {
+    // 3. Re-log the ledger-sourced fees as a single permanent non-refundable
+    //    expense.  Amount = exactly what was collected above — immutable.
+    if (totalFeesInLedger > 0) {
       list.insert(0, {
         'title': 'Saving fees (non-refundable): $goalName',
-        'amount': totalFeesPaid,
+        'amount': totalFeesInLedger,
         'transactionCost': 0.0,
         'type': 'expense',
         'reason': 'Transaction fees paid on savings deposits — non-refundable',

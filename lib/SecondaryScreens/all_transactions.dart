@@ -366,8 +366,8 @@ class _TransactionsPageState extends State<TransactionsPage> {
     final income = s?.totalIncome ?? 0.0;
     final expenses = s?.totalExpenses ?? 0.0;
     final saved = s?.displayedSavingsAmount ?? 0.0;
-    final balance =
-        s?.balance ?? (income - expenses).clamp(0.0, double.infinity);
+    // Do NOT clamp balance — negative values must be shown (overspent state).
+    final balance = s?.balance ?? (income - expenses);
 
     return Container(
       margin: const EdgeInsets.all(16),

@@ -751,20 +751,10 @@ class _SavingsPageState extends State<SavingsPage> {
         //             totalIncome is NEVER changed       ✓
         //    ─────────────────────────────────────────────────────────────────
 
-        // Collect total fees from this goal's deposit history
-        final totalFeesPaid = saving.transactions
-            .where((t) => t.type == 'deposit')
-            .fold(0.0, (s, t) => s + t.transactionCost);
-
-        // Centralised service handles:
-        //   1. Remove savings_deduction / saving_deposit rows for this goal
-        //   2. Re-log fees as a permanent non-refundable 'expense'
-        // Net: expenses drop by savedPrincipal; balance rises accordingly.
+        // FinancialService reads fees directly from the global ledger —
+        // immune to in-memory drift after partial withdrawals.
         // total_income is NEVER modified.
-        await FinancialService.refundSavingsPrincipal(
-          goalName: saving.name,
-          totalFeesPaid: totalFeesPaid,
-        );
+        await FinancialService.refundSavingsPrincipal(goalName: saving.name);
 
         _savings.remove(saving);
         await _sync();
