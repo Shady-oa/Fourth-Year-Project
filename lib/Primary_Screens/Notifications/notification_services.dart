@@ -1,4 +1,5 @@
 import 'dart:convert';
+
 import 'package:final_project/Primary_Screens/Notifications/local_notification_store.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -98,7 +99,7 @@ class SmartNotificationService {
       // 80% warning — fire once per budget
       if (pct >= 0.8 && pct < 1.0 && flags[key] != '80') {
         await send(
-          title: '⚠️ Budget Alert: ${budget.name}',
+          title: 'Budget Alert: ${budget.name}',
           message:
               'You\'ve used ${(pct * 100).toStringAsFixed(0)}% of your '
               '"${budget.name}" budget. Only Ksh ${_fmt(budget.total - budget.totalSpent)} remaining.',
@@ -111,7 +112,7 @@ class SmartNotificationService {
       // Overspent — fire once per budget
       if (pct >= 1.0 && flags[key] != 'over') {
         await send(
-          title: '🚨 Budget Exceeded: ${budget.name}',
+          title: 'Budget Exceeded: ${budget.name}',
           message:
               'You\'ve overspent your "${budget.name}" budget by '
               'Ksh ${_fmt(budget.totalSpent - budget.total)}. Consider reviewing your spending.',
@@ -150,7 +151,7 @@ class SmartNotificationService {
       final alertKey = '${goal.name}_due';
       if (daysLeft <= 7 && daysLeft > 1 && !alerted.contains(alertKey)) {
         await send(
-          title: '⏰ Savings Goal Due Soon: ${goal.name}',
+          title: 'Savings Goal Due Soon: ${goal.name}',
           message:
               '"${goal.name}" is due in $daysLeft day${daysLeft == 1 ? '' : 's'}. '
               'You\'ve saved Ksh ${_fmt(goal.savedAmount)} of Ksh ${_fmt(goal.targetAmount)} '
@@ -165,7 +166,7 @@ class SmartNotificationService {
       final urgentKey = '${goal.name}_urgent';
       if (daysLeft == 1 && !alerted.contains(urgentKey)) {
         await send(
-          title: '🚨 Last Day! Savings Goal: ${goal.name}',
+          title: 'Last Day — Savings Goal: ${goal.name}',
           message:
               'Your "${goal.name}" goal deadline is tomorrow! '
               'Ksh ${_fmt((goal.targetAmount - goal.savedAmount).clamp(0, double.infinity))} still needed.',
@@ -179,7 +180,7 @@ class SmartNotificationService {
       final overdueKey = '${goal.name}_overdue';
       if (daysLeft < 0 && daysLeft >= -1 && !alerted.contains(overdueKey)) {
         await send(
-          title: '📅 Goal Overdue: ${goal.name}',
+          title: 'Goal Overdue: ${goal.name}',
           message:
               'Your savings goal "${goal.name}" has passed its deadline. '
               'You reached ${(goal.progressPercent * 100).toStringAsFixed(0)}% — '
@@ -237,11 +238,11 @@ class SmartNotificationService {
     if (income == 0 && expenses == 0) return;
 
     final net = income - expenses;
-    final emoji = net >= 0 ? '📈' : '📉';
+    final dir = net >= 0 ? 'Positive' : 'Negative';
     final savingsRate = income > 0 ? (savings / income * 100) : 0.0;
 
     await send(
-      title: '$emoji Weekly Financial Summary',
+      title: '$dir Weekly Financial Summary',
       message:
           'Last 7 days — Income: Ksh ${_fmt(income)} | Expenses: Ksh ${_fmt(expenses)} | '
           'Net: ${net >= 0 ? '+' : ''}Ksh ${_fmt(net)}. '
@@ -297,7 +298,7 @@ class SmartNotificationService {
     final monthName = _monthName(prevMonth);
 
     await send(
-      title: '📊 $monthName Monthly Summary',
+      title: '$monthName Monthly Summary',
       message:
           'Income: Ksh ${_fmt(income)} | Expenses: Ksh ${_fmt(expenses)} | '
           'Saved: Ksh ${_fmt(savings)} | Net: ${net >= 0 ? '+' : ''}Ksh ${_fmt(net)}. '
@@ -353,7 +354,7 @@ class SmartNotificationService {
 
     if (todaySpend > avgDaily * 2.5) {
       await send(
-        title: '🔍 Unusual Spending Detected',
+        title: 'Unusual Spending Detected',
         message:
             'You\'ve spent Ksh ${_fmt(todaySpend)} today — '
             '${(todaySpend / avgDaily).toStringAsFixed(1)}× your daily average '
@@ -378,7 +379,7 @@ class SmartNotificationService {
 
     if (daysSince == 2 && streakCount > 0) {
       await send(
-        title: '🔥 Don\'t Break Your Streak!',
+        title: 'Don\'t Break Your Streak!',
         message:
             'You have a $streakCount-day savings streak! '
             'Add funds to a savings goal today to keep it alive.',
@@ -437,7 +438,7 @@ class SmartNotificationService {
     if (changePct <= -10) {
       await send(
         title:
-            '🎉 Great Progress! Spending Down ${changePct.abs().toStringAsFixed(1)}%',
+            'Great Progress! Spending Down ${changePct.abs().toStringAsFixed(1)}%',
         message:
             'You\'ve spent Ksh ${_fmt(thisMonthExp)} this month vs '
             'Ksh ${_fmt(lastMonthExp)} last month. '
@@ -446,7 +447,7 @@ class SmartNotificationService {
       );
     } else if (changePct >= 20) {
       await send(
-        title: '📊 Spending Up ${changePct.toStringAsFixed(1)}% This Month',
+        title: 'Spending Up ${changePct.toStringAsFixed(1)}% This Month',
         message:
             'Your spending is Ksh ${_fmt(changeAmt)} higher than last month. '
             'Review your transactions to identify areas to cut back.',
@@ -460,12 +461,11 @@ class SmartNotificationService {
           ((thisMonthSavings - lastMonthSavings) / lastMonthSavings) * 100;
       if (savingsPct >= 15) {
         await send(
-          title:
-              '💰 You Saved ${savingsPct.toStringAsFixed(0)}% More This Month!',
+          title: 'You Saved ${savingsPct.toStringAsFixed(0)}% More This Month!',
           message:
               'Ksh ${_fmt(thisMonthSavings)} saved this month vs '
               'Ksh ${_fmt(lastMonthSavings)} last month. '
-              'Your financial discipline is paying off! 🌟',
+              'Your financial discipline is paying off!',
           type: NotificationType.insight,
         );
       }
@@ -493,10 +493,10 @@ class SmartNotificationService {
 
       if (daysSince >= 7) {
         await send(
-          title: '👋 We Miss You!',
+          title: 'We Miss You!',
           message:
               'You haven\'t checked your finances in $daysSince days. '
-              'Stay on top of your money — open the app and review your spending! 💪',
+              'Stay on top of your money — open the app and review your spending!',
           type: NotificationType.system,
         );
         await prefs.setString(_Keys.inactivityAlertDate, today);

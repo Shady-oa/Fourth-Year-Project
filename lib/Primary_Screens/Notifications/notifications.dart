@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 
 // ─── Notification Type UI extensions ─────────────────────────────────────────
 extension _NotifTypeUI on NotificationType {
+  // Icon per notification type — color is handled uniformly by the theme.
   IconData get icon {
     switch (this) {
       case NotificationType.budget:
@@ -21,25 +22,6 @@ extension _NotifTypeUI on NotificationType {
         return Icons.lightbulb_rounded;
       case NotificationType.system:
         return Icons.info_rounded;
-    }
-  }
-
-  Color get color {
-    switch (this) {
-      case NotificationType.budget:
-        return const Color(0xFF6C63FF);
-      case NotificationType.savings:
-        return const Color(0xFF00B894);
-      case NotificationType.streak:
-        return const Color(0xFFE17055);
-      case NotificationType.analysis:
-        return const Color(0xFF0984E3);
-      case NotificationType.report:
-        return const Color(0xFF6C5CE7);
-      case NotificationType.insight:
-        return const Color(0xFFFDAA40);
-      case NotificationType.system:
-        return const Color(0xFF636E72);
     }
   }
 }
@@ -256,7 +238,9 @@ class _NotificationsPageState extends State<NotificationsPage>
   }
 
   // ── Filter tab row ────────────────────────────────────────────────────────
+  // All tabs share the same primary theme color — no per-type colors.
   Widget _buildFilterRow(ThemeData theme) {
+    final accent = theme.colorScheme.primary;
     return SizedBox(
       height: 44,
       child: ListView.separated(
@@ -266,8 +250,6 @@ class _NotificationsPageState extends State<NotificationsPage>
         separatorBuilder: (_, __) => const SizedBox(width: 8),
         itemBuilder: (_, i) {
           final selected = i == _filterIdx;
-          final tab = _filters[i];
-          final tabColor = tab.type?.color ?? theme.colorScheme.primary;
           return GestureDetector(
             onTap: () {
               setState(() {
@@ -280,19 +262,19 @@ class _NotificationsPageState extends State<NotificationsPage>
               duration: const Duration(milliseconds: 200),
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
               decoration: BoxDecoration(
-                color: selected ? tabColor : Colors.transparent,
+                color: selected ? accent : Colors.transparent,
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
-                  color: selected ? tabColor : tabColor.withOpacity(0.35),
+                  color: selected ? accent : accent.withOpacity(0.35),
                   width: 1.5,
                 ),
               ),
               child: Text(
-                tab.label,
+                _filters[i].label,
                 style: GoogleFonts.poppins(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
-                  color: selected ? Colors.white : tabColor.withOpacity(0.85),
+                  color: selected ? Colors.white : accent.withOpacity(0.75),
                 ),
               ),
             ),
@@ -425,19 +407,21 @@ class _NotificationsPageState extends State<NotificationsPage>
   }
 
   // ── Notification card (dynamic height) ───────────────────────────────────
+  // Single accent color for all cards — no per-type coloring.
   Widget _buildCard(ThemeData theme, bool isDark, AppNotification notif) {
-    final typeColor = notif.type.color;
+    final accent = theme.colorScheme.primary;
     final typeIcon = notif.type.icon;
     final isRead = notif.isRead;
 
+    // Subtle unread tint uses the single accent
     final cardBg = isRead
         ? (isDark ? const Color(0xFF1C1C1E) : Colors.white)
         : (isDark
               ? Color.alphaBlend(
-                  typeColor.withOpacity(0.10),
+                  accent.withOpacity(0.07),
                   const Color(0xFF1C1C1E),
                 )
-              : Color.alphaBlend(typeColor.withOpacity(0.04), Colors.white));
+              : Color.alphaBlend(accent.withOpacity(0.03), Colors.white));
 
     final timeStr = DateFormat('HH:mm').format(notif.createdAt);
 
@@ -487,35 +471,20 @@ class _NotificationsPageState extends State<NotificationsPage>
           decoration: BoxDecoration(
             color: cardBg,
             borderRadius: BorderRadius.circular(22),
+            // Single neutral border — no color variance per type
             border: Border.all(
-              color: isRead
-                  ? (isDark
-                        ? Colors.white.withOpacity(0.06)
-                        : Colors.black.withOpacity(0.06))
-                  : typeColor.withOpacity(isDark ? 0.35 : 0.2),
+              color: isDark
+                  ? Colors.white.withOpacity(isRead ? 0.06 : 0.10)
+                  : Colors.black.withOpacity(isRead ? 0.06 : 0.08),
               width: 1,
             ),
-            boxShadow: isRead
-                ? [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
-                      blurRadius: 10,
-                      offset: const Offset(0, 2),
-                    ),
-                  ]
-                : [
-                    BoxShadow(
-                      color: typeColor.withOpacity(isDark ? 0.25 : 0.13),
-                      blurRadius: 22,
-                      spreadRadius: -3,
-                      offset: const Offset(0, 8),
-                    ),
-                    BoxShadow(
-                      color: Colors.black.withOpacity(isDark ? 0.35 : 0.04),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
           // Padding wraps everything — card height is fully dynamic
           child: Padding(
@@ -523,30 +492,20 @@ class _NotificationsPageState extends State<NotificationsPage>
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // ── Type icon bubble ─────────────────────────────────────
-                AnimatedContainer(
-                  duration: const Duration(milliseconds: 280),
+                // ── Type icon bubble (single accent color) ───────────────
+                Container(
                   width: 50,
                   height: 50,
                   decoration: BoxDecoration(
                     color: isRead
-                        ? typeColor.withOpacity(isDark ? 0.12 : 0.08)
-                        : typeColor,
+                        ? accent.withOpacity(isDark ? 0.12 : 0.08)
+                        : accent.withOpacity(isDark ? 0.22 : 0.12),
                     borderRadius: BorderRadius.circular(16),
-                    boxShadow: isRead
-                        ? []
-                        : [
-                            BoxShadow(
-                              color: typeColor.withOpacity(0.40),
-                              blurRadius: 14,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
                   ),
                   child: Icon(
                     typeIcon,
                     size: 24,
-                    color: isRead ? typeColor.withOpacity(0.55) : Colors.white,
+                    color: accent.withOpacity(isRead ? 0.5 : 0.9),
                   ),
                 ),
 
@@ -560,18 +519,16 @@ class _NotificationsPageState extends State<NotificationsPage>
                       // Type pill + time + unread dot
                       Row(
                         children: [
-                          // Type pill
+                          // Type pill — single neutral style
                           Container(
                             padding: const EdgeInsets.symmetric(
                               horizontal: 8,
                               vertical: 3,
                             ),
                             decoration: BoxDecoration(
-                              color: isRead
-                                  ? (isDark
-                                        ? Colors.white.withOpacity(0.07)
-                                        : Colors.black.withOpacity(0.05))
-                                  : typeColor.withOpacity(isDark ? 0.25 : 0.12),
+                              color: isDark
+                                  ? Colors.white.withOpacity(0.07)
+                                  : Colors.black.withOpacity(0.05),
                               borderRadius: BorderRadius.circular(30),
                             ),
                             child: Text(
@@ -580,11 +537,9 @@ class _NotificationsPageState extends State<NotificationsPage>
                                 fontSize: 9,
                                 fontWeight: FontWeight.w800,
                                 letterSpacing: 0.8,
-                                color: isRead
-                                    ? (isDark
-                                          ? Colors.white.withOpacity(0.35)
-                                          : Colors.black.withOpacity(0.3))
-                                    : typeColor.withOpacity(isDark ? 0.9 : 0.8),
+                                color: isDark
+                                    ? Colors.white.withOpacity(0.40)
+                                    : Colors.black.withOpacity(0.35),
                               ),
                             ),
                           ),
@@ -604,18 +559,18 @@ class _NotificationsPageState extends State<NotificationsPage>
                                     ),
                             ),
                           ),
-                          // Unread dot
+                          // Unread dot — single accent color
                           if (!isRead) ...[
                             const SizedBox(width: 6),
                             Container(
                               width: 7,
                               height: 7,
                               decoration: BoxDecoration(
-                                color: typeColor,
+                                color: accent,
                                 shape: BoxShape.circle,
                                 boxShadow: [
                                   BoxShadow(
-                                    color: typeColor.withOpacity(0.5),
+                                    color: accent.withOpacity(0.4),
                                     blurRadius: 5,
                                   ),
                                 ],
