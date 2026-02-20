@@ -20,17 +20,36 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-// Currency formatting utility
+// Currency formatting utility (local copy — full methods)
 class CurrencyFormatter {
   static final NumberFormat _formatter = NumberFormat('#,##0', 'en_US');
-  static String format(double amount) =>
-      'Ksh ${_formatter.format(amount.round())}';
+  static final NumberFormat _decimalFmt = NumberFormat('#,##0.00', 'en_US');
+
+  /// Whole-number format:  1234 → "Ksh 1,234"
+  static String format(double amount) {
+    final abs = amount.abs();
+    final s = _formatter.format(abs.round());
+    return amount < 0 ? '-Ksh $s' : 'Ksh $s';
+  }
+
+  /// Two-decimal format:  1234.5 → "Ksh 1,234.50"
+  static String formatDecimal(double amount) {
+    final abs = amount.abs();
+    final s = _decimalFmt.format(abs);
+    return amount < 0 ? '-Ksh $s' : 'Ksh $s';
+  }
+
   static String compact(double amount) {
-    if (amount >= 1000000) {
-      return 'Ksh ${(amount / 1000000).toStringAsFixed(1)}M';
+    final abs = amount.abs();
+    String s;
+    if (abs >= 1000000) {
+      s = 'Ksh ${(abs / 1000000).toStringAsFixed(1)}M';
+    } else if (abs >= 1000) {
+      s = 'Ksh ${(abs / 1000).toStringAsFixed(1)}K';
+    } else {
+      s = format(abs);
     }
-    if (amount >= 1000) return 'Ksh ${(amount / 1000).toStringAsFixed(1)}K';
-    return format(amount);
+    return amount < 0 ? '-$s' : s;
   }
 }
 
@@ -349,7 +368,7 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  // ── Add Income Dialog ────────────────────────────────────────────────────────
+  // ── Add Income Dialog ──────────────────────────────────────────────────────────
   void showAddIncomeDialog() {
     final amountCtrl = TextEditingController();
     final titleCtrl = TextEditingController();
@@ -402,21 +421,30 @@ class _HomePageState extends State<HomePage> {
             style: ElevatedButton.styleFrom(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
             ),
-            onPressed: () async {
+            onPressed: () {
               final amt = double.tryParse(amountCtrl.text) ?? 0;
               final reason = reasonCtrl.text.trim();
               if (amt > 0 && titleCtrl.text.isNotEmpty && reason.isNotEmpty) {
-                final prefs = await SharedPreferences.getInstance();
-                totalIncome += amt;
-                await prefs.setDouble(keyTotalIncome, totalIncome);
-                await saveTransaction(
-                  titleCtrl.text,
-                  amt,
-                  'income',
-                  reason: reason,
-                );
                 Navigator.pop(context);
-                refreshData();
+                _showTransactionConfirmation(
+                  type: 'income',
+                  title: titleCtrl.text.trim(),
+                  amount: amt,
+                  transactionCost: 0,
+                  reason: reason,
+                  onConfirm: () async {
+                    final prefs = await SharedPreferences.getInstance();
+                    totalIncome += amt;
+                    await prefs.setDouble(keyTotalIncome, totalIncome);
+                    await saveTransaction(
+                      titleCtrl.text,
+                      amt,
+                      'income',
+                      reason: reason,
+                    );
+                    refreshData();
+                  },
+                );
               } else {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
@@ -429,14 +457,14 @@ class _HomePageState extends State<HomePage> {
                 );
               }
             },
-            child: const Text('Add Income'),
+            child: const Text('Continue ›'),
           ),
         ],
       ),
     );
   }
 
-  // ── Add Expense Dialog ────────────────────────────────────────────────────────
+  // ── Add Expense Dialog ──────────────────────────────────────────────────────────
   void showGeneralExpenseDialog() {
     final titleCtrl = TextEditingController();
     final amtCtrl = TextEditingController();
@@ -501,7 +529,7 @@ class _HomePageState extends State<HomePage> {
             style: ElevatedButton.styleFrom(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
             ),
-            onPressed: () async {
+            onPressed: () {
               final amt = double.tryParse(amtCtrl.text) ?? 0;
               final txCost = double.tryParse(txCostCtrl.text) ?? 0;
               final reason = reasonCtrl.text.trim();
@@ -537,17 +565,291 @@ class _HomePageState extends State<HomePage> {
                 return;
               }
 
-              await saveTransaction(
-                titleCtrl.text,
-                amt,
-                'expense',
+              Navigator.pop(context);
+              _showTransactionConfirmation(
+                type: 'expense',
+                title: titleCtrl.text.trim(),
+                amount: amt,
                 transactionCost: txCost,
                 reason: reason,
+                onConfirm: () async {
+                  await saveTransaction(
+                    titleCtrl.text,
+                    amt,
+                    'expense',
+                    transactionCost: txCost,
+                    reason: reason,
+                  );
+                  refreshData();
+                },
               );
-              Navigator.pop(context);
-              refreshData();
             },
-            child: const Text('Deduct'),
+            child: const Text('Continue ›'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Transaction Confirmation Bottom Sheet ───────────────────────────────────
+  //
+  // Called after the input dialog is dismissed.  Shows a full summary for the
+  // user to review before the transaction is written to SharedPreferences.
+  // onConfirm is called ONLY when the user taps "Confirm & Save".
+  void _showTransactionConfirmation({
+    required String type,
+    required String title,
+    required double amount,
+    required double transactionCost,
+    required String reason,
+    required Future<void> Function() onConfirm,
+  }) {
+    final isIncome = type == 'income';
+    final total = amount + transactionCost;
+    final newBalance = isIncome ? _balance + amount : _balance - total;
+    final balanceChange = isIncome ? amount : -total;
+    final balancePositive = balanceChange >= 0;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        bool isSaving = false;
+        return StatefulBuilder(
+          builder: (ctx, setSheetState) => Container(
+            padding: EdgeInsets.only(
+              left: 24,
+              right: 24,
+              top: 24,
+              bottom: MediaQuery.of(ctx).viewInsets.bottom + 32,
+            ),
+            decoration: BoxDecoration(
+              color: Theme.of(ctx).colorScheme.surface,
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(24),
+              ),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Handle
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade300,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                // Header
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: (isIncome ? brandGreen : errorColor).withOpacity(
+                          0.12,
+                        ),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(
+                        isIncome
+                            ? Icons.arrow_circle_down_rounded
+                            : Icons.arrow_circle_up_rounded,
+                        color: isIncome ? brandGreen : errorColor,
+                        size: 26,
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Confirm Transaction',
+                          style: Theme.of(ctx).textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                          isIncome ? 'Income' : 'Expense',
+                          style: TextStyle(
+                            color: isIncome ? brandGreen : errorColor,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 24),
+                const Divider(),
+                const SizedBox(height: 16),
+
+                // Detail rows
+                _confirmRow('Description', title),
+                _confirmRow('Amount', CurrencyFormatter.formatDecimal(amount)),
+                if (!isIncome && transactionCost > 0)
+                  _confirmRow(
+                    'Transaction Fee',
+                    CurrencyFormatter.formatDecimal(transactionCost),
+                  ),
+                if (!isIncome && transactionCost > 0)
+                  _confirmRow(
+                    'Total Deducted',
+                    CurrencyFormatter.formatDecimal(total),
+                    highlight: true,
+                  ),
+                _confirmRow('Reason', reason),
+                _confirmRow(
+                  'Date',
+                  DateFormat('d MMM yyyy, h:mm a').format(DateTime.now()),
+                ),
+
+                const SizedBox(height: 12),
+                const Divider(),
+                const SizedBox(height: 8),
+
+                // Balance impact
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: (balancePositive ? brandGreen : errorColor)
+                        .withOpacity(0.08),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: (balancePositive ? brandGreen : errorColor)
+                          .withOpacity(0.3),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Balance After Transaction',
+                            style: TextStyle(fontSize: 12, color: Colors.grey),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            CurrencyFormatter.formatDecimal(newBalance),
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 18,
+                              color: newBalance < 0 ? errorColor : brandGreen,
+                            ),
+                          ),
+                        ],
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 5,
+                        ),
+                        decoration: BoxDecoration(
+                          color: (balancePositive ? brandGreen : errorColor)
+                              .withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          '${balancePositive ? '+' : ''} ${CurrencyFormatter.formatDecimal(balanceChange)}',
+                          style: TextStyle(
+                            color: balancePositive ? brandGreen : errorColor,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 24),
+
+                // Action buttons
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.pop(ctx),
+                        child: const Text('Go Back'),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      flex: 2,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: isIncome ? brandGreen : errorColor,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        onPressed: isSaving
+                            ? null
+                            : () async {
+                                setSheetState(() => isSaving = true);
+                                await onConfirm();
+                                if (ctx.mounted) Navigator.pop(ctx);
+                              },
+                        child: isSaving
+                            ? const SizedBox(
+                                height: 18,
+                                width: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : const Text(
+                                'Confirm & Save',
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _confirmRow(String label, String value, {bool highlight = false}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 5),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+          ),
+          const SizedBox(width: 16),
+          Flexible(
+            child: Text(
+              value,
+              textAlign: TextAlign.end,
+              style: TextStyle(
+                fontWeight: highlight ? FontWeight.bold : FontWeight.w600,
+                fontSize: highlight ? 15 : 13,
+                color: highlight ? errorColor : null,
+              ),
+            ),
           ),
         ],
       ),

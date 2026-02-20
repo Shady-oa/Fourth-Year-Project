@@ -1,19 +1,13 @@
 import 'dart:convert';
 
 import 'package:final_project/Constants/colors.dart';
+import 'package:final_project/Constants/currency_formatter.dart';
 import 'package:final_project/Primary_Screens/Savings/financial_service.dart';
 import 'package:final_project/SecondaryScreens/Transactions/edit_transaction.dart';
 import 'package:final_project/SecondaryScreens/Transactions/transaction_card.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
-// Currency formatting utility
-class CurrencyFormatter {
-  static final NumberFormat _formatter = NumberFormat('#,##0', 'en_US');
-  static String format(double amount) =>
-      'Ksh ${_formatter.format(amount.round())}';
-}
 
 class TransactionsPage extends StatefulWidget {
   const TransactionsPage({super.key});
@@ -28,7 +22,13 @@ class _TransactionsPageState extends State<TransactionsPage> {
   static const String keyTotalIncome = 'total_income';
   static const String keySavings = 'savings';
 
+  // Display list — hidden rows already filtered out.
   List<Map<String, dynamic>> transactions = [];
+
+  // Full raw list from prefs — used only when writing soft-deletes back.
+  // Financial calculations use FinancialService (reads prefs directly).
+  List<Map<String, dynamic>> _allTxFromPrefs = [];
+
   List<Budget> budgets = [];
   List<Saving> savings = [];
   String filter = 'all';
@@ -36,6 +36,11 @@ class _TransactionsPageState extends State<TransactionsPage> {
   double totalIncome = 0.0;
   // Cached financial summary from FinancialService — always in sync with prefs.
   FinancialSummary? _summary;
+
+  // ── Multi-select (bulk soft-delete) ───────────────────────────────────────
+  bool _isMultiSelect = false;
+  // We track by list position within `transactions` (the display list).
+  final Set<int> _selectedIndices = {};
 
   final TextEditingController _searchCtrl = TextEditingController();
   String _searchQuery = '';
@@ -60,7 +65,10 @@ class _TransactionsPageState extends State<TransactionsPage> {
     setState(() => isLoading = true);
     final prefs = await SharedPreferences.getInstance();
     final txString = prefs.getString(keyTransactions) ?? '[]';
-    transactions = List<Map<String, dynamic>>.from(json.decode(txString));
+    // Keep the full raw list for writing soft-deletes back to prefs.
+    _allTxFromPrefs = List<Map<String, dynamic>>.from(json.decode(txString));
+    // Display list excludes hidden rows.
+    transactions = _allTxFromPrefs.where((tx) => tx['hidden'] != true).toList();
     totalIncome = prefs.getDouble(keyTotalIncome) ?? 0.0;
 
     final budgetStrings = prefs.getStringList(keyBudgets) ?? [];
@@ -71,10 +79,61 @@ class _TransactionsPageState extends State<TransactionsPage> {
         .map((s) => Saving.fromMap(json.decode(s)))
         .toList();
 
-    // Use centralised FinancialService so totals match Home / Analytics / Reports
+    // Use centralised FinancialService so totals match Home / Analytics / Reports.
+    // NOTE: FinancialService reads ALL rows (including hidden ones) — this is
+    // intentional: hiding a row must never change financial totals.
     _summary = FinancialService.recalculateFromPrefs(prefs);
 
     setState(() => isLoading = false);
+  }
+
+  // ── Bulk soft-delete helpers ───────────────────────────────────────────────
+
+  void _toggleMultiSelect() {
+    setState(() {
+      _isMultiSelect = !_isMultiSelect;
+      _selectedIndices.clear();
+    });
+  }
+
+  void _toggleSelect(int displayIndex) {
+    setState(() {
+      if (_selectedIndices.contains(displayIndex)) {
+        _selectedIndices.remove(displayIndex);
+      } else {
+        _selectedIndices.add(displayIndex);
+      }
+    });
+  }
+
+  Future<void> _bulkDelete() async {
+    if (_selectedIndices.isEmpty) return;
+
+    // Collect the transaction maps to be hidden.
+    final toHide = _selectedIndices.map((i) => transactions[i]).toSet();
+
+    // Mark matching rows hidden in the full prefs list.
+    // We match by object identity using date+title+amount for safety.
+    for (final row in _allTxFromPrefs) {
+      if (toHide.any(
+        (h) =>
+            h['date'] == row['date'] &&
+            h['title'] == row['title'] &&
+            h['amount'] == row['amount'],
+      )) {
+        row['hidden'] = true;
+      }
+    }
+
+    // Save back to prefs — financial calculations still include hidden rows.
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(keyTransactions, json.encode(_allTxFromPrefs));
+
+    setState(() {
+      _isMultiSelect = false;
+      _selectedIndices.clear();
+    });
+    await loadTransactions();
   }
 
   /// Returns true for any transaction that must be read-only.
@@ -155,12 +214,38 @@ class _TransactionsPageState extends State<TransactionsPage> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final groupedTx = groupedTransactions;
+    final hasSelection = _selectedIndices.isNotEmpty;
 
     return Scaffold(
       backgroundColor: theme.colorScheme.surface,
+      floatingActionButton: _isMultiSelect
+          ? FloatingActionButton.extended(
+              backgroundColor: hasSelection
+                  ? errorColor
+                  : theme.colorScheme.surface,
+              foregroundColor: hasSelection
+                  ? Colors.white
+                  : theme.colorScheme.onSurface,
+              icon: Icon(hasSelection ? Icons.delete_sweep : Icons.close),
+              label: Text(
+                hasSelection
+                    ? 'Delete ${_selectedIndices.length} item${_selectedIndices.length == 1 ? '' : 's'}'
+                    : 'Cancel',
+              ),
+              onPressed: hasSelection ? _bulkDelete : _toggleMultiSelect,
+            )
+          : FloatingActionButton(
+              backgroundColor: theme.colorScheme.primaryContainer,
+              foregroundColor: theme.colorScheme.onPrimaryContainer,
+              tooltip: 'Select transactions to delete',
+              onPressed: _toggleMultiSelect,
+              child: const Icon(Icons.checklist_rounded),
+            ),
       appBar: AppBar(
         backgroundColor: theme.colorScheme.surface,
-        title: _isSearchVisible
+        title: _isMultiSelect
+            ? Text('${_selectedIndices.length} selected')
+            : _isSearchVisible
             ? TextField(
                 controller: _searchCtrl,
                 autofocus: true,
@@ -172,48 +257,69 @@ class _TransactionsPageState extends State<TransactionsPage> {
                 style: theme.textTheme.bodyLarge,
               )
             : const Text('All Transactions'),
-        centerTitle: !_isSearchVisible,
+        centerTitle: !_isSearchVisible && !_isMultiSelect,
         elevation: 0,
         actions: [
-          IconButton(
-            icon: Icon(
-              _isSearchVisible ? Icons.close : Icons.search,
-              color: theme.colorScheme.onSurface,
+          if (_isMultiSelect)
+            TextButton(
+              onPressed: () {
+                setState(() {
+                  if (_selectedIndices.length == transactions.length) {
+                    _selectedIndices.clear();
+                  } else {
+                    _selectedIndices.addAll(
+                      List.generate(transactions.length, (i) => i),
+                    );
+                  }
+                });
+              },
+              child: Text(
+                _selectedIndices.length == transactions.length
+                    ? 'Deselect All'
+                    : 'Select All',
+              ),
+            )
+          else
+            IconButton(
+              icon: Icon(
+                _isSearchVisible ? Icons.close : Icons.search,
+                color: theme.colorScheme.onSurface,
+              ),
+              onPressed: () {
+                setState(() {
+                  _isSearchVisible = !_isSearchVisible;
+                  if (!_isSearchVisible) {
+                    _searchCtrl.clear();
+                    _searchQuery = '';
+                  }
+                });
+              },
             ),
-            onPressed: () {
-              setState(() {
-                _isSearchVisible = !_isSearchVisible;
-                if (!_isSearchVisible) {
-                  _searchCtrl.clear();
-                  _searchQuery = '';
-                }
-              });
-            },
-          ),
         ],
       ),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
           : Column(
               children: [
-                // Filter chips
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16.0,
-                    vertical: 8.0,
+                // Filter chips (hidden during multi-select to reduce noise)
+                if (!_isMultiSelect)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16.0,
+                      vertical: 8.0,
+                    ),
+                    child: Row(
+                      children: [
+                        buildFilterChip('All', 'all', theme),
+                        const SizedBox(width: 8),
+                        buildFilterChip('Income', 'income', theme),
+                        const SizedBox(width: 8),
+                        buildFilterChip('Expenses', 'expense', theme),
+                      ],
+                    ),
                   ),
-                  child: Row(
-                    children: [
-                      buildFilterChip('All', 'all', theme),
-                      const SizedBox(width: 8),
-                      buildFilterChip('Income', 'income', theme),
-                      const SizedBox(width: 8),
-                      buildFilterChip('Expenses', 'expense', theme),
-                    ],
-                  ),
-                ),
 
-                buildSummaryCard(theme),
+                if (!_isMultiSelect) buildSummaryCard(theme),
 
                 // Info bar
                 Container(
@@ -223,17 +329,33 @@ class _TransactionsPageState extends State<TransactionsPage> {
                   ),
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: accentColor.withOpacity(0.08),
+                    color: _isMultiSelect
+                        ? Colors.orange.withOpacity(0.08)
+                        : accentColor.withOpacity(0.08),
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: accentColor.withOpacity(0.25)),
+                    border: Border.all(
+                      color: _isMultiSelect
+                          ? Colors.orange.withOpacity(0.35)
+                          : accentColor.withOpacity(0.25),
+                    ),
                   ),
                   child: Row(
                     children: [
-                      Icon(Icons.edit_note, color: accentColor, size: 18),
+                      Icon(
+                        _isMultiSelect
+                            ? Icons.info_outline
+                            : Icons.lock_outline,
+                        color: _isMultiSelect
+                            ? Colors.orange.shade700
+                            : accentColor,
+                        size: 18,
+                      ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          'Tap any transaction to view details. Income & expense transactions can be edited.',
+                          _isMultiSelect
+                              ? 'Select records to remove from history. Financial totals will NOT be affected.'
+                              : 'This is a read-only ledger. Tap any transaction to view its details.',
                           style: TextStyle(
                             fontSize: 12,
                             color: Colors.grey.shade700,
@@ -278,7 +400,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
                       : RefreshIndicator(
                           onRefresh: loadTransactions,
                           child: ListView.builder(
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            padding: const EdgeInsets.fromLTRB(16, 0, 16, 80),
                             itemCount: groupedTx.length,
                             itemBuilder: (context, index) {
                               final dateKey = groupedTx.keys.elementAt(index);
@@ -305,28 +427,34 @@ class _TransactionsPageState extends State<TransactionsPage> {
                                     ),
                                   ),
                                   ...txList.map((tx) {
-                                    final originalIndex = transactions.indexOf(
+                                    // Use position in the DISPLAY list for selection.
+                                    final displayIndex = transactions.indexOf(
                                       tx,
                                     );
-                                    // Lock ALL savings and budget transactions.
-                                    final isLocked =
-                                        isSavingsOrBudgetTransaction(tx);
+                                    final isSelected = _selectedIndices
+                                        .contains(displayIndex);
 
-                                    return TransactionCard(
-                                      transaction: tx,
-                                      index: originalIndex,
-                                      isLocked: isLocked,
-                                      // Every card is tappable.
-                                      // Editable types (income/expense) open
-                                      // the edit form; all others show
-                                      // a read-only detail view.
-                                      onTap: () => EditTransactionSheet.show(
-                                        context,
-                                        transaction: tx,
-                                        index: originalIndex,
-                                        onSaved: loadTransactions,
-                                      ),
-                                    );
+                                    return _isMultiSelect
+                                        ? _SelectableCard(
+                                            transaction: tx,
+                                            isSelected: isSelected,
+                                            onToggle: () =>
+                                                _toggleSelect(displayIndex),
+                                          )
+                                        : TransactionCard(
+                                            transaction: tx,
+                                            index: displayIndex,
+                                            // All transactions show as locked
+                                            // (read-only ledger).
+                                            isLocked: true,
+                                            onTap: () =>
+                                                EditTransactionSheet.show(
+                                                  context,
+                                                  transaction: tx,
+                                                  index: displayIndex,
+                                                  onSaved: loadTransactions,
+                                                ),
+                                          );
                                   }),
                                   const SizedBox(height: 8),
                                 ],
@@ -680,4 +808,98 @@ class Saving {
         ? DateTime.parse(map['lastUpdated'])
         : DateTime.now(),
   );
+} // end Saving class
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Selectable card — shown only during multi-select mode
+// ─────────────────────────────────────────────────────────────────────────────
+class _SelectableCard extends StatelessWidget {
+  final Map<String, dynamic> transaction;
+  final bool isSelected;
+  final VoidCallback onToggle;
+
+  const _SelectableCard({
+    required this.transaction,
+    required this.isSelected,
+    required this.onToggle,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final title = (transaction['title'] ?? 'Transaction').toString();
+    final amount =
+        double.tryParse(transaction['amount']?.toString() ?? '0') ?? 0.0;
+    final type = (transaction['type'] ?? 'expense').toString();
+    final isIncome = type == 'income';
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: GestureDetector(
+        onTap: onToggle,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? Colors.red.withOpacity(0.08)
+                : theme.colorScheme.surface,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: isSelected
+                  ? Colors.red.shade300
+                  : theme.colorScheme.onSurface.withOpacity(0.1),
+              width: isSelected ? 1.5 : 1,
+            ),
+          ),
+          child: Row(
+            children: [
+              // Checkbox
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                width: 22,
+                height: 22,
+                decoration: BoxDecoration(
+                  color: isSelected ? Colors.red.shade400 : Colors.transparent,
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(
+                    color: isSelected
+                        ? Colors.red.shade400
+                        : theme.colorScheme.onSurface.withOpacity(0.3),
+                    width: 1.5,
+                  ),
+                ),
+                child: isSelected
+                    ? const Icon(Icons.check, color: Colors.white, size: 14)
+                    : null,
+              ),
+              const SizedBox(width: 14),
+              // Title
+              Expanded(
+                child: Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    decoration: isSelected ? TextDecoration.lineThrough : null,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              // Amount
+              Text(
+                '${isIncome ? '+' : '-'} Ksh ${amount.toStringAsFixed(0)}',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: isIncome ? Colors.green.shade600 : Colors.red.shade600,
+                  fontSize: 13,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }

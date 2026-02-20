@@ -64,20 +64,24 @@ class _EditTransactionSheetState extends State<EditTransactionSheet> {
   String get _type => (widget.transaction['type'] ?? 'expense') as String;
   bool get _isIncome => _type == 'income';
 
-  /// Only income and expense can be edited — all other types are read-only.
-  bool get _isEditable => _type == 'income' || _type == 'expense';
+  /// Transactions page is a read-only ledger — no transaction type is editable here.
+  bool get _isEditable => false;
 
   @override
   void initState() {
     super.initState();
     _titleCtrl = TextEditingController(
-        text: (widget.transaction['title'] ?? '').toString());
+      text: (widget.transaction['title'] ?? '').toString(),
+    );
     _amountCtrl = TextEditingController(
-        text: (widget.transaction['amount'] ?? '').toString());
+      text: (widget.transaction['amount'] ?? '').toString(),
+    );
     _txCostCtrl = TextEditingController(
-        text: (widget.transaction['transactionCost'] ?? '0').toString());
+      text: (widget.transaction['transactionCost'] ?? '0').toString(),
+    );
     _reasonCtrl = TextEditingController(
-        text: (widget.transaction['reason'] ?? '').toString());
+      text: (widget.transaction['reason'] ?? '').toString(),
+    );
   }
 
   @override
@@ -123,7 +127,9 @@ class _EditTransactionSheetState extends State<EditTransactionSheet> {
         if (_isIncome && oldAmount != newAmount) {
           final oldIncome = prefs.getDouble('total_income') ?? 0.0;
           await prefs.setDouble(
-              'total_income', oldIncome + (newAmount - oldAmount));
+            'total_income',
+            oldIncome + (newAmount - oldAmount),
+          );
         }
 
         list[widget.index] = {
@@ -156,12 +162,14 @@ class _EditTransactionSheetState extends State<EditTransactionSheet> {
   }
 
   void _snack(String msg) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(msg),
-      backgroundColor: Colors.orange,
-      behavior: SnackBarBehavior.floating,
-      duration: const Duration(seconds: 2),
-    ));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(msg),
+        backgroundColor: Colors.orange,
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 2),
+      ),
+    );
   }
 
   // ── Build ──────────────────────────────────────────────────────────────────
@@ -174,8 +182,7 @@ class _EditTransactionSheetState extends State<EditTransactionSheet> {
     return Container(
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
-        borderRadius:
-            const BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       ),
       padding: EdgeInsets.fromLTRB(20, 0, 20, bottomPad + 28),
       child: SingleChildScrollView(
@@ -214,7 +221,9 @@ class _EditTransactionSheetState extends State<EditTransactionSheet> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        _isEditable ? 'Edit Transaction' : 'Transaction Details',
+                        _isEditable
+                            ? 'Edit Transaction'
+                            : 'Transaction Details',
                         style: const TextStyle(
                           fontSize: 17,
                           fontWeight: FontWeight.w700,
@@ -223,7 +232,9 @@ class _EditTransactionSheetState extends State<EditTransactionSheet> {
                       const SizedBox(height: 2),
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 2),
+                          horizontal: 8,
+                          vertical: 2,
+                        ),
                         decoration: BoxDecoration(
                           color: cfg.accent.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(6),
@@ -243,8 +254,10 @@ class _EditTransactionSheetState extends State<EditTransactionSheet> {
                 // Close X
                 IconButton(
                   onPressed: () => Navigator.pop(context),
-                  icon: Icon(Icons.close,
-                      color: theme.colorScheme.onSurface.withOpacity(0.4)),
+                  icon: Icon(
+                    Icons.close,
+                    color: theme.colorScheme.onSurface.withOpacity(0.4),
+                  ),
                 ),
               ],
             ),
@@ -295,7 +308,8 @@ class _EditTransactionSheetState extends State<EditTransactionSheet> {
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12)),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
                       child: const Text('Cancel'),
                     ),
@@ -310,7 +324,8 @@ class _EditTransactionSheetState extends State<EditTransactionSheet> {
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12)),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                         elevation: 0,
                       ),
                       child: _isSaving
@@ -325,7 +340,9 @@ class _EditTransactionSheetState extends State<EditTransactionSheet> {
                           : const Text(
                               'Save Changes',
                               style: TextStyle(
-                                  fontWeight: FontWeight.bold, fontSize: 15),
+                                fontWeight: FontWeight.bold,
+                                fontSize: 15,
+                              ),
                             ),
                     ),
                   ),
@@ -365,10 +382,14 @@ class _EditTransactionSheetState extends State<EditTransactionSheet> {
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(
-              color: Theme.of(context).colorScheme.primary, width: 2),
+            color: Theme.of(context).colorScheme.primary,
+            width: 2,
+          ),
         ),
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 14,
+          vertical: 14,
+        ),
       ),
     );
   }
@@ -388,11 +409,10 @@ class _ReadOnlyView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final amount =
-        double.tryParse(transaction['amount'].toString()) ?? 0.0;
+    final amount = double.tryParse(transaction['amount'].toString()) ?? 0.0;
     final txCost =
         double.tryParse(transaction['transactionCost']?.toString() ?? '0') ??
-            0.0;
+        0.0;
     final reason = (transaction['reason'] ?? '').toString().trim();
     final date = DateTime.tryParse(transaction['date'] ?? '') ?? DateTime.now();
 
@@ -409,12 +429,11 @@ class _ReadOnlyView extends StatelessWidget {
           ),
           child: Row(
             children: [
-              Icon(Icons.lock_outline,
-                  color: Colors.orange.shade700, size: 20),
+              Icon(Icons.lock_outline, color: Colors.orange.shade700, size: 20),
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
-                  'Savings and budget transactions are read-only to protect your financial history.',
+                  'This is a read-only transaction record. Transactions cannot be modified from this screen.',
                   style: TextStyle(
                     fontSize: 13,
                     color: Colors.orange.shade900,
@@ -432,12 +451,9 @@ class _ReadOnlyView extends StatelessWidget {
         _row(context, 'Name', transaction['title'] ?? '—'),
         _row(context, 'Amount', _ksh(amount)),
         if (txCost > 0) _row(context, 'Fee', _ksh(txCost)),
-        _row(context, 'Total',
-            _ksh(amount + txCost),
-            bold: true),
+        _row(context, 'Total', _ksh(amount + txCost), bold: true),
         if (reason.isNotEmpty) _row(context, 'Reason', reason),
-        _row(context, 'Date',
-            DateFormat('d MMM yyyy · h:mm a').format(date)),
+        _row(context, 'Date', DateFormat('d MMM yyyy · h:mm a').format(date)),
 
         const SizedBox(height: 24),
 
@@ -448,7 +464,8 @@ class _ReadOnlyView extends StatelessWidget {
             style: OutlinedButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 14),
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
             child: const Text('Close'),
           ),
@@ -457,8 +474,12 @@ class _ReadOnlyView extends StatelessWidget {
     );
   }
 
-  Widget _row(BuildContext context, String label, String value,
-      {bool bold = false}) {
+  Widget _row(
+    BuildContext context,
+    String label,
+    String value, {
+    bool bold = false,
+  }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
@@ -470,8 +491,7 @@ class _ReadOnlyView extends StatelessWidget {
               label,
               style: TextStyle(
                 fontSize: 13,
-                color:
-                    Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
               ),
             ),
           ),
@@ -503,20 +523,47 @@ class _SheetCfg {
 _SheetCfg _typeCfg(String type) {
   switch (type) {
     case 'income':
-      return const _SheetCfg(brandGreen, Icons.arrow_circle_down_rounded, 'Income');
+      return const _SheetCfg(
+        brandGreen,
+        Icons.arrow_circle_down_rounded,
+        'Income',
+      );
     case 'expense':
-      return const _SheetCfg(errorColor, Icons.arrow_circle_up_outlined, 'Expense');
+      return const _SheetCfg(
+        errorColor,
+        Icons.arrow_circle_up_outlined,
+        'Expense',
+      );
     case 'budget_expense':
-      return _SheetCfg(Colors.orange.shade600, Icons.receipt_rounded, 'Budget Expense');
+      return _SheetCfg(
+        Colors.orange.shade600,
+        Icons.receipt_rounded,
+        'Budget Expense',
+      );
     case 'budget_finalized':
-      return const _SheetCfg(brandGreen, Icons.check_circle_outline, 'Budget Finalised');
+      return const _SheetCfg(
+        brandGreen,
+        Icons.check_circle_outline,
+        'Budget Finalised',
+      );
     case 'savings_deduction':
     case 'saving_deposit':
-      return const _SheetCfg(Color(0xFF5B8AF0), Icons.savings_outlined, 'Savings Deposit');
+      return const _SheetCfg(
+        Color(0xFF5B8AF0),
+        Icons.savings_outlined,
+        'Savings Deposit',
+      );
     case 'savings_withdrawal':
-      return _SheetCfg(Colors.purple.shade400,
-          Icons.account_balance_wallet_outlined, 'Savings Withdrawal');
+      return _SheetCfg(
+        Colors.purple.shade400,
+        Icons.account_balance_wallet_outlined,
+        'Savings Withdrawal',
+      );
     default:
-      return const _SheetCfg(errorColor, Icons.arrow_circle_up_outlined, 'Transaction');
+      return const _SheetCfg(
+        errorColor,
+        Icons.arrow_circle_up_outlined,
+        'Transaction',
+      );
   }
 }
