@@ -8,6 +8,7 @@ import 'package:final_project/Components/notification_icon.dart';
 import 'package:final_project/Components/quick_actions.dart';
 import 'package:final_project/Components/them_toggle.dart';
 import 'package:final_project/Components/toast.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:final_project/Constants/colors.dart';
 import 'package:final_project/Constants/spacing.dart';
 import 'package:final_project/Firebase/cloudinary_service.dart';
@@ -184,46 +185,16 @@ class _HomePageState extends State<HomePage> {
     double transactionCost = 0.0,
   }) {
     final isIncome = type == 'income';
-    final icon = isIncome ? '💰' : '💸';
     final action = isIncome ? 'Income Added' : 'Expense Recorded';
     final totalDeducted = amount + transactionCost;
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Text(icon, style: const TextStyle(fontSize: 20)),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    transactionCost > 0
-                        ? '$action: ${CurrencyFormatter.format(totalDeducted)} (incl. ${CurrencyFormatter.format(transactionCost)} fee)'
-                        : '$action: ${CurrencyFormatter.format(amount)}',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 15,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-        backgroundColor: isIncome ? brandGreen : Colors.deepOrange,
-        behavior: SnackBarBehavior.floating,
-        margin: EdgeInsets.only(
-          bottom: MediaQuery.of(context).size.height - 150,
-          left: 16,
-          right: 16,
-        ),
-        duration: const Duration(seconds: 3),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      ),
-    );
+    final msg = transactionCost > 0
+        ? '$action: ${CurrencyFormatter.format(totalDeducted)} (incl. ${CurrencyFormatter.format(transactionCost)} fee)'
+        : '$action: ${CurrencyFormatter.format(amount)}';
+    if (isIncome) {
+      AppToast.success(context, msg);
+    } else {
+      AppToast.error(context, msg);
+    }
   }
 
   bool isTransactionLinkedToAchievedGoal(Map<String, dynamic> tx) {
@@ -365,225 +336,357 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // ── Add Income Dialog ──────────────────────────────────────────────────────────
+  // ── Add Income Bottom Sheet ──────────────────────────────────────────────────
   void showAddIncomeDialog() {
     final amountCtrl = TextEditingController();
     final titleCtrl = TextEditingController();
     final reasonCtrl = TextEditingController();
-    showDialog(
+
+    showModalBottomSheet(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Add Income'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: titleCtrl,
-                textCapitalization: TextCapitalization.words,
-                decoration: const InputDecoration(
-                  hintText: 'Source (e.g. Salary)',
-                  border: OutlineInputBorder(),
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+        child: Container(
+          decoration: BoxDecoration(
+            color: Theme.of(ctx).colorScheme.surface,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(24, 8, 24, 32),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Drag handle
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    margin: const EdgeInsets.only(top: 8, bottom: 20),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade300,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: amountCtrl,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  hintText: 'Amount (Ksh)',
-                  border: OutlineInputBorder(),
+                // Header
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: brandGreen.withOpacity(0.12),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(
+                        Icons.arrow_circle_down_rounded,
+                        color: brandGreen,
+                        size: 22,
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Add Income',
+                          style: GoogleFonts.urbanist(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                          'Record a new income source',
+                          style: GoogleFonts.urbanist(
+                            fontSize: 12,
+                            color: Colors.grey.shade500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: reasonCtrl,
-                maxLines: 2,
-                textCapitalization: TextCapitalization.sentences,
-                decoration: const InputDecoration(
-                  hintText: 'Reason (required)',
-                  border: OutlineInputBorder(),
-                  helperText: 'e.g. Monthly salary, freelance payment',
+                const SizedBox(height: 24),
+                TextField(
+                  controller: titleCtrl,
+                  textCapitalization: TextCapitalization.words,
+                  decoration: const InputDecoration(
+                    labelText: 'Income Source',
+                    hintText: 'e.g. Salary, Freelance',
+                    prefixIcon: Icon(Icons.work_outline_rounded),
+                  ),
                 ),
-              ),
-            ],
+                const SizedBox(height: 14),
+                TextField(
+                  controller: amountCtrl,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                    labelText: 'Amount (Ksh)',
+                    hintText: '0',
+                    prefixIcon: Icon(Icons.attach_money_rounded),
+                  ),
+                ),
+                const SizedBox(height: 14),
+                TextField(
+                  controller: reasonCtrl,
+                  maxLines: 2,
+                  textCapitalization: TextCapitalization.sentences,
+                  decoration: const InputDecoration(
+                    labelText: 'Reason',
+                    hintText: 'e.g. Monthly salary, freelance payment',
+                    prefixIcon: Icon(Icons.notes_rounded),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.pop(ctx),
+                        child: const Text('Cancel'),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      flex: 2,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: brandGreen,
+                          foregroundColor: Colors.white,
+                        ),
+                        onPressed: () {
+                          final amt = double.tryParse(amountCtrl.text) ?? 0;
+                          final reason = reasonCtrl.text.trim();
+                          if (amt > 0 &&
+                              titleCtrl.text.isNotEmpty &&
+                              reason.isNotEmpty) {
+                            Navigator.pop(ctx);
+                            _showTransactionConfirmation(
+                              type: 'income',
+                              title: titleCtrl.text.trim(),
+                              amount: amt,
+                              transactionCost: 0,
+                              reason: reason,
+                              onConfirm: () async {
+                                final prefs =
+                                    await SharedPreferences.getInstance();
+                                totalIncome += amt;
+                                await prefs.setDouble(
+                                  keyTotalIncome,
+                                  totalIncome,
+                                );
+                                await saveTransaction(
+                                  titleCtrl.text,
+                                  amt,
+                                  'income',
+                                  reason: reason,
+                                );
+                                refreshData();
+                              },
+                            );
+                          } else {
+                            AppToast.warning(
+                              context,
+                              'Please fill all fields (amount, source & reason)',
+                            );
+                          }
+                        },
+                        child: const Text('Continue ›'),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-            ),
-            onPressed: () {
-              final amt = double.tryParse(amountCtrl.text) ?? 0;
-              final reason = reasonCtrl.text.trim();
-              if (amt > 0 && titleCtrl.text.isNotEmpty && reason.isNotEmpty) {
-                Navigator.pop(context);
-                _showTransactionConfirmation(
-                  type: 'income',
-                  title: titleCtrl.text.trim(),
-                  amount: amt,
-                  transactionCost: 0,
-                  reason: reason,
-                  onConfirm: () async {
-                    final prefs = await SharedPreferences.getInstance();
-                    totalIncome += amt;
-                    await prefs.setDouble(keyTotalIncome, totalIncome);
-                    await saveTransaction(
-                      titleCtrl.text,
-                      amt,
-                      'income',
-                      reason: reason,
-                    );
-                    refreshData();
-                  },
-                );
-              } else {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text(
-                      'Please fill all fields (amount, source & reason)',
-                    ),
-                    backgroundColor: Colors.orange,
-                    behavior: SnackBarBehavior.floating,
-                  ),
-                );
-              }
-            },
-            child: const Text('Continue ›'),
-          ),
-        ],
       ),
     );
   }
 
-  // ── Add Expense Dialog ──────────────────────────────────────────────────────────
+  // ── Add Expense Bottom Sheet ──────────────────────────────────────────────────
   void showGeneralExpenseDialog() {
     final titleCtrl = TextEditingController();
     final amtCtrl = TextEditingController();
     final txCostCtrl = TextEditingController();
     final reasonCtrl = TextEditingController();
 
-    showDialog(
+    showModalBottomSheet(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Add Expense'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: titleCtrl,
-                textCapitalization: TextCapitalization.words,
-                decoration: const InputDecoration(
-                  hintText: 'What was it for?',
-                  border: OutlineInputBorder(),
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+        child: Container(
+          decoration: BoxDecoration(
+            color: Theme.of(ctx).colorScheme.surface,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(24, 8, 24, 32),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Drag handle
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    margin: const EdgeInsets.only(top: 8, bottom: 20),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade300,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: amtCtrl,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  hintText: 'Amount (Ksh)',
-                  border: OutlineInputBorder(),
+                // Header
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: errorColor.withOpacity(0.12),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(
+                        Icons.arrow_circle_up_rounded,
+                        color: errorColor,
+                        size: 22,
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Add Expense',
+                          style: GoogleFonts.urbanist(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                          'Record a new expense',
+                          style: GoogleFonts.urbanist(
+                            fontSize: 12,
+                            color: Colors.grey.shade500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: txCostCtrl,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  hintText: 'Transaction Cost (Ksh)',
-                  border: OutlineInputBorder(),
-                  helperText: 'e.g. M-Pesa fee (enter 0 if none)',
+                const SizedBox(height: 24),
+                TextField(
+                  controller: titleCtrl,
+                  textCapitalization: TextCapitalization.words,
+                  decoration: const InputDecoration(
+                    labelText: 'Description',
+                    hintText: 'What was it for?',
+                    prefixIcon: Icon(Icons.receipt_outlined),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: reasonCtrl,
-                maxLines: 2,
-                textCapitalization: TextCapitalization.sentences,
-                decoration: const InputDecoration(
-                  hintText: 'Reason (required)',
-                  border: OutlineInputBorder(),
-                  helperText: 'e.g. Groceries for the week',
+                const SizedBox(height: 14),
+                TextField(
+                  controller: amtCtrl,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                    labelText: 'Amount (Ksh)',
+                    hintText: '0',
+                    prefixIcon: Icon(Icons.attach_money_rounded),
+                  ),
                 ),
-              ),
-            ],
+                const SizedBox(height: 14),
+                TextField(
+                  controller: txCostCtrl,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                    labelText: 'Transaction Fee (Ksh)',
+                    hintText: 'e.g. M-Pesa fee (0 if none)',
+                    prefixIcon: Icon(Icons.percent_rounded),
+                  ),
+                ),
+                const SizedBox(height: 14),
+                TextField(
+                  controller: reasonCtrl,
+                  maxLines: 2,
+                  textCapitalization: TextCapitalization.sentences,
+                  decoration: const InputDecoration(
+                    labelText: 'Reason',
+                    hintText: 'e.g. Groceries for the week',
+                    prefixIcon: Icon(Icons.notes_rounded),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.pop(ctx),
+                        child: const Text('Cancel'),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      flex: 2,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: errorColor,
+                          foregroundColor: Colors.white,
+                        ),
+                        onPressed: () {
+                          final amt = double.tryParse(amtCtrl.text) ?? 0;
+                          final txCost = double.tryParse(txCostCtrl.text) ?? 0;
+                          final reason = reasonCtrl.text.trim();
+                          if (amt <= 0 || titleCtrl.text.isEmpty) {
+                            AppToast.warning(
+                              context,
+                              'Please enter a name and valid amount',
+                            );
+                            return;
+                          }
+                          if (txCostCtrl.text.trim().isEmpty) {
+                            AppToast.warning(
+                              context,
+                              'Please enter transaction cost (0 if none)',
+                            );
+                            return;
+                          }
+                          if (reason.isEmpty) {
+                            AppToast.warning(context, 'Please enter a reason');
+                            return;
+                          }
+                          Navigator.pop(ctx);
+                          _showTransactionConfirmation(
+                            type: 'expense',
+                            title: titleCtrl.text.trim(),
+                            amount: amt,
+                            transactionCost: txCost,
+                            reason: reason,
+                            onConfirm: () async {
+                              await saveTransaction(
+                                titleCtrl.text,
+                                amt,
+                                'expense',
+                                transactionCost: txCost,
+                                reason: reason,
+                              );
+                              refreshData();
+                            },
+                          );
+                        },
+                        child: const Text('Continue ›'),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-            ),
-            onPressed: () {
-              final amt = double.tryParse(amtCtrl.text) ?? 0;
-              final txCost = double.tryParse(txCostCtrl.text) ?? 0;
-              final reason = reasonCtrl.text.trim();
-
-              if (amt <= 0 || titleCtrl.text.isEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Please enter a name and valid amount'),
-                    backgroundColor: Colors.orange,
-                    behavior: SnackBarBehavior.floating,
-                  ),
-                );
-                return;
-              }
-              if (txCostCtrl.text.trim().isEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Please enter transaction cost (0 if none)'),
-                    backgroundColor: Colors.orange,
-                    behavior: SnackBarBehavior.floating,
-                  ),
-                );
-                return;
-              }
-              if (reason.isEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Please enter a reason'),
-                    backgroundColor: Colors.orange,
-                    behavior: SnackBarBehavior.floating,
-                  ),
-                );
-                return;
-              }
-
-              Navigator.pop(context);
-              _showTransactionConfirmation(
-                type: 'expense',
-                title: titleCtrl.text.trim(),
-                amount: amt,
-                transactionCost: txCost,
-                reason: reason,
-                onConfirm: () async {
-                  await saveTransaction(
-                    titleCtrl.text,
-                    amt,
-                    'expense',
-                    transactionCost: txCost,
-                    reason: reason,
-                  );
-                  refreshData();
-                },
-              );
-            },
-            child: const Text('Continue ›'),
-          ),
-        ],
       ),
     );
   }
@@ -864,21 +967,11 @@ class _HomePageState extends State<HomePage> {
               .doc(userUid)
               .update({'profileUrl': url});
           if (mounted) {
-            showCustomToast(
-              context: context,
-              message: 'Profile image changed successfully!',
-              backgroundColor: accentColor,
-              icon: Icons.check_circle_outline_rounded,
-            );
+            AppToast.success(context, 'Profile image changed successfully!');
           }
         } catch (e) {
           if (mounted) {
-            showCustomToast(
-              context: context,
-              message: 'An error occurred, please try again',
-              backgroundColor: errorColor,
-              icon: Icons.error,
-            );
+            AppToast.error(context, 'An error occurred, please try again');
           }
         }
       }
@@ -1033,12 +1126,9 @@ class _HomePageState extends State<HomePage> {
                   title: 'About Penny Wise',
                   onTap: () {
                     Navigator.pop(context);
-                    showCustomToast(
-                      context: context,
-                      message:
-                          'Penny Wise helps you track your expenses and budgets.',
-                      backgroundColor: brandGreen,
-                      icon: Icons.info_outline_rounded,
+                    AppToast.info(
+                      context,
+                      'Penny Wise helps you track your expenses and budgets.',
                     );
                   },
                 ),
@@ -1048,12 +1138,7 @@ class _HomePageState extends State<HomePage> {
                   title: 'Logout',
                   onTap: () {
                     Navigator.pop(context);
-                    showCustomToast(
-                      context: context,
-                      message: 'Logged out successfully!',
-                      backgroundColor: accentColor,
-                      icon: Icons.check_circle_outline_rounded,
-                    );
+                    AppToast.success(context, 'Logged out successfully!');
                     Navigator.pushReplacement(
                       context,
                       MaterialPageRoute(

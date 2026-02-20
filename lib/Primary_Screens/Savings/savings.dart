@@ -2,12 +2,14 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:final_project/Components/Custom_header.dart';
+import 'package:final_project/Components/toast.dart';
 import 'package:final_project/Constants/colors.dart';
 import 'package:final_project/Constants/spacing.dart';
 import 'package:final_project/Models/models.dart';
 import 'package:final_project/Primary_Screens/Notifications/local_notification_store.dart';
 import 'package:final_project/Primary_Screens/Savings/financial_service.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -184,124 +186,239 @@ class _SavingsPageState extends State<SavingsPage> {
     final targetCtrl = TextEditingController();
     DateTime selectedDate = DateTime.now().add(const Duration(days: 30));
 
-    await showDialog(
+    showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
       builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setSt) => AlertDialog(
-          title: const Text('Create Savings Goal'),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: nameCtrl,
-                  textCapitalization: TextCapitalization.words,
-                  decoration: const InputDecoration(
-                    labelText: 'Goal Name',
-                    hintText: 'e.g. New Phone, Vacation',
-                    prefixIcon: Icon(Icons.edit),
-                    border: OutlineInputBorder(),
+        builder: (ctx, setSt) => Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(ctx).viewInsets.bottom,
+          ),
+          child: Container(
+            decoration: BoxDecoration(
+              color: Theme.of(ctx).colorScheme.surface,
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(24),
+              ),
+            ),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(24, 8, 24, 32),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      margin: const EdgeInsets.only(top: 8, bottom: 20),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade300,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
                   ),
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: targetCtrl,
-                  keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(
-                    labelText: 'Target Amount (Ksh)',
-                    hintText: '0',
-                    prefixIcon: Icon(Icons.attach_money),
-                    border: OutlineInputBorder(),
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: brandGreen.withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(
+                          Icons.flag_outlined,
+                          color: brandGreen,
+                          size: 22,
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Create Savings Goal',
+                            style: GoogleFonts.urbanist(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          Text(
+                            'Set a target and deadline',
+                            style: GoogleFonts.urbanist(
+                              fontSize: 12,
+                              color: Colors.grey.shade500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
-                ),
-                const SizedBox(height: 16),
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: const Icon(Icons.calendar_today),
-                  title: const Text('Due Date'),
-                  subtitle: Text(
-                    DateFormat('dd MMM yyyy').format(selectedDate),
+                  const SizedBox(height: 24),
+                  TextField(
+                    controller: nameCtrl,
+                    textCapitalization: TextCapitalization.words,
+                    decoration: const InputDecoration(
+                      labelText: 'Goal Name',
+                      hintText: 'e.g. New Phone, Vacation',
+                      prefixIcon: Icon(Icons.edit_outlined),
+                    ),
                   ),
-                  trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                  onTap: () async {
-                    final picked = await showDatePicker(
-                      context: ctx,
-                      initialDate: selectedDate,
-                      firstDate: DateTime.now(),
-                      lastDate: DateTime.now().add(const Duration(days: 3650)),
-                    );
-                    if (picked != null) setSt(() => selectedDate = picked);
-                  },
-                ),
-              ],
+                  const SizedBox(height: 14),
+                  TextField(
+                    controller: targetCtrl,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(
+                      labelText: 'Target Amount (Ksh)',
+                      hintText: '0',
+                      prefixIcon: Icon(Icons.attach_money_rounded),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  // Date picker tile
+                  GestureDetector(
+                    onTap: () async {
+                      final picked = await showDatePicker(
+                        context: ctx,
+                        initialDate: selectedDate,
+                        firstDate: DateTime.now(),
+                        lastDate: DateTime.now().add(
+                          const Duration(days: 3650),
+                        ),
+                      );
+                      if (picked != null) setSt(() => selectedDate = picked);
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 14,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Theme.of(
+                          ctx,
+                        ).colorScheme.onSurface.withOpacity(0.05),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: Theme.of(
+                            ctx,
+                          ).colorScheme.onSurface.withOpacity(0.15),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.calendar_today_rounded, size: 20),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Due Date',
+                                  style: GoogleFonts.urbanist(
+                                    fontSize: 12,
+                                    color: Theme.of(
+                                      ctx,
+                                    ).colorScheme.onSurface.withOpacity(0.6),
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                Text(
+                                  DateFormat(
+                                    'dd MMM yyyy',
+                                  ).format(selectedDate),
+                                  style: GoogleFonts.urbanist(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const Icon(Icons.chevron_right_rounded, size: 20),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () => Navigator.pop(ctx),
+                          child: const Text('Cancel'),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        flex: 2,
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: brandGreen,
+                            foregroundColor: Colors.white,
+                          ),
+                          onPressed: () {
+                            final target =
+                                double.tryParse(targetCtrl.text) ?? 0;
+                            if (nameCtrl.text.trim().isEmpty) {
+                              AppToast.warning(context, 'Enter a goal name');
+                              return;
+                            }
+                            if (target <= 0) {
+                              AppToast.warning(
+                                context,
+                                'Enter a valid target amount',
+                              );
+                              return;
+                            }
+                            final name = nameCtrl.text.trim();
+                            final deadline = selectedDate;
+                            Navigator.pop(ctx);
+                            _showSavingsConfirmSheet(
+                              title: 'Confirm New Goal',
+                              icon: Icons.flag_outlined,
+                              iconColor: brandGreen,
+                              rows: [
+                                _ConfirmRow('Goal Name', name),
+                                _ConfirmRow(
+                                  'Target Amount',
+                                  _Fmt.ksh(target),
+                                  highlight: true,
+                                ),
+                                _ConfirmRow(
+                                  'Due Date',
+                                  DateFormat('dd MMM yyyy').format(deadline),
+                                ),
+                              ],
+                              confirmLabel: 'Create Goal',
+                              confirmColor: brandGreen,
+                              onConfirm: () async {
+                                _savings.add(
+                                  Saving(
+                                    name: name,
+                                    savedAmount: 0,
+                                    targetAmount: target,
+                                    deadline: deadline,
+                                  ),
+                                );
+                                await _sync();
+                                await _notify(
+                                  'New Goal Created',
+                                  'Goal: $name — Target: ${_Fmt.ksh(target)}',
+                                );
+                                await _load();
+                              },
+                            );
+                          },
+                          child: const Text('Continue ›'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: brandGreen,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 12,
-                ),
-              ),
-              onPressed: () {
-                final target = double.tryParse(targetCtrl.text) ?? 0;
-                if (nameCtrl.text.trim().isEmpty) {
-                  _snack('Enter a goal name', isError: true);
-                  return;
-                }
-                if (target <= 0) {
-                  _snack('Enter a valid target amount', isError: true);
-                  return;
-                }
-                final name = nameCtrl.text.trim();
-                final deadline = selectedDate;
-                Navigator.pop(ctx);
-                _showSavingsConfirmSheet(
-                  title: 'Confirm New Goal',
-                  icon: Icons.flag_outlined,
-                  iconColor: brandGreen,
-                  rows: [
-                    _ConfirmRow('Goal Name', name),
-                    _ConfirmRow(
-                      'Target Amount',
-                      _Fmt.ksh(target),
-                      highlight: true,
-                    ),
-                    _ConfirmRow(
-                      'Due Date',
-                      DateFormat('dd MMM yyyy').format(deadline),
-                    ),
-                  ],
-                  confirmLabel: 'Create Goal',
-                  confirmColor: brandGreen,
-                  onConfirm: () async {
-                    _savings.add(
-                      Saving(
-                        name: name,
-                        savedAmount: 0,
-                        targetAmount: target,
-                        deadline: deadline,
-                      ),
-                    );
-                    await _sync();
-                    await _notify(
-                      '🎯 New Goal Created',
-                      'Goal: $name — Target: ${_Fmt.ksh(target)}',
-                    );
-                    await _load();
-                  },
-                );
-              },
-              child: const Text('Continue ›'),
-            ),
-          ],
         ),
       ),
     );
@@ -311,129 +428,202 @@ class _SavingsPageState extends State<SavingsPage> {
   Future<void> _addFunds(Saving saving) async {
     final amountCtrl = TextEditingController();
     final costCtrl = TextEditingController();
-    await showDialog(
+
+    showModalBottomSheet(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text('Add Funds to ${saving.name}'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _summaryBox(saving),
-              const SizedBox(height: 16),
-              TextField(
-                controller: amountCtrl,
-                keyboardType: TextInputType.number,
-                autofocus: true,
-                decoration: const InputDecoration(
-                  labelText: 'Amount to Add (Ksh) *',
-                  prefixIcon: Icon(Icons.add_circle_outline),
-                  border: OutlineInputBorder(),
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+        child: Container(
+          decoration: BoxDecoration(
+            color: Theme.of(ctx).colorScheme.surface,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(24, 8, 24, 32),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    margin: const EdgeInsets.only(top: 8, bottom: 20),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade300,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: costCtrl,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: 'Transaction Cost (Ksh) *',
-                  hintText: '0',
-                  prefixIcon: Icon(Icons.receipt_long),
-                  border: OutlineInputBorder(),
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: brandGreen.withOpacity(0.12),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(
+                        Icons.savings_outlined,
+                        color: brandGreen,
+                        size: 22,
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Add Funds',
+                            style: GoogleFonts.urbanist(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          Text(
+                            'Adding to: ${saving.name}',
+                            style: GoogleFonts.urbanist(
+                              fontSize: 12,
+                              color: Colors.grey.shade500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-            ],
+                const SizedBox(height: 16),
+                _summaryBox(saving),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: amountCtrl,
+                  keyboardType: TextInputType.number,
+                  autofocus: true,
+                  decoration: const InputDecoration(
+                    labelText: 'Amount to Add (Ksh)',
+                    prefixIcon: Icon(Icons.add_circle_outline_rounded),
+                  ),
+                ),
+                const SizedBox(height: 14),
+                TextField(
+                  controller: costCtrl,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                    labelText: 'Transaction Cost (Ksh)',
+                    hintText: '0',
+                    prefixIcon: Icon(Icons.receipt_long_rounded),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.pop(ctx),
+                        child: const Text('Cancel'),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      flex: 2,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: brandGreen,
+                          foregroundColor: Colors.white,
+                        ),
+                        onPressed: () {
+                          final amount = double.tryParse(amountCtrl.text) ?? 0;
+                          final cost = double.tryParse(costCtrl.text) ?? 0;
+                          if (amount <= 0) {
+                            AppToast.warning(context, 'Enter a valid amount');
+                            return;
+                          }
+                          if (cost < 0) {
+                            AppToast.warning(
+                              context,
+                              'Transaction cost cannot be negative',
+                            );
+                            return;
+                          }
+                          final totalDeduct = amount + cost;
+                          Navigator.pop(ctx);
+                          _showSavingsConfirmSheet(
+                            title: 'Confirm Deposit',
+                            icon: Icons.savings,
+                            iconColor: brandGreen,
+                            rows: [
+                              _ConfirmRow('Goal', saving.name),
+                              _ConfirmRow('Amount Added', _Fmt.ksh(amount)),
+                              if (cost > 0)
+                                _ConfirmRow('Transaction Fee', _Fmt.ksh(cost)),
+                              _ConfirmRow(
+                                'Total Deducted',
+                                _Fmt.ksh(totalDeduct),
+                                highlight: cost > 0,
+                              ),
+                            ],
+                            note: cost > 0
+                                ? 'Transaction fees are non-refundable.'
+                                : null,
+                            noteColor: Colors.orange,
+                            confirmLabel: 'Confirm Deposit',
+                            confirmColor: brandGreen,
+                            onConfirm: () async {
+                              saving.savedAmount += amount;
+                              saving.lastUpdated = DateTime.now();
+                              saving.transactions.insert(
+                                0,
+                                SavingTransaction(
+                                  type: 'deposit',
+                                  amount: amount,
+                                  transactionCost: cost,
+                                  date: DateTime.now(),
+                                  goalName: saving.name,
+                                ),
+                              );
+                              final wasAchieved = saving.achieved;
+                              if (saving.savedAmount >= saving.targetAmount &&
+                                  !wasAchieved) {
+                                saving.achieved = true;
+                                await _notify(
+                                  'Goal Achieved!',
+                                  'You reached ${saving.name}: ${_Fmt.ksh(saving.targetAmount)}!',
+                                );
+                              }
+                              await _sync();
+                              await _logGlobal(
+                                'Saved for ${saving.name}',
+                                totalDeduct,
+                                'savings_deduction',
+                                transactionCost: cost,
+                              );
+                              widget.onTransactionAdded?.call(
+                                'Saved for ${saving.name}',
+                                totalDeduct,
+                                'savings_deduction',
+                              );
+                              await _updateStreak();
+                              await _load();
+                              if (mounted)
+                                AppToast.success(
+                                  context,
+                                  'Added ${_Fmt.ksh(amount)} · Deducted ${_Fmt.ksh(totalDeduct)}',
+                                );
+                            },
+                          );
+                        },
+                        child: const Text('Continue ›'),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: brandGreen,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-            ),
-            onPressed: () {
-              final amount = double.tryParse(amountCtrl.text) ?? 0;
-              final cost = double.tryParse(costCtrl.text) ?? 0;
-              if (amount <= 0) {
-                _snack('Enter a valid amount', isError: true);
-                return;
-              }
-              if (cost < 0) {
-                _snack('Transaction cost cannot be negative', isError: true);
-                return;
-              }
-              final totalDeduct = amount + cost;
-              Navigator.pop(ctx);
-              _showSavingsConfirmSheet(
-                title: 'Confirm Deposit',
-                icon: Icons.savings,
-                iconColor: brandGreen,
-                rows: [
-                  _ConfirmRow('Goal', saving.name),
-                  _ConfirmRow('Amount Added', _Fmt.ksh(amount)),
-                  if (cost > 0) _ConfirmRow('Transaction Fee', _Fmt.ksh(cost)),
-                  _ConfirmRow(
-                    'Total Deducted',
-                    _Fmt.ksh(totalDeduct),
-                    highlight: cost > 0,
-                  ),
-                ],
-                note: cost > 0 ? 'Transaction fees are non-refundable.' : null,
-                noteColor: Colors.orange,
-                confirmLabel: 'Confirm Deposit',
-                confirmColor: brandGreen,
-                onConfirm: () async {
-                  saving.savedAmount += amount;
-                  saving.lastUpdated = DateTime.now();
-                  saving.transactions.insert(
-                    0,
-                    SavingTransaction(
-                      type: 'deposit',
-                      amount: amount,
-                      transactionCost: cost,
-                      date: DateTime.now(),
-                      goalName: saving.name,
-                    ),
-                  );
-                  final wasAchieved = saving.achieved;
-                  if (saving.savedAmount >= saving.targetAmount &&
-                      !wasAchieved) {
-                    saving.achieved = true;
-                    await _notify(
-                      '🎉 Goal Achieved!',
-                      'You reached ${saving.name}: ${_Fmt.ksh(saving.targetAmount)}!',
-                    );
-                  }
-                  await _sync();
-                  await _logGlobal(
-                    'Saved for ${saving.name}',
-                    totalDeduct,
-                    'savings_deduction',
-                    transactionCost: cost,
-                  );
-                  widget.onTransactionAdded?.call(
-                    'Saved for ${saving.name}',
-                    totalDeduct,
-                    'savings_deduction',
-                  );
-                  await _updateStreak();
-                  await _load();
-                  if (mounted) {
-                    _snack(
-                      '✅ Added ${_Fmt.ksh(amount)} · Deducted ${_Fmt.ksh(totalDeduct)}',
-                    );
-                  }
-                },
-              );
-            },
-            child: const Text('Continue ›'),
-          ),
-        ],
       ),
     );
   }
@@ -453,107 +643,176 @@ class _SavingsPageState extends State<SavingsPage> {
   //     because the deduction rows are gone, without touching total_income.
   Future<void> _removeFunds(Saving saving) async {
     final amountCtrl = TextEditingController();
-    await showDialog(
+
+    showModalBottomSheet(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text('Withdraw from ${saving.name}'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _summaryBox(saving),
-            const SizedBox(height: 16),
-            TextField(
-              controller: amountCtrl,
-              keyboardType: TextInputType.number,
-              autofocus: true,
-              decoration: InputDecoration(
-                labelText: 'Amount to Withdraw (Ksh) *',
-                helperText: 'Max: ${_Fmt.ksh(saving.savedAmount)}',
-                prefixIcon: const Icon(Icons.remove_circle_outline),
-                border: const OutlineInputBorder(),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+        child: Container(
+          decoration: BoxDecoration(
+            color: Theme.of(ctx).colorScheme.surface,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
           ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.orange,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-            ),
-            onPressed: () {
-              final amount = double.tryParse(amountCtrl.text) ?? 0;
-              if (amount <= 0) {
-                _snack('Enter a valid amount', isError: true);
-                return;
-              }
-              if (amount > saving.savedAmount) {
-                _snack(
-                  'Cannot withdraw more than ${_Fmt.ksh(saving.savedAmount)}',
-                  isError: true,
-                );
-                return;
-              }
-              Navigator.pop(ctx);
-              _showSavingsConfirmSheet(
-                title: 'Confirm Withdrawal',
-                icon: Icons.remove_circle_outline,
-                iconColor: Colors.orange,
-                rows: [
-                  _ConfirmRow('Goal', saving.name),
-                  _ConfirmRow('Withdraw Amount', _Fmt.ksh(amount)),
-                  _ConfirmRow(
-                    'Remaining in Goal',
-                    _Fmt.ksh(saving.savedAmount - amount),
-                  ),
-                ],
-                note:
-                    'Withdrawal restores the principal to your balance. Transaction fees already paid are non-refundable.',
-                noteColor: Colors.orange,
-                confirmLabel: 'Confirm Withdrawal',
-                confirmColor: Colors.orange,
-                onConfirm: () async {
-                  saving.savedAmount -= amount;
-                  saving.lastUpdated = DateTime.now();
-                  saving.transactions.insert(
-                    0,
-                    SavingTransaction(
-                      type: 'withdrawal',
-                      amount: amount,
-                      date: DateTime.now(),
-                      goalName: saving.name,
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(24, 8, 24, 32),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    margin: const EdgeInsets.only(top: 8, bottom: 20),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade300,
+                      borderRadius: BorderRadius.circular(2),
                     ),
-                  );
-                  if (saving.savedAmount < saving.targetAmount) {
-                    saving.achieved = false;
-                  }
-                  await _sync();
-                  await FinancialService.processWithdrawal(
-                    goalName: saving.name,
-                    withdrawAmount: amount,
-                  );
-                  widget.onTransactionAdded?.call(
-                    'Withdrawal from ${saving.name}',
-                    amount,
-                    'savings_withdrawal',
-                  );
-                  await _load();
-                  if (mounted) {
-                    _snack(
-                      '✅ Withdrew ${_Fmt.ksh(amount)} from ${saving.name}',
-                    );
-                  }
-                },
-              );
-            },
-            child: const Text('Continue ›'),
+                  ),
+                ),
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: Colors.orange.withOpacity(0.12),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(
+                        Icons.remove_circle_outline_rounded,
+                        color: Colors.orange,
+                        size: 22,
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Withdraw Funds',
+                            style: GoogleFonts.urbanist(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          Text(
+                            'From: ${saving.name}',
+                            style: GoogleFonts.urbanist(
+                              fontSize: 12,
+                              color: Colors.grey.shade500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                _summaryBox(saving),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: amountCtrl,
+                  keyboardType: TextInputType.number,
+                  autofocus: true,
+                  decoration: InputDecoration(
+                    labelText: 'Amount to Withdraw (Ksh)',
+                    helperText: 'Max: ${_Fmt.ksh(saving.savedAmount)}',
+                    prefixIcon: const Icon(Icons.remove_circle_outline_rounded),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.pop(ctx),
+                        child: const Text('Cancel'),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      flex: 2,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.orange,
+                          foregroundColor: Colors.white,
+                        ),
+                        onPressed: () {
+                          final amount = double.tryParse(amountCtrl.text) ?? 0;
+                          if (amount <= 0) {
+                            AppToast.warning(context, 'Enter a valid amount');
+                            return;
+                          }
+                          if (amount > saving.savedAmount) {
+                            AppToast.warning(
+                              context,
+                              'Cannot withdraw more than ${_Fmt.ksh(saving.savedAmount)}',
+                            );
+                            return;
+                          }
+                          Navigator.pop(ctx);
+                          _showSavingsConfirmSheet(
+                            title: 'Confirm Withdrawal',
+                            icon: Icons.remove_circle_outline,
+                            iconColor: Colors.orange,
+                            rows: [
+                              _ConfirmRow('Goal', saving.name),
+                              _ConfirmRow('Withdraw Amount', _Fmt.ksh(amount)),
+                              _ConfirmRow(
+                                'Remaining in Goal',
+                                _Fmt.ksh(saving.savedAmount - amount),
+                              ),
+                            ],
+                            note:
+                                'Withdrawal restores the principal to your balance. Transaction fees already paid are non-refundable.',
+                            noteColor: Colors.orange,
+                            confirmLabel: 'Confirm Withdrawal',
+                            confirmColor: Colors.orange,
+                            onConfirm: () async {
+                              saving.savedAmount -= amount;
+                              saving.lastUpdated = DateTime.now();
+                              saving.transactions.insert(
+                                0,
+                                SavingTransaction(
+                                  type: 'withdrawal',
+                                  amount: amount,
+                                  date: DateTime.now(),
+                                  goalName: saving.name,
+                                ),
+                              );
+                              if (saving.savedAmount < saving.targetAmount)
+                                saving.achieved = false;
+                              await _sync();
+                              await FinancialService.processWithdrawal(
+                                goalName: saving.name,
+                                withdrawAmount: amount,
+                              );
+                              widget.onTransactionAdded?.call(
+                                'Withdrawal from ${saving.name}',
+                                amount,
+                                'savings_withdrawal',
+                              );
+                              await _load();
+                              if (mounted)
+                                AppToast.success(
+                                  context,
+                                  'Withdrew ${_Fmt.ksh(amount)} from ${saving.name}',
+                                );
+                            },
+                          );
+                        },
+                        child: const Text('Continue ›'),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
-        ],
+        ),
       ),
     );
   }
@@ -566,105 +825,216 @@ class _SavingsPageState extends State<SavingsPage> {
     );
     DateTime selectedDate = saving.deadline;
 
-    await showDialog(
+    showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
       builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setSt) => AlertDialog(
-          title: const Text('Edit Savings Goal'),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: nameCtrl,
-                  textCapitalization: TextCapitalization.words,
-                  decoration: const InputDecoration(
-                    labelText: 'Goal Name',
-                    prefixIcon: Icon(Icons.edit),
-                    border: OutlineInputBorder(),
+        builder: (ctx, setSt) => Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(ctx).viewInsets.bottom,
+          ),
+          child: Container(
+            decoration: BoxDecoration(
+              color: Theme.of(ctx).colorScheme.surface,
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(24),
+              ),
+            ),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(24, 8, 24, 32),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      margin: const EdgeInsets.only(top: 8, bottom: 20),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade300,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
                   ),
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: targetCtrl,
-                  keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(
-                    labelText: 'Target Amount (Ksh)',
-                    prefixIcon: Icon(Icons.attach_money),
-                    border: OutlineInputBorder(),
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: brandGreen.withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(
+                          Icons.edit_rounded,
+                          color: brandGreen,
+                          size: 22,
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Edit Savings Goal',
+                            style: GoogleFonts.urbanist(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          Text(
+                            'Update goal details',
+                            style: GoogleFonts.urbanist(
+                              fontSize: 12,
+                              color: Colors.grey.shade500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
-                ),
-                const SizedBox(height: 16),
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: const Icon(Icons.calendar_today),
-                  title: const Text('Due Date'),
-                  subtitle: Text(
-                    DateFormat('dd MMM yyyy').format(selectedDate),
+                  const SizedBox(height: 24),
+                  TextField(
+                    controller: nameCtrl,
+                    textCapitalization: TextCapitalization.words,
+                    decoration: const InputDecoration(
+                      labelText: 'Goal Name',
+                      prefixIcon: Icon(Icons.edit_outlined),
+                    ),
                   ),
-                  trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                  onTap: () async {
-                    final picked = await showDatePicker(
-                      context: ctx,
-                      initialDate: selectedDate,
-                      firstDate: DateTime.now(),
-                      lastDate: DateTime.now().add(const Duration(days: 3650)),
-                    );
-                    if (picked != null) setSt(() => selectedDate = picked);
-                  },
-                ),
-              ],
+                  const SizedBox(height: 14),
+                  TextField(
+                    controller: targetCtrl,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(
+                      labelText: 'Target Amount (Ksh)',
+                      prefixIcon: Icon(Icons.attach_money_rounded),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  GestureDetector(
+                    onTap: () async {
+                      final picked = await showDatePicker(
+                        context: ctx,
+                        initialDate: selectedDate,
+                        firstDate: DateTime.now(),
+                        lastDate: DateTime.now().add(
+                          const Duration(days: 3650),
+                        ),
+                      );
+                      if (picked != null) setSt(() => selectedDate = picked);
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 14,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Theme.of(
+                          ctx,
+                        ).colorScheme.onSurface.withOpacity(0.05),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: Theme.of(
+                            ctx,
+                          ).colorScheme.onSurface.withOpacity(0.15),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.calendar_today_rounded, size: 20),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Due Date',
+                                  style: GoogleFonts.urbanist(
+                                    fontSize: 12,
+                                    color: Theme.of(
+                                      ctx,
+                                    ).colorScheme.onSurface.withOpacity(0.6),
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                Text(
+                                  DateFormat(
+                                    'dd MMM yyyy',
+                                  ).format(selectedDate),
+                                  style: GoogleFonts.urbanist(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const Icon(Icons.chevron_right_rounded, size: 20),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () => Navigator.pop(ctx),
+                          child: const Text('Cancel'),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        flex: 2,
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: brandGreen,
+                            foregroundColor: Colors.white,
+                          ),
+                          onPressed: () async {
+                            final target =
+                                double.tryParse(targetCtrl.text) ?? 0;
+                            if (nameCtrl.text.trim().isEmpty) {
+                              AppToast.warning(context, 'Enter a goal name');
+                              return;
+                            }
+                            if (target <= 0) {
+                              AppToast.warning(
+                                context,
+                                'Enter a valid target amount',
+                              );
+                              return;
+                            }
+                            saving.name = nameCtrl.text.trim();
+                            saving.targetAmount = target;
+                            saving.deadline = selectedDate;
+                            saving.lastUpdated = DateTime.now();
+                            if (saving.savedAmount >= saving.targetAmount) {
+                              if (!saving.achieved) {
+                                saving.achieved = true;
+                                await _notify(
+                                  'Goal Achieved!',
+                                  'You reached ${saving.name}!',
+                                );
+                              }
+                            } else {
+                              saving.achieved = false;
+                            }
+                            await _sync();
+                            if (ctx.mounted) Navigator.pop(ctx);
+                            await _load();
+                          },
+                          child: const Text('Save Changes'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: brandGreen,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 12,
-                ),
-              ),
-              onPressed: () async {
-                final target = double.tryParse(targetCtrl.text) ?? 0;
-                if (nameCtrl.text.trim().isEmpty) {
-                  _snack('Enter a goal name', isError: true);
-                  return;
-                }
-                if (target <= 0) {
-                  _snack('Enter a valid target amount', isError: true);
-                  return;
-                }
-
-                saving.name = nameCtrl.text.trim();
-                saving.targetAmount = target;
-                saving.deadline = selectedDate;
-                saving.lastUpdated = DateTime.now();
-
-                if (saving.savedAmount >= saving.targetAmount) {
-                  if (!saving.achieved) {
-                    saving.achieved = true;
-                    await _notify(
-                      '🎉 Goal Achieved!',
-                      'You reached ${saving.name}!',
-                    );
-                  }
-                } else {
-                  saving.achieved = false;
-                }
-
-                await _sync();
-                if (mounted) Navigator.pop(ctx);
-                await _load();
-              },
-              child: const Text('Save Changes'),
-            ),
-          ],
         ),
       ),
     );
@@ -696,7 +1066,7 @@ class _SavingsPageState extends State<SavingsPage> {
           _savings.remove(saving);
           await _sync();
           await _notify(
-            '🗑️ Goal Removed',
+            'Goal Removed',
             '${saving.name} (achieved) has been removed from your goals.',
           );
         } else {
@@ -704,16 +1074,18 @@ class _SavingsPageState extends State<SavingsPage> {
           _savings.remove(saving);
           await _sync();
           await _notify(
-            '🗑️ Goal Deleted',
+            'Goal Deleted',
             saving.savedAmount > 0
                 ? '${saving.name} deleted. ${_Fmt.ksh(saving.savedAmount)} refunded to balance.'
                 : '${saving.name} deleted.',
           );
         }
         await _load();
-        if (mounted) {
-          _snack(isAchieved ? 'Goal removed' : 'Goal deleted & refund applied');
-        }
+        if (mounted)
+          AppToast.success(
+            context,
+            isAchieved ? 'Goal removed' : 'Goal deleted & refund applied',
+          );
       },
     );
   }

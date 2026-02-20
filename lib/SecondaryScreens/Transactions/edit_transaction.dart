@@ -1,4 +1,6 @@
 import 'dart:convert';
+
+import 'package:final_project/Components/toast.dart';
 import 'package:final_project/Constants/colors.dart';
 import 'package:final_project/Primary_Screens/Savings/financial_service.dart';
 import 'package:flutter/material.dart';
@@ -155,32 +157,16 @@ class _EditTransactionSheetState extends State<EditTransactionSheet> {
       if (mounted) {
         Navigator.pop(context);
         widget.onSaved();
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Transaction updated'),
-            backgroundColor: brandGreen,
-            behavior: SnackBarBehavior.floating,
-            duration: Duration(seconds: 2),
-          ),
-        );
+        AppToast.success(context, 'Transaction updated successfully');
       }
     } catch (e) {
-      if (mounted) _snack('Error: $e');
+      if (mounted) AppToast.error(context, 'Error: $e');
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }
   }
 
-  void _snack(String msg) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(msg),
-        backgroundColor: Colors.orange,
-        behavior: SnackBarBehavior.floating,
-        duration: const Duration(seconds: 2),
-      ),
-    );
-  }
+  void _snack(String msg) => AppToast.warning(context, msg);
 
   // ── Build ──────────────────────────────────────────────────────────────────
   @override
@@ -389,24 +375,24 @@ class _EditTransactionSheetState extends State<EditTransactionSheet> {
         suffixIcon: readOnly
             ? const Icon(Icons.lock_outline, size: 16, color: Colors.orange)
             : null,
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        filled: true,
+        fillColor: readOnly
+            ? Colors.orange.shade50
+            : Theme.of(context).colorScheme.onSurface.withOpacity(0.04),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(
-            color: readOnly ? Colors.orange.shade200 : Colors.grey.shade300,
+            color: readOnly ? Colors.orange.shade200 : Colors.transparent,
           ),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(
-            color: readOnly
-                ? Colors.orange.shade300
-                : Theme.of(context).colorScheme.primary,
+            color: readOnly ? Colors.orange.shade300 : brandGreen,
             width: 2,
           ),
         ),
-        filled: readOnly,
-        fillColor: readOnly ? Colors.orange.shade50 : null,
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 14,
           vertical: 14,

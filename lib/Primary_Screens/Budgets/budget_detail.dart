@@ -3,9 +3,11 @@ import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:final_project/Components/back_button.dart';
+import 'package:final_project/Components/toast.dart';
 import 'package:final_project/Constants/colors.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:pdf/pdf.dart';
@@ -97,22 +99,9 @@ class _BudgetDetailPageState extends State<BudgetDetailPage> {
 
   void showAddExpenseDialog() {
     if (budget == null || budget!.isChecked) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              const Icon(Icons.lock, color: Colors.white, size: 20),
-              const SizedBox(width: 8),
-              const Expanded(
-                child: Text(
-                  'Budget is finalized. Toggle off to add expenses.',
-                  style: TextStyle(fontSize: 14),
-                ),
-              ),
-            ],
-          ),
-          backgroundColor: Colors.orange.shade700,
-        ),
+      AppToast.warning(
+        context,
+        'Budget is finalized. Toggle off to add expenses.',
       );
       return;
     }
@@ -120,60 +109,140 @@ class _BudgetDetailPageState extends State<BudgetDetailPage> {
     final nameCtrl = TextEditingController();
     final amountCtrl = TextEditingController();
 
-    showDialog(
+    showModalBottomSheet(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Add Expense'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nameCtrl,
-              textCapitalization: TextCapitalization.words,
-              decoration: const InputDecoration(
-                hintText: 'Expense Title (e.g., Lunch)',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: amountCtrl,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                hintText: 'Amount (Ksh)',
-                border: OutlineInputBorder(),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+        child: Container(
+          decoration: BoxDecoration(
+            color: Theme.of(ctx).colorScheme.surface,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
           ),
-          ElevatedButton(
-            onPressed: () async {
-              final name = nameCtrl.text.trim();
-              final amount = double.tryParse(amountCtrl.text) ?? 0;
-              if (name.isNotEmpty && amount > 0) {
-                final newExpense = Expense(name: name, amount: amount);
-                budget!.expenses.add(newExpense);
-                await saveBudgets();
-                Navigator.pop(context);
-                setState(() {});
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Expense "$name" added'),
-                      backgroundColor: brandGreen,
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(24, 8, 24, 32),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    margin: const EdgeInsets.only(top: 8, bottom: 20),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade300,
+                      borderRadius: BorderRadius.circular(2),
                     ),
-                  );
-                }
-              }
-            },
-            child: const Text('Add'),
+                  ),
+                ),
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: brandGreen.withOpacity(0.12),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(
+                        Icons.add_circle_outline_rounded,
+                        color: brandGreen,
+                        size: 22,
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Add Expense',
+                          style: GoogleFonts.urbanist(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                          'Log a budget expense',
+                          style: GoogleFonts.urbanist(
+                            fontSize: 12,
+                            color: Colors.grey.shade500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                TextField(
+                  controller: nameCtrl,
+                  textCapitalization: TextCapitalization.words,
+                  decoration: const InputDecoration(
+                    labelText: 'Expense Title',
+                    hintText: 'e.g. Lunch, Fuel',
+                    prefixIcon: Icon(Icons.receipt_outlined),
+                  ),
+                ),
+                const SizedBox(height: 14),
+                TextField(
+                  controller: amountCtrl,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                    labelText: 'Amount (Ksh)',
+                    hintText: '0',
+                    prefixIcon: Icon(Icons.attach_money_rounded),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.pop(ctx),
+                        child: const Text('Cancel'),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      flex: 2,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: brandGreen,
+                          foregroundColor: Colors.white,
+                        ),
+                        onPressed: () async {
+                          final name = nameCtrl.text.trim();
+                          final amount = double.tryParse(amountCtrl.text) ?? 0;
+                          if (name.isNotEmpty && amount > 0) {
+                            final newExpense = Expense(
+                              name: name,
+                              amount: amount,
+                            );
+                            budget!.expenses.add(newExpense);
+                            await saveBudgets();
+                            if (ctx.mounted) Navigator.pop(ctx);
+                            setState(() {});
+                            if (mounted)
+                              AppToast.success(
+                                context,
+                                'Expense "$name" added',
+                              );
+                          } else {
+                            AppToast.warning(
+                              context,
+                              'Please enter a valid name and amount',
+                            );
+                          }
+                        },
+                        child: const Text('Add Expense'),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
-        ],
+        ),
       ),
     );
   }
@@ -276,91 +345,160 @@ class _BudgetDetailPageState extends State<BudgetDetailPage> {
     if (budget == null || budget!.isChecked) return;
 
     final nameCtrl = TextEditingController(text: expense.name);
-    final amountCtrl = TextEditingController(text: expense.amount.toString());
+    final amountCtrl = TextEditingController(
+      text: expense.amount.toStringAsFixed(0),
+    );
 
-    showDialog(
+    showModalBottomSheet(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Edit Expense'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nameCtrl,
-              textCapitalization: TextCapitalization.words,
-              decoration: const InputDecoration(
-                labelText: 'Expense Title',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: amountCtrl,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                labelText: 'Amount',
-                border: OutlineInputBorder(),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+        child: Container(
+          decoration: BoxDecoration(
+            color: Theme.of(ctx).colorScheme.surface,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
           ),
-          ElevatedButton(
-            onPressed: () {
-              final name = nameCtrl.text.trim();
-              final amount = double.tryParse(amountCtrl.text) ?? 0;
-              if (name.isNotEmpty && amount > 0) {
-                Navigator.pop(context);
-                _showBudgetDetailConfirmSheet(
-                  title: 'Confirm Edit',
-                  icon: Icons.edit_outlined,
-                  iconColor: accentColor,
-                  rows: [
-                    _BudgetDetailRow('Expense', name),
-                    _BudgetDetailRow(
-                      'New Amount',
-                      CurrencyFormatter.format(amount),
-                      highlight: true,
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(24, 8, 24, 32),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    margin: const EdgeInsets.only(top: 8, bottom: 20),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade300,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: accentColor.withOpacity(0.12),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(
+                        Icons.edit_rounded,
+                        color: accentColor,
+                        size: 22,
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Edit Expense',
+                          style: GoogleFonts.urbanist(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                          'Update expense details',
+                          style: GoogleFonts.urbanist(
+                            fontSize: 12,
+                            color: Colors.grey.shade500,
+                          ),
+                        ),
+                      ],
                     ),
                   ],
-                  confirmLabel: 'Save Changes',
-                  confirmColor: accentColor,
-                  onConfirm: () async {
-                    expense.name = name;
-                    expense.amount = amount;
-                    await saveBudgets();
-                    setState(() {});
-                    if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Expense updated'),
-                          backgroundColor: brandGreen,
+                ),
+                const SizedBox(height: 24),
+                TextField(
+                  controller: nameCtrl,
+                  textCapitalization: TextCapitalization.words,
+                  decoration: const InputDecoration(
+                    labelText: 'Expense Title',
+                    prefixIcon: Icon(Icons.receipt_outlined),
+                  ),
+                ),
+                const SizedBox(height: 14),
+                TextField(
+                  controller: amountCtrl,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                    labelText: 'Amount (Ksh)',
+                    prefixIcon: Icon(Icons.attach_money_rounded),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.pop(ctx),
+                        child: const Text('Cancel'),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      flex: 2,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: accentColor,
+                          foregroundColor: Colors.white,
                         ),
-                      );
-                    }
-                  },
-                );
-              }
-            },
-            child: const Text('Continue ›'),
+                        onPressed: () {
+                          final name = nameCtrl.text.trim();
+                          final amount = double.tryParse(amountCtrl.text) ?? 0;
+                          if (name.isNotEmpty && amount > 0) {
+                            Navigator.pop(ctx);
+                            _showBudgetDetailConfirmSheet(
+                              title: 'Confirm Edit',
+                              icon: Icons.edit_outlined,
+                              iconColor: accentColor,
+                              rows: [
+                                _BudgetDetailRow('Expense', name),
+                                _BudgetDetailRow(
+                                  'New Amount',
+                                  CurrencyFormatter.format(amount),
+                                  highlight: true,
+                                ),
+                              ],
+                              confirmLabel: 'Save Changes',
+                              confirmColor: accentColor,
+                              onConfirm: () async {
+                                expense.name = name;
+                                expense.amount = amount;
+                                await saveBudgets();
+                                setState(() {});
+                                if (mounted)
+                                  AppToast.success(context, 'Expense updated');
+                              },
+                            );
+                          } else {
+                            AppToast.warning(
+                              context,
+                              'Please enter valid name and amount',
+                            );
+                          }
+                        },
+                        child: const Text('Continue ›'),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
-        ],
+        ),
       ),
     );
   }
 
   void _deleteExpense(Expense expense) {
     if (budget == null || budget!.isChecked) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Budget is finalized. Toggle off to delete.'),
-          backgroundColor: Colors.orange.shade700,
-        ),
-      );
+      AppToast.warning(context, 'Budget is finalized. Toggle off to delete.');
       return;
     }
     _showBudgetDetailConfirmSheet(
@@ -383,14 +521,7 @@ class _BudgetDetailPageState extends State<BudgetDetailPage> {
         budget!.expenses.remove(expense);
         await saveBudgets();
         setState(() {});
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Expense deleted'),
-              backgroundColor: brandGreen,
-            ),
-          );
-        }
+        if (mounted) AppToast.success(context, 'Expense deleted');
       },
     );
   }
@@ -559,22 +690,12 @@ class _BudgetDetailPageState extends State<BudgetDetailPage> {
       ], text: 'Budget Report: ${budget!.name}');
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('PDF exported successfully'),
-            backgroundColor: brandGreen,
-          ),
-        );
+        AppToast.success(context, 'PDF exported successfully');
       }
     } catch (e) {
       debugPrint('Error exporting PDF: $e');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error exporting PDF: $e'),
-            backgroundColor: errorColor,
-          ),
-        );
+        AppToast.error(context, 'Error exporting PDF: $e');
       }
     }
   }
@@ -630,16 +751,11 @@ class _BudgetDetailPageState extends State<BudgetDetailPage> {
             'Budget "${budget!.name}" has been finalized. ${CurrencyFormatter.format(budget!.totalSpent)} deducted from balance.',
           );
           setState(() {});
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  'Budget finalized. ${CurrencyFormatter.format(budget!.totalSpent)} deducted',
-                ),
-                backgroundColor: brandGreen,
-              ),
+          if (mounted)
+            AppToast.success(
+              context,
+              'Budget finalized. ${CurrencyFormatter.format(budget!.totalSpent)} deducted',
             );
-          }
         },
       );
     } else {
@@ -683,16 +799,11 @@ class _BudgetDetailPageState extends State<BudgetDetailPage> {
             'Budget "${budget!.name}" has been unfinalized. ${CurrencyFormatter.format(budget!.totalSpent)} restored to balance.',
           );
           setState(() {});
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  'Budget unfinalized. ${CurrencyFormatter.format(budget!.totalSpent)} restored',
-                ),
-                backgroundColor: brandGreen,
-              ),
+          if (mounted)
+            AppToast.info(
+              context,
+              'Budget unfinalized. ${CurrencyFormatter.format(budget!.totalSpent)} restored',
             );
-          }
         },
       );
     }

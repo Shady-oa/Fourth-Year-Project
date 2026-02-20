@@ -1,11 +1,13 @@
 import 'dart:convert';
 
 import 'package:final_project/Components/Custom_header.dart';
+import 'package:final_project/Components/toast.dart';
 import 'package:final_project/Constants/colors.dart';
 import 'package:final_project/Primary_Screens/Budgets/budget_detail.dart';
 import 'package:final_project/Primary_Screens/Notifications/local_notification_store.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -67,80 +69,160 @@ class _BudgetPageState extends State<BudgetPage> {
     final nameCtrl = TextEditingController();
     final amountCtrl = TextEditingController();
 
-    showDialog(
+    showModalBottomSheet(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Create Budget'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nameCtrl,
-              textCapitalization: TextCapitalization.words,
-              decoration: const InputDecoration(
-                hintText: 'Budget Name (e.g., Groceries)',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: amountCtrl,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                hintText: 'Budget Amount (Ksh)',
-                border: OutlineInputBorder(),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+        child: Container(
+          decoration: BoxDecoration(
+            color: Theme.of(ctx).colorScheme.surface,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
           ),
-          ElevatedButton(
-            onPressed: () {
-              final name = nameCtrl.text.trim();
-              final amount = double.tryParse(amountCtrl.text) ?? 0;
-              if (name.isNotEmpty && amount > 0) {
-                Navigator.pop(context);
-                _showBudgetConfirmSheet(
-                  title: 'Confirm Budget',
-                  icon: Icons.account_balance_wallet,
-                  iconColor: accentColor,
-                  rows: [
-                    _BudgetConfirmRow('Name', name),
-                    _BudgetConfirmRow(
-                      'Budget Amount',
-                      CurrencyFormatter.format(amount),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(24, 8, 24, 32),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    margin: const EdgeInsets.only(top: 8, bottom: 20),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade300,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: accentColor.withOpacity(0.12),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(
+                        Icons.account_balance_wallet_rounded,
+                        color: accentColor,
+                        size: 22,
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Create Budget',
+                          style: GoogleFonts.urbanist(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                          'Set a new spending limit',
+                          style: GoogleFonts.urbanist(
+                            fontSize: 12,
+                            color: Colors.grey.shade500,
+                          ),
+                        ),
+                      ],
                     ),
                   ],
-                  confirmLabel: 'Create Budget',
-                  confirmColor: accentColor,
-                  onConfirm: () async {
-                    final newBudget = Budget(name: name, total: amount);
-                    budgets.add(newBudget);
-                    await saveBudgets();
-                    await sendNotification(
-                      '💼 Budget Created',
-                      'New budget "$name" created with ${CurrencyFormatter.format(amount)}',
-                    );
-                    setState(() {});
-                    if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Budget "$name" created successfully'),
-                          backgroundColor: brandGreen,
+                ),
+                const SizedBox(height: 24),
+                TextField(
+                  controller: nameCtrl,
+                  textCapitalization: TextCapitalization.words,
+                  decoration: const InputDecoration(
+                    labelText: 'Budget Name',
+                    hintText: 'e.g. Groceries, Transport',
+                    prefixIcon: Icon(Icons.label_outline_rounded),
+                  ),
+                ),
+                const SizedBox(height: 14),
+                TextField(
+                  controller: amountCtrl,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                    labelText: 'Budget Amount (Ksh)',
+                    hintText: '0',
+                    prefixIcon: Icon(Icons.attach_money_rounded),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.pop(ctx),
+                        child: const Text('Cancel'),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      flex: 2,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: accentColor,
+                          foregroundColor: Colors.white,
                         ),
-                      );
-                    }
-                  },
-                );
-              }
-            },
-            child: const Text('Continue ›'),
+                        onPressed: () {
+                          final name = nameCtrl.text.trim();
+                          final amount = double.tryParse(amountCtrl.text) ?? 0;
+                          if (name.isNotEmpty && amount > 0) {
+                            Navigator.pop(ctx);
+                            _showBudgetConfirmSheet(
+                              title: 'Confirm Budget',
+                              icon: Icons.account_balance_wallet,
+                              iconColor: accentColor,
+                              rows: [
+                                _BudgetConfirmRow('Name', name),
+                                _BudgetConfirmRow(
+                                  'Budget Amount',
+                                  CurrencyFormatter.format(amount),
+                                ),
+                              ],
+                              confirmLabel: 'Create Budget',
+                              confirmColor: accentColor,
+                              onConfirm: () async {
+                                final newBudget = Budget(
+                                  name: name,
+                                  total: amount,
+                                );
+                                budgets.add(newBudget);
+                                await saveBudgets();
+                                await sendNotification(
+                                  'Budget Created',
+                                  'New budget "$name" created with ${CurrencyFormatter.format(amount)}',
+                                );
+                                setState(() {});
+                                if (mounted)
+                                  AppToast.success(
+                                    context,
+                                    'Budget "$name" created successfully',
+                                  );
+                              },
+                            );
+                          } else {
+                            AppToast.warning(
+                              context,
+                              'Please enter a valid name and amount',
+                            );
+                          }
+                        },
+                        child: const Text('Continue ›'),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
-        ],
+        ),
       ),
     );
   }
@@ -268,60 +350,139 @@ class _BudgetPageState extends State<BudgetPage> {
 
   void _showEditBudgetDialog(Budget budget) {
     final nameCtrl = TextEditingController(text: budget.name);
-    final amountCtrl = TextEditingController(text: budget.total.toString());
+    final amountCtrl = TextEditingController(
+      text: budget.total.toStringAsFixed(0),
+    );
 
-    showDialog(
+    showModalBottomSheet(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Edit Budget'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nameCtrl,
-              textCapitalization: TextCapitalization.words,
-              decoration: const InputDecoration(
-                labelText: 'Budget Name',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: amountCtrl,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                labelText: 'Budget Amount',
-                border: OutlineInputBorder(),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+        child: Container(
+          decoration: BoxDecoration(
+            color: Theme.of(ctx).colorScheme.surface,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
           ),
-          ElevatedButton(
-            onPressed: () async {
-              final name = nameCtrl.text.trim();
-              final amount = double.tryParse(amountCtrl.text) ?? 0;
-              if (name.isNotEmpty && amount > 0) {
-                budget.name = name;
-                budget.total = amount;
-                await saveBudgets();
-                Navigator.pop(context);
-                setState(() {});
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Budget updated successfully'),
-                    backgroundColor: brandGreen,
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(24, 8, 24, 32),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    margin: const EdgeInsets.only(top: 8, bottom: 20),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade300,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
                   ),
-                );
-              }
-            },
-            child: const Text('Save'),
+                ),
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: accentColor.withOpacity(0.12),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(
+                        Icons.edit_rounded,
+                        color: accentColor,
+                        size: 22,
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Edit Budget',
+                          style: GoogleFonts.urbanist(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                          'Update budget details',
+                          style: GoogleFonts.urbanist(
+                            fontSize: 12,
+                            color: Colors.grey.shade500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                TextField(
+                  controller: nameCtrl,
+                  textCapitalization: TextCapitalization.words,
+                  decoration: const InputDecoration(
+                    labelText: 'Budget Name',
+                    prefixIcon: Icon(Icons.label_outline_rounded),
+                  ),
+                ),
+                const SizedBox(height: 14),
+                TextField(
+                  controller: amountCtrl,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                    labelText: 'Budget Amount (Ksh)',
+                    prefixIcon: Icon(Icons.attach_money_rounded),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.pop(ctx),
+                        child: const Text('Cancel'),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      flex: 2,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: accentColor,
+                          foregroundColor: Colors.white,
+                        ),
+                        onPressed: () async {
+                          final name = nameCtrl.text.trim();
+                          final amount = double.tryParse(amountCtrl.text) ?? 0;
+                          if (name.isNotEmpty && amount > 0) {
+                            budget.name = name;
+                            budget.total = amount;
+                            await saveBudgets();
+                            if (ctx.mounted) Navigator.pop(ctx);
+                            setState(() {});
+                            if (mounted)
+                              AppToast.success(
+                                context,
+                                'Budget updated successfully',
+                              );
+                          } else {
+                            AppToast.warning(
+                              context,
+                              'Please enter a valid name and amount',
+                            );
+                          }
+                        },
+                        child: const Text('Save Changes'),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
-        ],
+        ),
       ),
     );
   }
@@ -344,18 +505,11 @@ class _BudgetPageState extends State<BudgetPage> {
         budgets.remove(budget);
         await saveBudgets();
         await sendNotification(
-          '🗑️ Budget Deleted',
+          'Budget Deleted',
           'Budget "${budget.name}" has been deleted',
         );
         setState(() {});
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Budget deleted successfully'),
-              backgroundColor: brandGreen,
-            ),
-          );
-        }
+        if (mounted) AppToast.success(context, 'Budget deleted successfully');
       },
     );
   }
