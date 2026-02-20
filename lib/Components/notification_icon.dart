@@ -1,30 +1,20 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:final_project/Primary_Screens/Notifications/local_notification_store.dart';
 import 'package:final_project/Primary_Screens/Notifications/notifications.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
+/// Bell icon button that shows a live unread-count badge.
+///
+/// Uses [LocalNotificationStore.unreadCountNotifier] — no network/Firestore
+/// required. The badge updates immediately whenever a notification is saved
+/// or marked as read anywhere in the app.
 class NotificationIcon extends StatelessWidget {
   const NotificationIcon({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final User user = FirebaseAuth.instance.currentUser!;
-    String userId = user.uid;
-
-    return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance
-          .collection('users')
-          .doc(userId)
-          .collection('notifications')
-          .where('isRead', isEqualTo: false)
-          .snapshots(),
-      builder: (context, snapshot) {
-        int unreadCount = 0;
-        
-        if (snapshot.hasData && snapshot.data != null) {
-          unreadCount = snapshot.data!.docs.length;
-        }
-
+    return ValueListenableBuilder<int>(
+      valueListenable: LocalNotificationStore.unreadCountNotifier,
+      builder: (context, unreadCount, _) {
         return Stack(
           children: [
             IconButton(
@@ -33,12 +23,12 @@ class NotificationIcon extends StatelessWidget {
                 size: 30,
                 color: Theme.of(context).colorScheme.onSurface,
               ),
-              onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (context) => NotificationsPage(userId: userId),
-                  ),
+              onPressed: () async {
+                await Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const NotificationsPage()),
                 );
+                // Refresh count when returning from notification page
+                await LocalNotificationStore.init();
               },
             ),
             if (unreadCount > 0)
@@ -47,7 +37,7 @@ class NotificationIcon extends StatelessWidget {
                 top: 8,
                 child: Container(
                   padding: const EdgeInsets.all(4),
-                  decoration: BoxDecoration(
+                  decoration: const BoxDecoration(
                     color: Colors.red,
                     shape: BoxShape.circle,
                   ),
@@ -57,7 +47,7 @@ class NotificationIcon extends StatelessWidget {
                   ),
                   child: Center(
                     child: Text(
-                      unreadCount > 9 ? '9+' : unreadCount.toString(),
+                      unreadCount > 9 ? '9+' : '$unreadCount',
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 10,

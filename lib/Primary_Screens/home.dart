@@ -11,6 +11,8 @@ import 'package:final_project/Components/toast.dart';
 import 'package:final_project/Constants/colors.dart';
 import 'package:final_project/Constants/spacing.dart';
 import 'package:final_project/Firebase/cloudinary_service.dart';
+import 'package:final_project/Primary_Screens/Notifications/local_notification_store.dart';
+import 'package:final_project/Primary_Screens/Notifications/notification_services.dart';
 import 'package:final_project/Primary_Screens/Savings/financial_service.dart';
 import 'package:final_project/SecondaryScreens/all_transactions.dart';
 import 'package:final_project/SecondaryScreens/report_page.dart';
@@ -95,6 +97,9 @@ class _HomePageState extends State<HomePage> {
     super.initState();
     loadUserData();
     refreshData();
+    // Initialise local notification badge count and run smart checks
+    LocalNotificationStore.init();
+    SmartNotificationService.runAllChecks();
   }
 
   @override
@@ -351,21 +356,13 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+  /// Save a local notification (offline, no Firestore).
   Future<void> sendNotification(String title, String message) async {
-    try {
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(userUid)
-          .collection('notifications')
-          .add({
-            'title': title,
-            'message': message,
-            'createdAt': FieldValue.serverTimestamp(),
-            'isRead': false,
-          });
-    } catch (e) {
-      debugPrint('Error sending notification: $e');
-    }
+    await LocalNotificationStore.saveNotification(
+      title: title,
+      message: message,
+      type: NotificationType.system,
+    );
   }
 
   // ── Add Income Dialog ──────────────────────────────────────────────────────────

@@ -1,9 +1,9 @@
 import 'dart:convert';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:final_project/Components/Custom_header.dart';
 import 'package:final_project/Constants/colors.dart';
 import 'package:final_project/Primary_Screens/Budgets/budget_detail.dart';
+import 'package:final_project/Primary_Screens/Notifications/local_notification_store.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -54,21 +54,13 @@ class _BudgetPageState extends State<BudgetPage> {
     await prefs.setStringList(keyBudgets, data);
   }
 
+  /// Save a local notification (offline, no Firestore).
   Future<void> sendNotification(String title, String message) async {
-    try {
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(userUid)
-          .collection('notifications')
-          .add({
-            'title': title,
-            'message': message,
-            'createdAt': FieldValue.serverTimestamp(),
-            'isRead': false,
-          });
-    } catch (e) {
-      debugPrint('Error sending notification: $e');
-    }
+    await LocalNotificationStore.saveNotification(
+      title: title,
+      message: message,
+      type: NotificationType.budget,
+    );
   }
 
   void showCreateBudgetDialog() {

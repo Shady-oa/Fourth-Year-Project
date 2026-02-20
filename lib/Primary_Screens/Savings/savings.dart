@@ -1,13 +1,12 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:final_project/Components/Custom_header.dart';
 import 'package:final_project/Constants/colors.dart';
 import 'package:final_project/Constants/spacing.dart';
 import 'package:final_project/Models/models.dart';
+import 'package:final_project/Primary_Screens/Notifications/local_notification_store.dart';
 import 'package:final_project/Primary_Screens/Savings/financial_service.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -33,7 +32,6 @@ class SavingsPage extends StatefulWidget {
 }
 
 class _SavingsPageState extends State<SavingsPage> {
-  final _uid = FirebaseAuth.instance.currentUser!.uid;
   List<Saving> _savings = [];
   List<Saving> _filtered = [];
   String _filter = 'all';
@@ -167,19 +165,17 @@ class _SavingsPageState extends State<SavingsPage> {
     }
   }
 
-  Future<void> _notify(String title, String body) async {
-    try {
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(_uid)
-          .collection('notifications')
-          .add({
-            'title': title,
-            'message': body,
-            'createdAt': FieldValue.serverTimestamp(),
-            'isRead': false,
-          });
-    } catch (_) {}
+  /// Save a local notification via [LocalNotificationStore] (offline, no Firestore).
+  Future<void> _notify(
+    String title,
+    String body, {
+    NotificationType type = NotificationType.savings,
+  }) async {
+    await LocalNotificationStore.saveNotification(
+      title: title,
+      message: body,
+      type: type,
+    );
   }
 
   // ── CREATE GOAL ────────────────────────────────────────────────────────────

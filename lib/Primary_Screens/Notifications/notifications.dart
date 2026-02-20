@@ -1,111 +1,71 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:final_project/Primary_Screens/Notifications/local_notification_store.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
-// ─── Notification Type ────────────────────────────────────────────────────────
-enum _NotifType { budget, savings, streak, analysis, report, insight, system }
-
-extension _NotifTypeX on _NotifType {
-  String get firestoreValue {
-    switch (this) {
-      case _NotifType.budget:
-        return 'budget';
-      case _NotifType.savings:
-        return 'savings';
-      case _NotifType.streak:
-        return 'streak';
-      case _NotifType.analysis:
-        return 'analysis';
-      case _NotifType.report:
-        return 'report';
-      case _NotifType.insight:
-        return 'insight';
-      case _NotifType.system:
-        return 'system';
-    }
-  }
-
-  static _NotifType fromString(String? v) {
-    switch (v) {
-      case 'budget':
-        return _NotifType.budget;
-      case 'savings':
-        return _NotifType.savings;
-      case 'streak':
-        return _NotifType.streak;
-      case 'analysis':
-        return _NotifType.analysis;
-      case 'report':
-        return _NotifType.report;
-      case 'insight':
-        return _NotifType.insight;
-      default:
-        return _NotifType.system;
-    }
-  }
-
+// ─── Notification Type UI extensions ─────────────────────────────────────────
+extension _NotifTypeUI on NotificationType {
   IconData get icon {
     switch (this) {
-      case _NotifType.budget:
+      case NotificationType.budget:
         return Icons.account_balance_wallet_rounded;
-      case _NotifType.savings:
+      case NotificationType.savings:
         return Icons.savings_rounded;
-      case _NotifType.streak:
+      case NotificationType.streak:
         return Icons.local_fire_department_rounded;
-      case _NotifType.analysis:
+      case NotificationType.analysis:
         return Icons.bar_chart_rounded;
-      case _NotifType.report:
+      case NotificationType.report:
         return Icons.receipt_long_rounded;
-      case _NotifType.insight:
+      case NotificationType.insight:
         return Icons.lightbulb_rounded;
-      case _NotifType.system:
+      case NotificationType.system:
         return Icons.info_rounded;
     }
   }
 
   Color get color {
     switch (this) {
-      case _NotifType.budget:
+      case NotificationType.budget:
         return const Color(0xFF6C63FF);
-      case _NotifType.savings:
+      case NotificationType.savings:
         return const Color(0xFF00B894);
-      case _NotifType.streak:
+      case NotificationType.streak:
         return const Color(0xFFE17055);
-      case _NotifType.analysis:
+      case NotificationType.analysis:
         return const Color(0xFF0984E3);
-      case _NotifType.report:
+      case NotificationType.report:
         return const Color(0xFF6C5CE7);
-      case _NotifType.insight:
+      case NotificationType.insight:
         return const Color(0xFFFDAA40);
-      case _NotifType.system:
+      case NotificationType.system:
         return const Color(0xFF636E72);
-    }
-  }
-
-  String get label {
-    switch (this) {
-      case _NotifType.budget:
-        return 'Budget';
-      case _NotifType.savings:
-        return 'Savings';
-      case _NotifType.streak:
-        return 'Streak';
-      case _NotifType.analysis:
-        return 'Analysis';
-      case _NotifType.report:
-        return 'Reports';
-      case _NotifType.insight:
-        return 'Insights';
-      case _NotifType.system:
-        return 'System';
     }
   }
 }
 
+// ─── Filter tab model ─────────────────────────────────────────────────────────
+class _FilterTab {
+  final String label;
+  final NotificationType? type; // null means "All"
+  const _FilterTab(this.label, this.type);
+}
+
+const _filters = [
+  _FilterTab('All', null),
+  _FilterTab('Budget', NotificationType.budget),
+  _FilterTab('Savings', NotificationType.savings),
+  _FilterTab('Streak', NotificationType.streak),
+  _FilterTab('Reports', NotificationType.report),
+  _FilterTab('AI', NotificationType.insight),
+];
+
 // ─── Notifications Page ───────────────────────────────────────────────────────
 class NotificationsPage extends StatefulWidget {
-  final String userId;
-  const NotificationsPage({super.key, required this.userId});
+  /// [userId] kept for API backwards-compat with nav routes that still pass it.
+  /// Not used internally — all data comes from [LocalNotificationStore].
+  final String? userId;
+  const NotificationsPage({super.key, this.userId});
 
   @override
   State<NotificationsPage> createState() => _NotificationsPageState();
@@ -113,229 +73,254 @@ class NotificationsPage extends StatefulWidget {
 
 class _NotificationsPageState extends State<NotificationsPage>
     with SingleTickerProviderStateMixin {
-  late AnimationController _fadeCtrl;
+  late final AnimationController _fadeCtrl;
+
+  // Local state
+  List<AppNotification> _all = [];
+  List<AppNotification> _shown = [];
+  int _filterIdx = 0;
+  bool _loading = true;
 
   @override
   void initState() {
     super.initState();
     _fadeCtrl = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 300),
-    )..forward();
+      duration: const Duration(milliseconds: 320),
+    );
+    _loadNotifications();
   }
 
   @override
   void dispose() {
-    _markAllAsRead();
     _fadeCtrl.dispose();
     super.dispose();
   }
 
-  // ── Firestore reference ───────────────────────────────────────────────────────
-  CollectionReference<Map<String, dynamic>> get _col => FirebaseFirestore
-      .instance
-      .collection('users')
-      .doc(widget.userId)
-      .collection('notifications');
+  // ── Data loading ──────────────────────────────────────────────────────────
+  Future<void> _loadNotifications() async {
+    setState(() => _loading = true);
+    final data = await LocalNotificationStore.fetchNotifications();
+    if (!mounted) return;
+    setState(() {
+      _all = data;
+      _loading = false;
+      _applyFilter();
+    });
+    _fadeCtrl.forward(from: 0);
+  }
 
-  // ── Actions ───────────────────────────────────────────────────────────────────
+  void _applyFilter() {
+    final selectedType = _filters[_filterIdx].type;
+    _shown = selectedType == null
+        ? List.of(_all)
+        : _all.where((n) => n.type == selectedType).toList();
+  }
+
+  // ── Actions ───────────────────────────────────────────────────────────────
   Future<void> _markAllAsRead() async {
-    try {
-      final unread = await _col.where('isRead', isEqualTo: false).get();
-      if (unread.docs.isEmpty) return;
-      final batch = FirebaseFirestore.instance.batch();
-      for (final doc in unread.docs) {
-        batch.update(doc.reference, {'isRead': true});
-      }
-      await batch.commit();
-    } catch (_) {}
+    await LocalNotificationStore.markAllAsRead();
+    await _loadNotifications();
   }
 
-  Future<void> _markSingleRead(QueryDocumentSnapshot doc) async {
-    try {
-      final data = doc.data() as Map<String, dynamic>?;
-      if (data?['isRead'] == true) return;
-      await doc.reference.update({'isRead': true});
-    } catch (_) {}
+  Future<void> _deleteSingle(String id) async {
+    await LocalNotificationStore.deleteNotification(id);
+    await _loadNotifications();
   }
 
-  Future<void> _deleteDoc(DocumentSnapshot doc) async {
-    try {
-      await doc.reference.delete();
-    } catch (_) {}
-  }
-
-  Future<void> _deleteAll() async {
-    final confirmed = await showDialog<bool>(
+  Future<void> _clearAll() async {
+    final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Clear All Notifications'),
-        content: const Text('This will permanently delete all notifications.'),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(
+          'Clear All Notifications',
+          style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
+        ),
+        content: Text(
+          'This will permanently delete all notifications.',
+          style: GoogleFonts.poppins(fontSize: 13),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
+            child: Text('Cancel', style: GoogleFonts.poppins()),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.red,
               foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
             ),
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Delete All'),
+            child: Text('Delete All', style: GoogleFonts.poppins()),
           ),
         ],
       ),
     );
-    if (confirmed != true) return;
-    try {
-      final all = await _col.get();
-      final batch = FirebaseFirestore.instance.batch();
-      for (final doc in all.docs) {
-        batch.delete(doc.reference);
-      }
-      await batch.commit();
-    } catch (_) {}
+    if (ok != true) return;
+    await LocalNotificationStore.clearAll();
+    await _loadNotifications();
   }
 
-  // ── Helpers ───────────────────────────────────────────────────────────────────
-  _NotifType _notifTypeOf(QueryDocumentSnapshot doc) {
-    final data = doc.data() as Map<String, dynamic>?;
-    return _NotifTypeX.fromString(data?['type'] as String?);
-  }
-
-  bool _isRead(QueryDocumentSnapshot doc) {
-    final data = doc.data() as Map<String, dynamic>?;
-    return data?['isRead'] as bool? ?? false;
-  }
-
-  String _dateLabel(Timestamp ts) {
-    final d = ts.toDate();
+  // ── Date grouping helper ──────────────────────────────────────────────────
+  String _dateGroupLabel(DateTime d) {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
-    final yesterday = today.subtract(const Duration(days: 1));
     final day = DateTime(d.year, d.month, d.day);
-    if (day == today) return 'Today';
-    if (day == yesterday) return 'Yesterday';
-    if (today.difference(day).inDays < 7) return DateFormat('EEEE').format(d);
+    final diff = today.difference(day).inDays;
+
+    if (diff == 0) return 'Today';
+    if (diff == 1) return 'Yesterday';
+    if (diff < 7) return DateFormat('EEEE').format(d);
     return DateFormat('dd MMM yyyy').format(d);
   }
 
-  String _timeStr(Timestamp ts) => DateFormat('HH:mm').format(ts.toDate());
+  /// Group [_shown] by date-label, preserving insertion order.
+  Map<String, List<AppNotification>> _grouped() {
+    final map = <String, List<AppNotification>>{};
+    for (final n in _shown) {
+      map.putIfAbsent(_dateGroupLabel(n.createdAt), () => []).add(n);
+    }
+    return map;
+  }
 
-  // ── Build ─────────────────────────────────────────────────────────────────────
+  // ── Build ─────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final unread = _all.where((n) => !n.isRead).length;
+
     return Scaffold(
       backgroundColor: theme.colorScheme.surface,
-      appBar: _buildAppBar(theme),
-      body: _buildBody(theme),
+      appBar: _buildAppBar(theme, unread),
+      body: _loading
+          ? const Center(child: CircularProgressIndicator())
+          : RefreshIndicator(
+              onRefresh: _loadNotifications,
+              child: FadeTransition(
+                opacity: _fadeCtrl,
+                child: _buildBody(theme, isDark, unread),
+              ),
+            ),
     );
   }
 
-  // ── AppBar ────────────────────────────────────────────────────────────────────
-  AppBar _buildAppBar(ThemeData theme) {
+  // ── AppBar ─────────────────────────────────────────────────────────────────
+  AppBar _buildAppBar(ThemeData theme, int unread) {
     return AppBar(
       backgroundColor: theme.colorScheme.surface,
       elevation: 0,
       centerTitle: true,
-      title: const Text(
+      title: Text(
         'Notifications',
-        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+        style: GoogleFonts.poppins(fontWeight: FontWeight.w700, fontSize: 18),
       ),
       actions: [
-        StreamBuilder<QuerySnapshot>(
-          stream: _col.where('isRead', isEqualTo: false).snapshots(),
-          builder: (ctx, snap) {
-            if (!(snap.data?.docs.isNotEmpty ?? false)) {
-              return const SizedBox.shrink();
-            }
-            return IconButton(
-              tooltip: 'Mark all as read',
-              icon: const Icon(Icons.done_all_rounded),
-              onPressed: _markAllAsRead,
-            );
-          },
-        ),
+        if (unread > 0)
+          IconButton(
+            tooltip: 'Mark all as read',
+            icon: const Icon(Icons.done_all_rounded),
+            onPressed: _markAllAsRead,
+          ),
         IconButton(
           tooltip: 'Clear all',
           icon: const Icon(Icons.delete_sweep_outlined),
-          onPressed: _deleteAll,
+          onPressed: _clearAll,
         ),
       ],
     );
   }
 
-  // ── Body ─────────────────────────────────────────────────────────────────────
-  Widget _buildBody(ThemeData theme) {
-    return StreamBuilder<QuerySnapshot>(
-      stream: _col.orderBy('createdAt', descending: true).snapshots(),
-      builder: (ctx, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        if (snapshot.hasError) return _buildErrorState(theme);
-        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-          return _buildEmptyState(theme);
-        }
+  // ── Body ──────────────────────────────────────────────────────────────────
+  Widget _buildBody(ThemeData theme, bool isDark, int unread) {
+    return Column(
+      children: [
+        // ── Filter tabs ──────────────────────────────────────────────────
+        _buildFilterRow(theme),
 
-        final allDocs = snapshot.data!.docs;
-        final unreadCount = allDocs.where((d) => !_isRead(d)).length;
+        // ── Unread banner ────────────────────────────────────────────────
+        if (unread > 0) _buildUnreadBanner(theme, unread),
 
-        // Group by date
-        final grouped = <String, List<QueryDocumentSnapshot>>{};
-        for (final doc in allDocs) {
-          final data = doc.data() as Map<String, dynamic>?;
-          final ts = data?['createdAt'] as Timestamp?;
-          if (ts == null) continue;
-          grouped.putIfAbsent(_dateLabel(ts), () => []).add(doc);
-        }
-
-        if (grouped.isEmpty) return _buildEmptyState(theme);
-
-        return FadeTransition(
-          opacity: _fadeCtrl,
-          child: Column(
-            children: [
-              if (unreadCount > 0) _buildUnreadBanner(theme, unreadCount),
-              Expanded(
-                child: ListView.builder(
-                  padding: const EdgeInsets.only(bottom: 24),
-                  itemCount: grouped.length,
-                  itemBuilder: (ctx, i) {
-                    final label = grouped.keys.elementAt(i);
-                    return _buildDateGroup(theme, label, grouped[label]!);
-                  },
-                ),
-              ),
-            ],
-          ),
-        );
-      },
+        // ── Notification list ────────────────────────────────────────────
+        Expanded(
+          child: _shown.isEmpty
+              ? _buildEmptyState(theme)
+              : _buildList(theme, isDark),
+        ),
+      ],
     );
   }
 
-  // ── Unread banner ─────────────────────────────────────────────────────────────
+  // ── Filter tab row ────────────────────────────────────────────────────────
+  Widget _buildFilterRow(ThemeData theme) {
+    return SizedBox(
+      height: 44,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+        itemCount: _filters.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        itemBuilder: (_, i) {
+          final selected = i == _filterIdx;
+          final tab = _filters[i];
+          final tabColor = tab.type?.color ?? theme.colorScheme.primary;
+          return GestureDetector(
+            onTap: () {
+              setState(() {
+                _filterIdx = i;
+                _applyFilter();
+              });
+              _fadeCtrl.forward(from: 0);
+            },
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+              decoration: BoxDecoration(
+                color: selected ? tabColor : Colors.transparent,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: selected ? tabColor : tabColor.withOpacity(0.35),
+                  width: 1.5,
+                ),
+              ),
+              child: Text(
+                tab.label,
+                style: GoogleFonts.poppins(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: selected ? Colors.white : tabColor.withOpacity(0.85),
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  // ── Unread banner ─────────────────────────────────────────────────────────
   Widget _buildUnreadBanner(ThemeData theme, int count) {
     return GestureDetector(
       onTap: _markAllAsRead,
       child: Container(
-        margin: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+        margin: const EdgeInsets.fromLTRB(16, 4, 16, 4),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
           color: theme.colorScheme.primary.withOpacity(0.08),
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color: theme.colorScheme.primary.withOpacity(0.25),
+            color: theme.colorScheme.primary.withOpacity(0.22),
           ),
         ),
         child: Row(
           children: [
             Container(
-              width: 24,
-              height: 24,
+              width: 26,
+              height: 26,
               decoration: BoxDecoration(
                 color: theme.colorScheme.primary,
                 shape: BoxShape.circle,
@@ -343,7 +328,7 @@ class _NotificationsPageState extends State<NotificationsPage>
               child: Center(
                 child: Text(
                   '$count',
-                  style: const TextStyle(
+                  style: GoogleFonts.poppins(
                     color: Colors.white,
                     fontSize: 11,
                     fontWeight: FontWeight.bold,
@@ -355,7 +340,7 @@ class _NotificationsPageState extends State<NotificationsPage>
             Expanded(
               child: Text(
                 '$count unread notification${count == 1 ? '' : 's'}',
-                style: TextStyle(
+                style: GoogleFonts.poppins(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
                   color: theme.colorScheme.primary,
@@ -364,7 +349,7 @@ class _NotificationsPageState extends State<NotificationsPage>
             ),
             Text(
               'Mark all read',
-              style: TextStyle(
+              style: GoogleFonts.poppins(
                 fontSize: 12,
                 color: theme.colorScheme.primary,
                 fontWeight: FontWeight.bold,
@@ -381,29 +366,44 @@ class _NotificationsPageState extends State<NotificationsPage>
     );
   }
 
-  // ── Date group ────────────────────────────────────────────────────────────────
+  // ── Grouped list ──────────────────────────────────────────────────────────
+  Widget _buildList(ThemeData theme, bool isDark) {
+    final groups = _grouped();
+    return ListView.builder(
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: const EdgeInsets.only(bottom: 32),
+      itemCount: groups.length,
+      itemBuilder: (_, i) {
+        final label = groups.keys.elementAt(i);
+        return _buildDateGroup(theme, isDark, label, groups[label]!);
+      },
+    );
+  }
+
+  // ── Date group ────────────────────────────────────────────────────────────
   Widget _buildDateGroup(
     ThemeData theme,
-    String dateLabel,
-    List<QueryDocumentSnapshot> docs,
+    bool isDark,
+    String label,
+    List<AppNotification> notifs,
   ) {
-    final isDark = theme.brightness == Brightness.dark;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // Group label + divider
         Padding(
-          padding: const EdgeInsets.fromLTRB(20, 28, 20, 10),
+          padding: const EdgeInsets.fromLTRB(20, 24, 20, 8),
           child: Row(
             children: [
               Text(
-                dateLabel,
-                style: TextStyle(
-                  fontSize: 12,
+                label.toUpperCase(),
+                style: GoogleFonts.poppins(
+                  fontSize: 11,
                   fontWeight: FontWeight.w700,
                   color: isDark
                       ? Colors.white.withOpacity(0.35)
                       : Colors.black.withOpacity(0.3),
-                  letterSpacing: 0.3,
+                  letterSpacing: 0.6,
                 ),
               ),
               const SizedBox(width: 10),
@@ -418,23 +418,17 @@ class _NotificationsPageState extends State<NotificationsPage>
             ],
           ),
         ),
-        ...docs.map((doc) => _buildCard(theme, doc)),
+        // Cards
+        ...notifs.map((n) => _buildCard(theme, isDark, n)),
       ],
     );
   }
 
-  // ── Notification card ─────────────────────────────────────────────────────────
-  Widget _buildCard(ThemeData theme, QueryDocumentSnapshot doc) {
-    final data = doc.data() as Map<String, dynamic>? ?? {};
-    final isRead = data['isRead'] as bool? ?? false;
-    final title = data['title'] as String? ?? '(No title)';
-    final message = data['message'] as String? ?? '';
-    final ts = data['createdAt'] as Timestamp?;
-    final timeStr = ts != null ? _timeStr(ts) : '';
-    final notifType = _notifTypeOf(doc);
-    final typeColor = notifType.color;
-    final typeIcon = notifType.icon;
-    final isDark = theme.brightness == Brightness.dark;
+  // ── Notification card (dynamic height) ───────────────────────────────────
+  Widget _buildCard(ThemeData theme, bool isDark, AppNotification notif) {
+    final typeColor = notif.type.color;
+    final typeIcon = notif.type.icon;
+    final isRead = notif.isRead;
 
     final cardBg = isRead
         ? (isDark ? const Color(0xFF1C1C1E) : Colors.white)
@@ -445,9 +439,12 @@ class _NotificationsPageState extends State<NotificationsPage>
                 )
               : Color.alphaBlend(typeColor.withOpacity(0.04), Colors.white));
 
+    final timeStr = DateFormat('HH:mm').format(notif.createdAt);
+
     return Dismissible(
-      key: Key(doc.id),
+      key: Key(notif.id),
       direction: DismissDirection.endToStart,
+      // Red delete background
       background: Container(
         margin: const EdgeInsets.fromLTRB(16, 5, 16, 5),
         decoration: BoxDecoration(
@@ -456,14 +453,14 @@ class _NotificationsPageState extends State<NotificationsPage>
         ),
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.only(right: 22),
-        child: const Column(
+        child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.delete_rounded, color: Colors.white, size: 22),
-            SizedBox(height: 3),
+            const Icon(Icons.delete_rounded, color: Colors.white, size: 22),
+            const SizedBox(height: 3),
             Text(
               'Delete',
-              style: TextStyle(
+              style: GoogleFonts.poppins(
                 color: Colors.white,
                 fontSize: 10,
                 fontWeight: FontWeight.w600,
@@ -473,12 +470,17 @@ class _NotificationsPageState extends State<NotificationsPage>
         ),
       ),
       confirmDismiss: (_) async {
-        await _deleteDoc(doc);
-        return false;
+        await _deleteSingle(notif.id);
+        return false; // We handle removal ourselves
       },
 
       child: GestureDetector(
-        onTap: () => _markSingleRead(doc),
+        onTap: () async {
+          if (!isRead) {
+            await LocalNotificationStore.markAsRead(notif.id);
+            await _loadNotifications();
+          }
+        },
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 280),
           margin: const EdgeInsets.fromLTRB(16, 5, 16, 5),
@@ -515,16 +517,17 @@ class _NotificationsPageState extends State<NotificationsPage>
                     ),
                   ],
           ),
+          // Padding wraps everything — card height is fully dynamic
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // ── Type-specific icon bubble ─────────────────────────────────
+                // ── Type icon bubble ─────────────────────────────────────
                 AnimatedContainer(
                   duration: const Duration(milliseconds: 280),
-                  width: 52,
-                  height: 52,
+                  width: 50,
+                  height: 50,
                   decoration: BoxDecoration(
                     color: isRead
                         ? typeColor.withOpacity(isDark ? 0.12 : 0.08)
@@ -534,7 +537,7 @@ class _NotificationsPageState extends State<NotificationsPage>
                         ? []
                         : [
                             BoxShadow(
-                              color: typeColor.withOpacity(0.4),
+                              color: typeColor.withOpacity(0.40),
                               blurRadius: 14,
                               offset: const Offset(0, 4),
                             ),
@@ -542,14 +545,14 @@ class _NotificationsPageState extends State<NotificationsPage>
                   ),
                   child: Icon(
                     typeIcon,
-                    size: 26,
+                    size: 24,
                     color: isRead ? typeColor.withOpacity(0.55) : Colors.white,
                   ),
                 ),
 
                 const SizedBox(width: 14),
 
-                // ── Text content ──────────────────────────────────────────────
+                // ── Text content ─────────────────────────────────────────
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -557,6 +560,7 @@ class _NotificationsPageState extends State<NotificationsPage>
                       // Type pill + time + unread dot
                       Row(
                         children: [
+                          // Type pill
                           Container(
                             padding: const EdgeInsets.symmetric(
                               horizontal: 8,
@@ -571,8 +575,8 @@ class _NotificationsPageState extends State<NotificationsPage>
                               borderRadius: BorderRadius.circular(30),
                             ),
                             child: Text(
-                              notifType.label.toUpperCase(),
-                              style: TextStyle(
+                              notif.type.label.toUpperCase(),
+                              style: GoogleFonts.poppins(
                                 fontSize: 9,
                                 fontWeight: FontWeight.w800,
                                 letterSpacing: 0.8,
@@ -585,21 +589,22 @@ class _NotificationsPageState extends State<NotificationsPage>
                             ),
                           ),
                           const Spacer(),
-                          if (timeStr.isNotEmpty)
-                            Text(
-                              timeStr,
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w500,
-                                color: isDark
-                                    ? Colors.white.withOpacity(
-                                        isRead ? 0.25 : 0.45,
-                                      )
-                                    : Colors.black.withOpacity(
-                                        isRead ? 0.25 : 0.4,
-                                      ),
-                              ),
+                          // Timestamp
+                          Text(
+                            timeStr,
+                            style: GoogleFonts.poppins(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w500,
+                              color: isDark
+                                  ? Colors.white.withOpacity(
+                                      isRead ? 0.25 : 0.45,
+                                    )
+                                  : Colors.black.withOpacity(
+                                      isRead ? 0.25 : 0.40,
+                                    ),
                             ),
+                          ),
+                          // Unread dot
                           if (!isRead) ...[
                             const SizedBox(width: 6),
                             Container(
@@ -624,28 +629,28 @@ class _NotificationsPageState extends State<NotificationsPage>
 
                       // Title
                       Text(
-                        title,
-                        style: TextStyle(
-                          fontSize: 14.5,
+                        notif.title,
+                        style: GoogleFonts.poppins(
+                          fontSize: 14,
                           fontWeight: isRead
                               ? FontWeight.w500
                               : FontWeight.w700,
                           color: isDark
                               ? Colors.white.withOpacity(isRead ? 0.45 : 0.92)
                               : Colors.black.withOpacity(isRead ? 0.4 : 0.88),
-                          height: 1.3,
+                          height: 1.35,
                           letterSpacing: -0.2,
                         ),
                       ),
 
-                      // Message
-                      if (message.isNotEmpty) ...[
+                      // Message body — fully dynamic, no truncation
+                      if (notif.message.isNotEmpty) ...[
                         const SizedBox(height: 5),
                         Text(
-                          message,
-                          style: TextStyle(
-                            fontSize: 13,
-                            height: 1.5,
+                          notif.message,
+                          style: GoogleFonts.poppins(
+                            fontSize: 12.5,
+                            height: 1.55,
                             color: isDark
                                 ? Colors.white.withOpacity(isRead ? 0.28 : 0.58)
                                 : Colors.black.withOpacity(isRead ? 0.3 : 0.55),
@@ -664,38 +669,9 @@ class _NotificationsPageState extends State<NotificationsPage>
     );
   }
 
-  // ── Error state ───────────────────────────────────────────────────────────────
-  Widget _buildErrorState(ThemeData theme) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.error_outline, size: 56, color: Colors.red.shade300),
-            const SizedBox(height: 16),
-            Text(
-              'Could not load notifications',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: Colors.grey.shade700,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Please check your connection and try again.',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // ── Empty state ───────────────────────────────────────────────────────────────
+  // ── Empty state ───────────────────────────────────────────────────────────
   Widget _buildEmptyState(ThemeData theme) {
+    final isDark = theme.brightness == Brightness.dark;
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(40),
@@ -703,32 +679,45 @@ class _NotificationsPageState extends State<NotificationsPage>
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              width: 88,
-              height: 88,
+              width: 90,
+              height: 90,
               decoration: BoxDecoration(
-                color: Colors.grey.shade100,
+                color: isDark
+                    ? Colors.white.withOpacity(0.05)
+                    : Colors.grey.shade100,
                 shape: BoxShape.circle,
               ),
               child: Icon(
                 Icons.notifications_off_outlined,
                 size: 42,
-                color: Colors.grey.shade300,
+                color: isDark
+                    ? Colors.white.withOpacity(0.2)
+                    : Colors.grey.shade300,
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 22),
             Text(
               'All Caught Up!',
-              style: TextStyle(
+              style: GoogleFonts.poppins(
                 fontSize: 17,
                 fontWeight: FontWeight.bold,
-                color: Colors.grey.shade500,
+                color: isDark
+                    ? Colors.white.withOpacity(0.4)
+                    : Colors.grey.shade500,
               ),
             ),
             const SizedBox(height: 8),
             Text(
-              'Smart notifications will appear here\nas you use the app.',
+              _filterIdx == 0
+                  ? 'Smart notifications will appear here\nas you use the app.'
+                  : 'No ${_filters[_filterIdx].label} notifications yet.',
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 13, color: Colors.grey.shade400),
+              style: GoogleFonts.poppins(
+                fontSize: 13,
+                color: isDark
+                    ? Colors.white.withOpacity(0.25)
+                    : Colors.grey.shade400,
+              ),
             ),
           ],
         ),
