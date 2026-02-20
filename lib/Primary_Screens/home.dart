@@ -24,6 +24,13 @@ class CurrencyFormatter {
   static final NumberFormat _formatter = NumberFormat('#,##0', 'en_US');
   static String format(double amount) =>
       'Ksh ${_formatter.format(amount.round())}';
+  static String compact(double amount) {
+    if (amount >= 1000000) {
+      return 'Ksh ${(amount / 1000000).toStringAsFixed(1)}M';
+    }
+    if (amount >= 1000) return 'Ksh ${(amount / 1000).toStringAsFixed(1)}K';
+    return format(amount);
+  }
 }
 
 class HomePage extends StatefulWidget {
@@ -95,9 +102,7 @@ class _HomePageState extends State<HomePage> {
     budgets = budgetStrings.map((s) => Budget.fromMap(json.decode(s))).toList();
 
     final savingsStrings = prefs.getStringList(keySavings) ?? [];
-    savings = savingsStrings
-        .map((s) => Saving.fromMap(json.decode(s)))
-        .toList();
+    savings = savingsStrings.map((s) => Saving.fromMap(json.decode(s))).toList();
 
     totalIncome = prefs.getDouble(keyTotalIncome) ?? 0.0;
 
@@ -126,6 +131,7 @@ class _HomePageState extends State<HomePage> {
     double amount,
     String type, {
     double transactionCost = 0.0,
+    String reason = '',
   }) async {
     final prefs = await SharedPreferences.getInstance();
     final newTx = {
@@ -133,6 +139,7 @@ class _HomePageState extends State<HomePage> {
       'amount': amount,
       'type': type,
       'transactionCost': transactionCost,
+      'reason': reason,
       'date': DateTime.now().toIso8601String(),
     };
     transactions.insert(0, newTx);
@@ -175,11 +182,6 @@ class _HomePageState extends State<HomePage> {
                 ),
               ],
             ),
-            const SizedBox(height: 4),
-            const Text(
-              '💡 Tip: Swipe left or right to delete transactions',
-              style: TextStyle(fontSize: 12),
-            ),
           ],
         ),
         backgroundColor: isIncome ? brandGreen : Colors.deepOrange,
@@ -189,7 +191,7 @@ class _HomePageState extends State<HomePage> {
           left: 16,
           right: 16,
         ),
-        duration: const Duration(seconds: 4),
+        duration: const Duration(seconds: 3),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
     );
@@ -217,215 +219,19 @@ class _HomePageState extends State<HomePage> {
     return false;
   }
 
-  Future<void> recalculateSavingsGoals() async {
-    final prefs = await SharedPreferences.getInstance();
-    final txString = prefs.getString(keyTransactions) ?? '[]';
-    final currentTransactions = List<Map<String, dynamic>>.from(
-      json.decode(txString),
-    );
-
-    bool savingsChanged = false;
-    for (var saving in savings) {
-      double calculatedAmount = 0.0;
-      for (var tx in currentTransactions) {
-        if ((tx['type'] == 'savings_deduction' ||
-                tx['type'] == 'saving_deposit') &&
-            tx['title'] != null &&
-            tx['title'].toString().contains('Saved for ${saving.name}')) {
-          calculatedAmount += double.tryParse(tx['amount'].toString()) ?? 0.0;
-        }
-      }
-      if (saving.savedAmount != calculatedAmount) {
-        saving.savedAmount = calculatedAmount;
-        savingsChanged = true;
-      }
-      bool shouldBeAchieved = saving.savedAmount >= saving.targetAmount;
-      if (saving.achieved != shouldBeAchieved) {
-        saving.achieved = shouldBeAchieved;
-        savingsChanged = true;
-      }
-    }
-    if (savingsChanged) {
-      final data = savings.map((s) => json.encode(s.toMap())).toList();
-      await prefs.setStringList(keySavings, data);
-    }
-  }
-
-  Future<void> deleteTransaction(int index) async {
-    final tx = transactions[index];
-    final amount = double.tryParse(tx['amount'].toString()) ?? 0.0;
-    final transactionCost =
-        double.tryParse(tx['transactionCost']?.toString() ?? '0') ?? 0.0;
-    final type = tx['type'];
-
-    if (isTransactionLinkedToAchievedGoal(tx)) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                const Icon(Icons.lock, color: Colors.white, size: 20),
-                const SizedBox(width: 8),
-                const Expanded(
-                  child: Text(
-                    'Transactions linked to an achieved saving goal cannot be deleted.',
-                    style: TextStyle(fontSize: 14),
-                  ),
-                ),
-              ],
-            ),
-            backgroundColor: Colors.orange.shade700,
-            behavior: SnackBarBehavior.floating,
-            duration: const Duration(seconds: 4),
-            action: SnackBarAction(
-              label: 'OK',
-              textColor: Colors.white,
-              onPressed: () {},
-            ),
-          ),
-        );
-      }
-      return;
-    }
-
-    if (isTransactionLinkedToCheckedBudget(tx)) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                const Icon(Icons.lock, color: Colors.white, size: 20),
-                const SizedBox(width: 8),
-                const Expanded(
-                  child: Text(
-                    'Transactions from finalized budgets cannot be deleted.',
-                    style: TextStyle(fontSize: 14),
-                  ),
-                ),
-              ],
-            ),
-            backgroundColor: Colors.orange.shade700,
-            behavior: SnackBarBehavior.floating,
-            duration: const Duration(seconds: 4),
-            action: SnackBarAction(
-              label: 'OK',
-              textColor: Colors.white,
-              onPressed: () {},
-            ),
-          ),
-        );
-      }
-      return;
-    }
-
-    final totalAmount = amount + transactionCost;
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete Transaction'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('Are you sure you want to delete this transaction?'),
-            const SizedBox(height: 12),
-            Text(
-              '${tx['title']}',
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-            Text('Amount: ${CurrencyFormatter.format(amount)}'),
-            if (transactionCost > 0)
-              Text('+ Fee: ${CurrencyFormatter.format(transactionCost)}'),
-            if (transactionCost > 0)
-              Text(
-                'Total: ${CurrencyFormatter.format(totalAmount)}',
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.orange.shade50,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.orange.shade200),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.warning_amber_rounded,
-                    color: Colors.orange.shade700,
-                    size: 20,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'This will affect your balance and statistics.',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.orange.shade900,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: errorColor,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-            ),
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed == true) {
-      transactions.removeAt(index);
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(keyTransactions, json.encode(transactions));
-
-      if (type == 'income') {
-        totalIncome -= amount;
-        await prefs.setDouble(keyTotalIncome, totalIncome);
-      }
-
-      await recalculateSavingsGoals();
-      calculateStats();
-      setState(() {});
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Transaction deleted successfully'),
-            backgroundColor: brandGreen,
-            behavior: SnackBarBehavior.floating,
-            duration: Duration(seconds: 2),
-          ),
-        );
-      }
-    }
-  }
-
-  Future<void> syncBudgets() async {
-    final prefs = await SharedPreferences.getInstance();
-    final data = budgets.map((b) => json.encode(b.toMap())).toList();
-    await prefs.setStringList(keyBudgets, data);
-  }
-
-  Future<void> syncSavings() async {
-    final prefs = await SharedPreferences.getInstance();
-    final data = savings.map((s) => json.encode(s.toMap())).toList();
-    await prefs.setStringList(keySavings, data);
+  // ── Top 5 expenses ──────────────────────────────────────────────────────────
+  List<Map<String, dynamic>> get top5Expenses {
+    final expenses = transactions
+        .where((tx) => tx['type'] == 'expense' || tx['type'] == 'budget_finalized')
+        .toList();
+    expenses.sort((a, b) {
+      final aTotal = (double.tryParse(a['amount'].toString()) ?? 0) +
+          (double.tryParse(a['transactionCost']?.toString() ?? '0') ?? 0);
+      final bTotal = (double.tryParse(b['amount'].toString()) ?? 0) +
+          (double.tryParse(b['transactionCost']?.toString() ?? '0') ?? 0);
+      return bTotal.compareTo(aTotal);
+    });
+    return expenses.take(5).toList();
   }
 
   Future<void> onSavingsTransactionAdded(
@@ -474,18 +280,14 @@ class _HomePageState extends State<HomePage> {
     final todayStr = DateFormat('yyyy-MM-dd').format(now);
 
     int streakCount = prefs.getInt(keyStreakCount) ?? 0;
-    String lastSaveDateStr = prefs.getString(keyLastSaveDate) ?? "";
+    String lastSaveDateStr = prefs.getString(keyLastSaveDate) ?? '';
 
     if (lastSaveDateStr == todayStr) return;
 
     if (lastSaveDateStr.isNotEmpty) {
       final lastDate = DateFormat('yyyy-MM-dd').parse(lastSaveDateStr);
       final difference = now.difference(lastDate).inDays;
-      if (difference == 1) {
-        streakCount++;
-      } else {
-        streakCount = 1;
-      }
+      streakCount = difference == 1 ? streakCount + 1 : 1;
     } else {
       streakCount = 1;
     }
@@ -538,131 +340,149 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+  // ── Add Income Dialog ────────────────────────────────────────────────────────
   void showAddIncomeDialog() {
-    final amountController = TextEditingController();
+    final amountCtrl = TextEditingController();
     final titleCtrl = TextEditingController();
+    final reasonCtrl = TextEditingController();
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text("Add Income"),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: titleCtrl,
-              textCapitalization: TextCapitalization.words,
-              decoration: const InputDecoration(
-                hintText: "Source (e.g. Salary)",
+        title: const Text('Add Income'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: titleCtrl,
+                textCapitalization: TextCapitalization.words,
+                decoration: const InputDecoration(
+                  hintText: 'Source (e.g. Salary)',
+                  border: OutlineInputBorder(),
+                ),
               ),
-            ),
-            TextField(
-              controller: amountController,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(hintText: "Amount (Ksh)"),
-            ),
-          ],
+              const SizedBox(height: 12),
+              TextField(
+                controller: amountCtrl,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  hintText: 'Amount (Ksh)',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: reasonCtrl,
+                maxLines: 2,
+                textCapitalization: TextCapitalization.sentences,
+                decoration: const InputDecoration(
+                  hintText: 'Reason (required)',
+                  border: OutlineInputBorder(),
+                  helperText: 'e.g. Monthly salary, freelance payment',
+                ),
+              ),
+            ],
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text("Cancel"),
+            child: const Text('Cancel'),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
             ),
             onPressed: () async {
-              final amt = double.tryParse(amountController.text) ?? 0;
-              if (amt > 0 && titleCtrl.text.isNotEmpty) {
+              final amt = double.tryParse(amountCtrl.text) ?? 0;
+              final reason = reasonCtrl.text.trim();
+              if (amt > 0 &&
+                  titleCtrl.text.isNotEmpty &&
+                  reason.isNotEmpty) {
                 final prefs = await SharedPreferences.getInstance();
                 totalIncome += amt;
                 await prefs.setDouble(keyTotalIncome, totalIncome);
-                await saveTransaction(titleCtrl.text, amt, "income");
+                await saveTransaction(titleCtrl.text, amt, 'income',
+                    reason: reason);
                 Navigator.pop(context);
                 refreshData();
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Please fill all fields (amount, source & reason)'),
+                    backgroundColor: Colors.orange,
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
               }
             },
-            child: const Text("Add Income"),
+            child: const Text('Add Income'),
           ),
         ],
       ),
     );
   }
 
-  // Directly shows the general expense dialog — no savings/budget routing
+  // ── Add Expense Dialog ────────────────────────────────────────────────────────
   void showGeneralExpenseDialog() {
     final titleCtrl = TextEditingController();
     final amtCtrl = TextEditingController();
     final txCostCtrl = TextEditingController();
+    final reasonCtrl = TextEditingController();
 
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text("Add Expense"),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: titleCtrl,
-              textCapitalization: TextCapitalization.words,
-              decoration: const InputDecoration(
-                hintText: "What was it for?",
-                border: OutlineInputBorder(),
+        title: const Text('Add Expense'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: titleCtrl,
+                textCapitalization: TextCapitalization.words,
+                decoration: const InputDecoration(
+                  hintText: 'What was it for?',
+                  border: OutlineInputBorder(),
+                ),
               ),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: amtCtrl,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                hintText: "Amount (Ksh)",
-                border: OutlineInputBorder(),
+              const SizedBox(height: 12),
+              TextField(
+                controller: amtCtrl,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  hintText: 'Amount (Ksh)',
+                  border: OutlineInputBorder(),
+                ),
               ),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: txCostCtrl,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                hintText: "Transaction Cost (Ksh) — required",
-                border: OutlineInputBorder(),
-                helperText: "e.g. M-Pesa fee, bank charge",
+              const SizedBox(height: 12),
+              TextField(
+                controller: txCostCtrl,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  hintText: 'Transaction Cost (Ksh)',
+                  border: OutlineInputBorder(),
+                  helperText: 'e.g. M-Pesa fee (enter 0 if none)',
+                ),
               ),
-            ),
-            const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.orange.shade50,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.orange.shade200),
+              const SizedBox(height: 12),
+              TextField(
+                controller: reasonCtrl,
+                maxLines: 2,
+                textCapitalization: TextCapitalization.sentences,
+                decoration: const InputDecoration(
+                  hintText: 'Reason (required)',
+                  border: OutlineInputBorder(),
+                  helperText: 'e.g. Groceries for the week',
+                ),
               ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.info_outline,
-                    color: Colors.orange.shade700,
-                    size: 16,
-                  ),
-                  const SizedBox(width: 6),
-                  Expanded(
-                    child: Text(
-                      'Both amount and transaction cost will be deducted from your balance.',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: Colors.orange.shade900,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text("Cancel"),
+            child: const Text('Cancel'),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -671,31 +491,50 @@ class _HomePageState extends State<HomePage> {
             onPressed: () async {
               final amt = double.tryParse(amtCtrl.text) ?? 0;
               final txCost = double.tryParse(txCostCtrl.text) ?? 0;
-              if (amt > 0 && titleCtrl.text.isNotEmpty) {
-                if (txCostCtrl.text.trim().isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text(
-                        'Please enter a transaction cost (enter 0 if none)',
-                      ),
-                      backgroundColor: Colors.orange,
-                      behavior: SnackBarBehavior.floating,
-                    ),
-                  );
-                  return;
-                }
+              final reason = reasonCtrl.text.trim();
 
-                await saveTransaction(
-                  titleCtrl.text,
-                  amt,
-                  "expense",
-                  transactionCost: txCost,
+              if (amt <= 0 || titleCtrl.text.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Please enter a name and valid amount'),
+                    backgroundColor: Colors.orange,
+                    behavior: SnackBarBehavior.floating,
+                  ),
                 );
-                Navigator.pop(context);
-                refreshData();
+                return;
               }
+              if (txCostCtrl.text.trim().isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Please enter transaction cost (0 if none)'),
+                    backgroundColor: Colors.orange,
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+                return;
+              }
+              if (reason.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Please enter a reason'),
+                    backgroundColor: Colors.orange,
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+                return;
+              }
+
+              await saveTransaction(
+                titleCtrl.text,
+                amt,
+                'expense',
+                transactionCost: txCost,
+                reason: reason,
+              );
+              Navigator.pop(context);
+              refreshData();
             },
-            child: const Text("Deduct"),
+            child: const Text('Deduct'),
           ),
         ],
       ),
@@ -729,15 +568,6 @@ class _HomePageState extends State<HomePage> {
               icon: Icons.error,
             );
           }
-        }
-      } else {
-        if (mounted) {
-          showCustomToast(
-            context: context,
-            message: 'Upload failed',
-            backgroundColor: errorColor,
-            icon: Icons.error,
-          );
         }
       }
     }
@@ -792,7 +622,7 @@ class _HomePageState extends State<HomePage> {
                             backgroundColor: Colors.white,
                             backgroundImage:
                                 (profileImage == null || profileImage!.isEmpty)
-                                ? const AssetImage("assets/image/icon.png")
+                                ? const AssetImage('assets/image/icon.png')
                                       as ImageProvider
                                 : NetworkImage(profileImage!),
                           ),
@@ -824,7 +654,9 @@ class _HomePageState extends State<HomePage> {
                           children: [
                             Text(
                               username ?? 'Penny User',
-                              style: Theme.of(context).textTheme.headlineSmall
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .headlineSmall
                                   ?.copyWith(
                                     color: Colors.white,
                                     fontWeight: FontWeight.bold,
@@ -833,14 +665,11 @@ class _HomePageState extends State<HomePage> {
                             const SizedBox(height: 6),
                             const Row(
                               children: [
-                                Icon(
-                                  Icons.location_on_rounded,
-                                  size: 16,
-                                  color: Colors.white70,
-                                ),
+                                Icon(Icons.location_on_rounded,
+                                    size: 16, color: Colors.white70),
                                 SizedBox(width: 4),
                                 Text(
-                                  "Kisii, Kenya",
+                                  'Kisii, Kenya',
                                   style: TextStyle(color: Colors.white70),
                                 ),
                               ],
@@ -855,7 +684,7 @@ class _HomePageState extends State<HomePage> {
                 Align(
                   alignment: Alignment.centerLeft,
                   child: Text(
-                    "Settings",
+                    'Settings',
                     style: Theme.of(context).textTheme.headlineSmall,
                   ),
                 ),
@@ -863,40 +692,33 @@ class _HomePageState extends State<HomePage> {
                 _buildModernSettingsCard(
                   context: context,
                   icon: Icons.dark_mode_outlined,
-                  title: "Dark Mode",
+                  title: 'Dark Mode',
                   trailing: Switch(
-                    value:
-                        Provider.of<ThemeProvider>(
-                          context,
-                          listen: true,
-                        ).currentTheme.brightness ==
+                    value: Provider.of<ThemeProvider>(
+                              context, listen: true)
+                          .currentTheme
+                          .brightness ==
                         Brightness.dark,
                     onChanged: (_) {
-                      Provider.of<ThemeProvider>(
-                        context,
-                        listen: false,
-                      ).toggleTheme();
+                      Provider.of<ThemeProvider>(context, listen: false)
+                          .toggleTheme();
                     },
                     activeTrackColor: brandGreen.withOpacity(0.4),
                     activeThumbColor: brandGreen,
                   ),
-                  onTap: () {
-                    Provider.of<ThemeProvider>(
-                      context,
-                      listen: false,
-                    ).toggleTheme();
-                  },
+                  onTap: () => Provider.of<ThemeProvider>(context, listen: false)
+                      .toggleTheme(),
                 ),
                 _buildModernSettingsCard(
                   context: context,
                   icon: Icons.info_outline,
-                  title: "About Penny Wise",
+                  title: 'About Penny Wise',
                   onTap: () {
                     Navigator.pop(context);
                     showCustomToast(
                       context: context,
                       message:
-                          "Penny Wise helps you track your expenses and budgets.",
+                          'Penny Wise helps you track your expenses and budgets.',
                       backgroundColor: brandGreen,
                       icon: Icons.info_outline_rounded,
                     );
@@ -905,20 +727,19 @@ class _HomePageState extends State<HomePage> {
                 _buildModernSettingsCard(
                   context: context,
                   icon: Icons.logout_rounded,
-                  title: "Logout",
+                  title: 'Logout',
                   onTap: () {
                     Navigator.pop(context);
                     showCustomToast(
                       context: context,
-                      message: "Logged out successfully!",
+                      message: 'Logged out successfully!',
                       backgroundColor: accentColor,
                       icon: Icons.check_circle_outline_rounded,
                     );
                     Navigator.pushReplacement(
                       context,
                       MaterialPageRoute(
-                        builder: (_) => Login(showSignupPage: () {}),
-                      ),
+                          builder: (_) => Login(showSignupPage: () {})),
                     );
                   },
                 ),
@@ -961,14 +782,12 @@ class _HomePageState extends State<HomePage> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                color:
+                    Theme.of(context).colorScheme.primary.withOpacity(0.1),
                 borderRadius: radiusMedium,
               ),
-              child: Icon(
-                icon,
-                size: 24,
-                color: Theme.of(context).colorScheme.onSurface,
-              ),
+              child: Icon(icon, size: 24,
+                  color: Theme.of(context).colorScheme.onSurface),
             ),
             const SizedBox(width: 18),
             Expanded(
@@ -978,25 +797,20 @@ class _HomePageState extends State<HomePage> {
                   Text(
                     title,
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
+                          fontWeight: FontWeight.w600,
+                        ),
                   ),
                   if (subtitle != null) ...[
                     const SizedBox(height: 4),
-                    Text(
-                      subtitle,
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
+                    Text(subtitle,
+                        style: Theme.of(context).textTheme.bodySmall),
                   ],
                 ],
               ),
             ),
             trailing ??
-                Icon(
-                  Icons.chevron_right_rounded,
-                  size: 26,
-                  color: Theme.of(context).colorScheme.onSurface,
-                ),
+                Icon(Icons.chevron_right_rounded, size: 26,
+                    color: Theme.of(context).colorScheme.onSurface),
           ],
         ),
       ),
@@ -1025,7 +839,7 @@ class _HomePageState extends State<HomePage> {
               CircleAvatar(
                 radius: 24,
                 backgroundImage: (profileImage == null)
-                    ? const AssetImage("assets/image/icon.png")
+                    ? const AssetImage('assets/image/icon.png')
                     : NetworkImage(profileImage!) as ImageProvider,
               ),
             ],
@@ -1036,21 +850,18 @@ class _HomePageState extends State<HomePage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                greetings(),
-                style: Theme.of(context).textTheme.headlineSmall,
-              ),
-              Text(
-                username ?? 'Penny User',
-                style: Theme.of(context).textTheme.bodyLarge,
-              ),
+              Text(greetings(),
+                  style: Theme.of(context).textTheme.headlineSmall),
+              Text(username ?? 'Penny User',
+                  style: Theme.of(context).textTheme.bodyLarge),
             ],
           ),
         ),
         actions: [
           Padding(
             padding: paddingAllTiny,
-            child: Row(children: [const ThemeToggleIcon(), NotificationIcon()]),
+            child: Row(
+                children: [const ThemeToggleIcon(), NotificationIcon()]),
           ),
         ],
       ),
@@ -1066,26 +877,13 @@ class _HomePageState extends State<HomePage> {
                   children: [
                     buildBalanceCard(),
                     sizedBoxHeightLarge,
-                    Text(
-                      'Quick Actions',
-                      style: Theme.of(context).textTheme.titleLarge,
-                    ),
+                    Text('Quick Actions',
+                        style: Theme.of(context).textTheme.titleLarge),
                     sizedBoxHeightSmall,
                     buildQuickActions(),
                     sizedBoxHeightLarge,
-                    const Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'Recent Transactions',
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                    buildRecentTransactions(),
+                    buildTop5ExpensesSection(),
+                    sizedBoxHeightLarge,
                   ],
                 ),
               ),
@@ -1093,76 +891,186 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  // ═══════════════════════════════════════════════════════════════════════════
+  //  REDESIGNED BALANCE CARD
+  // ═══════════════════════════════════════════════════════════════════════════
   Widget buildBalanceCard() {
-    double balance = totalIncome - totalExpenses;
+    final balance = totalIncome - totalExpenses;
+    final isNegative = balance < 0;
+    final savingsTotal = savings.fold<double>(0, (s, g) => s + g.savedAmount);
+
     return Container(
       width: double.infinity,
-      padding: paddingAllMedium,
       decoration: BoxDecoration(
-        borderRadius: radiusSmall,
-        color: balance < 0 ? errorColor : accentColor,
+        borderRadius: BorderRadius.circular(24),
+        gradient: LinearGradient(
+          colors: isNegative
+              ? [errorColor, errorColor.withOpacity(0.8)]
+              : [accentColor, accentColor.withOpacity(0.75)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: (isNegative ? errorColor : accentColor).withOpacity(0.3),
+            blurRadius: 24,
+            offset: const Offset(0, 8),
+          ),
+        ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Stack(
         children: [
-          Text(
-            'Total Balance',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: Theme.of(context).colorScheme.onSurface,
-            ),
-          ),
-          Text(
-            CurrencyFormatter.format(balance),
-            style: Theme.of(context).textTheme.displaySmall?.copyWith(
-              color: Theme.of(context).colorScheme.onSurface,
-            ),
-          ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              statItem("Income", totalIncome, Icons.arrow_circle_down_rounded),
-              statItem(
-                "Expenses",
-                totalExpenses,
-                Icons.arrow_circle_up_rounded,
+          // Decorative circle
+          Positioned(
+            right: -30,
+            top: -30,
+            child: Container(
+              width: 130,
+              height: 130,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white.withOpacity(0.06),
               ),
-            ],
+            ),
+          ),
+          Positioned(
+            right: 30,
+            bottom: -20,
+            child: Container(
+              width: 80,
+              height: 80,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white.withOpacity(0.06),
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Label
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.18),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: const Text(
+                        'Total Balance',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                // Main amount
+                Text(
+                  CurrencyFormatter.format(balance),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 34,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: -0.5,
+                    height: 1.1,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                // Divider
+                Divider(
+                    color: Colors.white.withOpacity(0.2), height: 1),
+                const SizedBox(height: 16),
+                // Stats row
+                Row(
+                  children: [
+                    Expanded(
+                      child: _balanceStat(
+                        'Income',
+                        totalIncome,
+                        Icons.arrow_circle_down_rounded,
+                      ),
+                    ),
+                    Container(
+                      height: 36,
+                      width: 1,
+                      color: Colors.white.withOpacity(0.2),
+                    ),
+                    Expanded(
+                      child: _balanceStat(
+                        'Expenses',
+                        totalExpenses,
+                        Icons.arrow_circle_up_rounded,
+                        center: true,
+                      ),
+                    ),
+                    Container(
+                      height: 36,
+                      width: 1,
+                      color: Colors.white.withOpacity(0.2),
+                    ),
+                    Expanded(
+                      child: _balanceStat(
+                        'Savings',
+                        savingsTotal,
+                        Icons.savings_outlined,
+                        center: true,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget statItem(String label, double amt, IconData icon) {
-    return Row(
-      children: [
-        Icon(
-          icon,
-          color: Theme.of(context).colorScheme.onSurface.withAlpha(100),
-          size: 30,
-        ),
-        const SizedBox(width: 5),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              label,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.onSurface,
+  Widget _balanceStat(String label, double amount, IconData icon,
+      {bool center = false}) {
+    return Padding(
+      padding: EdgeInsets.only(left: center ? 0 : 0),
+      child: Column(
+        crossAxisAlignment:
+            center ? CrossAxisAlignment.center : CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment:
+                center ? MainAxisAlignment.center : MainAxisAlignment.start,
+            children: [
+              Icon(icon, size: 14, color: Colors.white70),
+              const SizedBox(width: 4),
+              Text(
+                label,
+                style: const TextStyle(color: Colors.white70, fontSize: 11),
               ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            CurrencyFormatter.compact(amount),
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
             ),
-            Text(
-              CurrencyFormatter.format(amt),
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Theme.of(context).colorScheme.onSurface,
-              ),
-            ),
-          ],
-        ),
-      ],
+          ),
+        ],
+      ),
     );
   }
 
+  // ═══════════════════════════════════════════════════════════════════════════
+  //  QUICK ACTIONS (updated — removed old ones, added View All Reports)
+  // ═══════════════════════════════════════════════════════════════════════════
   Widget buildQuickActions() {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1175,7 +1083,7 @@ class _HomePageState extends State<HomePage> {
         QuickActionCard(
           icon: Icons.remove,
           label: 'Add Expense',
-          onTap: showGeneralExpenseDialog, // directly opens expense dialog
+          onTap: showGeneralExpenseDialog,
         ),
         QuickActionCard(
           icon: Icons.receipt_long,
@@ -1183,14 +1091,15 @@ class _HomePageState extends State<HomePage> {
           onTap: () async {
             await Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => const TransactionsPage()),
+              MaterialPageRoute(
+                  builder: (context) => const TransactionsPage()),
             );
             refreshData();
           },
         ),
         QuickActionCard(
-          icon: Icons.list_outlined,
-          label: 'View Reports',
+          icon: Icons.bar_chart_rounded,
+          label: 'Reports',
           onTap: () async {
             await Navigator.push(
               context,
@@ -1202,278 +1111,179 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget buildRecentTransactions() {
-    if (transactions.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+  // ═══════════════════════════════════════════════════════════════════════════
+  //  TOP 5 EXPENSES SECTION
+  // ═══════════════════════════════════════════════════════════════════════════
+  Widget buildTop5ExpensesSection() {
+    final top = top5Expenses;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Icon(
-              Icons.receipt_long_outlined,
-              size: 64,
-              color: Colors.grey.shade400,
+            const Text(
+              'Top 5 Expenses',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
-            const SizedBox(height: 16),
-            Text(
-              'No transactions found',
-              style: Theme.of(
-                context,
-              ).textTheme.bodyLarge?.copyWith(color: Colors.grey.shade600),
-            ),
-          ],
-        ),
-      );
-    }
-
-    final displayTransactions = transactions.length > 8
-        ? transactions.sublist(0, 8)
-        : transactions;
-
-    return ListView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: displayTransactions.length,
-      itemBuilder: (context, index) {
-        return buildTransactionCard(displayTransactions[index], index);
-      },
-    );
-  }
-
-  Widget buildTransactionCard(Map<String, dynamic> tx, int index) {
-    final theme = Theme.of(context);
-    final isIncome = tx['type'] == 'income';
-    final date = DateTime.parse(tx['date']);
-    final time = DateFormat('HH:mm').format(date);
-    final amount = double.tryParse(tx['amount'].toString()) ?? 0.0;
-    final transactionCost =
-        double.tryParse(tx['transactionCost']?.toString() ?? '0') ?? 0.0;
-    final totalDeducted = amount + transactionCost;
-    final isLocked =
-        isTransactionLinkedToAchievedGoal(tx) ||
-        isTransactionLinkedToCheckedBudget(tx);
-
-    IconData txIcon;
-    Color iconBgColor;
-
-    switch (tx['type']) {
-      case 'income':
-        txIcon = Icons.arrow_circle_down_rounded;
-        iconBgColor = accentColor;
-        break;
-      case 'budget_expense':
-        txIcon = Icons.receipt_rounded;
-        iconBgColor = Colors.orange;
-        break;
-      case 'budget_finalized':
-        txIcon = Icons.check_circle;
-        iconBgColor = brandGreen;
-        break;
-      case 'savings_deduction':
-      case 'saving_deposit':
-        txIcon = Icons.savings;
-        iconBgColor = brandGreen;
-        break;
-      default:
-        txIcon = Icons.arrow_circle_up_outlined;
-        iconBgColor = errorColor;
-    }
-
-    return Dismissible(
-      key: Key('${tx['date']}_$index'),
-      direction: isLocked ? DismissDirection.none : DismissDirection.horizontal,
-      confirmDismiss: (direction) async {
-        if (isLocked) return false;
-        await deleteTransaction(index);
-        return false;
-      },
-      background: isLocked
-          ? null
-          : Container(
-              margin: const EdgeInsets.only(bottom: 8),
-              decoration: BoxDecoration(
-                color: errorColor,
-                borderRadius: BorderRadius.circular(12),
+            TextButton.icon(
+              onPressed: () async {
+                await Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const ReportPage()),
+                );
+              },
+              icon: const Icon(Icons.open_in_new, size: 14),
+              label: const Text('View All Reports'),
+              style: TextButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
               ),
-              alignment: Alignment.centerLeft,
-              padding: const EdgeInsets.only(left: 20),
-              child: const Icon(
-                Icons.delete_outline,
-                color: Colors.white,
-                size: 32,
-              ),
-            ),
-      secondaryBackground: isLocked
-          ? null
-          : Container(
-              margin: const EdgeInsets.only(bottom: 8),
-              decoration: BoxDecoration(
-                color: errorColor,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              alignment: Alignment.centerRight,
-              padding: const EdgeInsets.only(right: 20),
-              child: const Icon(
-                Icons.delete_outline,
-                color: Colors.white,
-                size: 32,
-              ),
-            ),
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 8),
-        decoration: BoxDecoration(
-          color: theme.colorScheme.surface,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: isLocked
-                ? Colors.orange.shade300
-                : Theme.of(context).colorScheme.onSurface.withAlpha(10),
-            width: isLocked ? 2 : 1,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withAlpha(8),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
             ),
           ],
         ),
-        child: ListTile(
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 12,
-            vertical: 4,
-          ),
-          leading: Stack(
-            children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: iconBgColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(100),
-                ),
-                child: Icon(txIcon, color: iconBgColor, size: 30),
-              ),
-              if (isLocked)
-                Positioned(
-                  right: 0,
-                  bottom: 0,
-                  child: Container(
-                    padding: const EdgeInsets.all(2),
-                    decoration: BoxDecoration(
-                      color: Colors.orange.shade700,
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.lock,
-                      color: Colors.white,
-                      size: 12,
-                    ),
-                  ),
-                ),
-            ],
-          ),
-          title: Text(
-            tx['title'] ?? "Unknown",
-            style: theme.textTheme.bodyLarge?.copyWith(
-              fontWeight: FontWeight.w600,
+        const SizedBox(height: 8),
+        if (top.isEmpty)
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Theme.of(context)
+                  .colorScheme
+                  .surface,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onSurface
+                      .withAlpha(15)),
             ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          subtitle: Row(
-            children: [
-              Icon(
-                Icons.access_time,
-                size: 12,
-                color: Theme.of(context).colorScheme.onSurface.withAlpha(80),
-              ),
-              const SizedBox(width: 4),
-              Text(
-                time,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurface.withAlpha(80),
-                ),
-              ),
-              if (transactionCost > 0) ...[
-                const SizedBox(width: 6),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 4,
-                    vertical: 1,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.orange.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Text(
-                    '+fee',
-                    style: TextStyle(
-                      fontSize: 10,
-                      color: Colors.orange.shade700,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
+            child: Row(
+              children: [
+                Icon(Icons.bar_chart_rounded,
+                    size: 32, color: Colors.grey.shade300),
+                const SizedBox(width: 12),
+                Text(
+                  'No expenses yet. Add some transactions!',
+                  style: TextStyle(
+                      color: Colors.grey.shade500, fontSize: 13),
                 ),
               ],
-            ],
-          ),
-          trailing: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: iconBgColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Text(
-                  getTypeLabel(tx['type']),
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodySmall?.copyWith(color: iconBgColor),
-                ),
+            ),
+          )
+        else
+          ...top.asMap().entries.map((entry) {
+            final idx = entry.key;
+            final tx = entry.value;
+            final amount =
+                double.tryParse(tx['amount'].toString()) ?? 0.0;
+            final fee = double.tryParse(
+                    tx['transactionCost']?.toString() ?? '0') ??
+                0.0;
+            final total = amount + fee;
+
+            final rankColors = [
+              Colors.amber.shade400,
+              Colors.grey.shade400,
+              Colors.brown.shade300,
+              errorColor.withOpacity(0.7),
+              errorColor.withOpacity(0.5),
+            ];
+
+            return Container(
+              margin: const EdgeInsets.only(bottom: 8),
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surface,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withAlpha(12)),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.04),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
               ),
-              Text(
-                "${isIncome ? '+' : '-'} ${CurrencyFormatter.format(isIncome ? amount : totalDeducted)}",
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: isIncome ? brandGreen : errorColor,
-                  fontWeight: FontWeight.bold,
-                ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      color: rankColors[idx].withOpacity(0.2),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Center(
+                      child: Text(
+                        '${idx + 1}',
+                        style: TextStyle(
+                          color: rankColors[idx],
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          tx['title'] ?? 'Unknown',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        if ((tx['reason'] ?? '').toString().isNotEmpty)
+                          Text(
+                            tx['reason'].toString(),
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: Colors.grey.shade500,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Flexible(
+                    flex: 0,
+                    child: Text(
+                      '- ${CurrencyFormatter.format(total)}',
+                      textAlign: TextAlign.end,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: errorColor,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ],
-          ),
-        ),
-      ),
+            );
+          }),
+      ],
     );
   }
 
-  String getTypeLabel(String type) {
-    switch (type) {
-      case 'income':
-        return 'Income';
-      case 'budget_expense':
-        return 'Budget';
-      case 'budget_finalized':
-        return 'Budget';
-      case 'savings_deduction':
-        return 'Savings ↓';
-      case 'savings_withdrawal':
-        return 'Savings ↑';
-      case 'expense':
-        return 'Expense';
-      default:
-        return 'Other';
-    }
-  }
 }
 
-// Models
+// ─── Models ────────────────────────────────────────────────────────────────────
 class Budget {
-  String name;
+  String name, id;
   double total;
   List<Expense> expenses;
-  String id;
   bool isChecked;
   DateTime? checkedDate;
   DateTime createdDate;
@@ -1486,44 +1296,44 @@ class Budget {
     this.isChecked = false,
     this.checkedDate,
     DateTime? createdDate,
-  }) : expenses = expenses ?? [],
-       id = id ?? DateTime.now().millisecondsSinceEpoch.toString(),
-       createdDate = createdDate ?? DateTime.now();
+  })  : expenses = expenses ?? [],
+        id = id ?? DateTime.now().millisecondsSinceEpoch.toString(),
+        createdDate = createdDate ?? DateTime.now();
 
-  double get totalSpent => expenses.fold(0.0, (sum, e) => sum + e.amount);
+  double get totalSpent => expenses.fold(0.0, (s, e) => s + e.amount);
   double get amountLeft => total - totalSpent;
 
   Map<String, dynamic> toMap() => {
-    'id': id,
-    'name': name,
-    'total': total,
-    'expenses': expenses.map((e) => e.toMap()).toList(),
-    'isChecked': isChecked,
-    'checkedDate': checkedDate?.toIso8601String(),
-    'createdDate': createdDate.toIso8601String(),
-  };
+        'id': id,
+        'name': name,
+        'total': total,
+        'expenses': expenses.map((e) => e.toMap()).toList(),
+        'isChecked': isChecked,
+        'checkedDate': checkedDate?.toIso8601String(),
+        'createdDate': createdDate.toIso8601String(),
+      };
 
   factory Budget.fromMap(Map<String, dynamic> map) => Budget(
-    id: map['id'] ?? DateTime.now().millisecondsSinceEpoch.toString(),
-    name: map['name'],
-    total: (map['total'] as num).toDouble(),
-    expenses:
-        (map['expenses'] as List?)?.map((e) => Expense.fromMap(e)).toList() ??
-        [],
-    isChecked: map['isChecked'] ?? map['checked'] ?? false,
-    checkedDate: map['checkedDate'] != null
-        ? DateTime.parse(map['checkedDate'])
-        : null,
-    createdDate: map['createdDate'] != null
-        ? DateTime.parse(map['createdDate'])
-        : DateTime.now(),
-  );
+        id: map['id'] ?? DateTime.now().millisecondsSinceEpoch.toString(),
+        name: map['name'],
+        total: (map['total'] as num).toDouble(),
+        expenses: (map['expenses'] as List?)
+                ?.map((e) => Expense.fromMap(e))
+                .toList() ??
+            [],
+        isChecked: map['isChecked'] ?? map['checked'] ?? false,
+        checkedDate: map['checkedDate'] != null
+            ? DateTime.parse(map['checkedDate'])
+            : null,
+        createdDate: map['createdDate'] != null
+            ? DateTime.parse(map['createdDate'])
+            : DateTime.now(),
+      );
 }
 
 class Expense {
-  String name;
+  String name, id;
   double amount;
-  String id;
   DateTime createdDate;
 
   Expense({
@@ -1531,30 +1341,29 @@ class Expense {
     required this.name,
     required this.amount,
     DateTime? createdDate,
-  }) : id = id ?? DateTime.now().millisecondsSinceEpoch.toString(),
-       createdDate = createdDate ?? DateTime.now();
+  })  : id = id ?? DateTime.now().millisecondsSinceEpoch.toString(),
+        createdDate = createdDate ?? DateTime.now();
 
   Map<String, dynamic> toMap() => {
-    'id': id,
-    'name': name,
-    'amount': amount,
-    'createdDate': createdDate.toIso8601String(),
-  };
+        'id': id,
+        'name': name,
+        'amount': amount,
+        'createdDate': createdDate.toIso8601String(),
+      };
 
   factory Expense.fromMap(Map<String, dynamic> map) => Expense(
-    id: map['id'] ?? DateTime.now().millisecondsSinceEpoch.toString(),
-    name: map['name'],
-    amount: (map['amount'] as num).toDouble(),
-    createdDate: map['createdDate'] != null
-        ? DateTime.parse(map['createdDate'])
-        : DateTime.now(),
-  );
+        id: map['id'] ?? DateTime.now().millisecondsSinceEpoch.toString(),
+        name: map['name'],
+        amount: (map['amount'] as num).toDouble(),
+        createdDate: map['createdDate'] != null
+            ? DateTime.parse(map['createdDate'])
+            : DateTime.now(),
+      );
 }
 
 class Saving {
   String name;
-  double savedAmount;
-  double targetAmount;
+  double savedAmount, targetAmount;
   DateTime deadline;
   bool achieved;
   String walletType;
@@ -1575,32 +1384,32 @@ class Saving {
   double get balance => targetAmount - savedAmount;
 
   Map<String, dynamic> toMap() => {
-    'name': name,
-    'savedAmount': savedAmount,
-    'targetAmount': targetAmount,
-    'deadline': deadline.toIso8601String(),
-    'achieved': achieved,
-    'walletType': walletType,
-    'walletName': walletName,
-    'lastUpdated': lastUpdated.toIso8601String(),
-  };
+        'name': name,
+        'savedAmount': savedAmount,
+        'targetAmount': targetAmount,
+        'deadline': deadline.toIso8601String(),
+        'achieved': achieved,
+        'walletType': walletType,
+        'walletName': walletName,
+        'lastUpdated': lastUpdated.toIso8601String(),
+      };
 
   factory Saving.fromMap(Map<String, dynamic> map) => Saving(
-    name: map['name'] ?? 'Unnamed',
-    savedAmount: map['savedAmount'] is String
-        ? double.tryParse(map['savedAmount']) ?? 0.0
-        : (map['savedAmount'] as num?)?.toDouble() ?? 0.0,
-    targetAmount: map['targetAmount'] is String
-        ? double.tryParse(map['targetAmount']) ?? 0.0
-        : (map['targetAmount'] as num?)?.toDouble() ?? 0.0,
-    deadline: map['deadline'] != null
-        ? DateTime.parse(map['deadline'])
-        : DateTime.now().add(const Duration(days: 30)),
-    achieved: map['achieved'] ?? false,
-    walletType: map['walletType'] ?? 'M-Pesa',
-    walletName: map['walletName'],
-    lastUpdated: map['lastUpdated'] != null
-        ? DateTime.parse(map['lastUpdated'])
-        : DateTime.now(),
-  );
+        name: map['name'] ?? 'Unnamed',
+        savedAmount: map['savedAmount'] is String
+            ? double.tryParse(map['savedAmount']) ?? 0.0
+            : (map['savedAmount'] as num?)?.toDouble() ?? 0.0,
+        targetAmount: map['targetAmount'] is String
+            ? double.tryParse(map['targetAmount']) ?? 0.0
+            : (map['targetAmount'] as num?)?.toDouble() ?? 0.0,
+        deadline: map['deadline'] != null
+            ? DateTime.parse(map['deadline'])
+            : DateTime.now().add(const Duration(days: 30)),
+        achieved: map['achieved'] ?? false,
+        walletType: map['walletType'] ?? 'M-Pesa',
+        walletName: map['walletName'],
+        lastUpdated: map['lastUpdated'] != null
+            ? DateTime.parse(map['lastUpdated'])
+            : DateTime.now(),
+      );
 }

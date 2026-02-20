@@ -2,6 +2,9 @@ import 'dart:convert';
 
 import 'package:final_project/Constants/colors.dart';
 import 'package:final_project/Constants/spacing.dart';
+import 'package:final_project/SecondaryScreens/Transactions/edit_transaction.dart';
+import 'package:final_project/SecondaryScreens/Transactions/transaction_card.dart';
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -33,7 +36,6 @@ class _TransactionsPageState extends State<TransactionsPage> {
   bool isLoading = true;
   double totalIncome = 0.0;
 
-  // ✅ NEW: Search state
   final TextEditingController _searchCtrl = TextEditingController();
   String _searchQuery = '';
   bool _isSearchVisible = false;
@@ -93,183 +95,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
     return false;
   }
 
-  Future<void> recalculateSavingsGoals() async {
-    final prefs = await SharedPreferences.getInstance();
-    final txString = prefs.getString(keyTransactions) ?? '[]';
-    final currentTransactions =
-        List<Map<String, dynamic>>.from(json.decode(txString));
-
-    bool savingsChanged = false;
-    for (var saving in savings) {
-      double calculatedAmount = 0.0;
-      for (var tx in currentTransactions) {
-        if ((tx['type'] == 'savings_deduction' ||
-                tx['type'] == 'saving_deposit') &&
-            tx['title'] != null &&
-            tx['title'].toString().contains('Saved for ${saving.name}')) {
-          calculatedAmount += double.tryParse(tx['amount'].toString()) ?? 0.0;
-        }
-      }
-      if (saving.savedAmount != calculatedAmount) {
-        saving.savedAmount = calculatedAmount;
-        savingsChanged = true;
-      }
-      bool shouldBeAchieved = saving.savedAmount >= saving.targetAmount;
-      if (saving.achieved != shouldBeAchieved) {
-        saving.achieved = shouldBeAchieved;
-        savingsChanged = true;
-      }
-    }
-    if (savingsChanged) {
-      final data = savings.map((s) => json.encode(s.toMap())).toList();
-      await prefs.setStringList(keySavings, data);
-    }
-  }
-
-  Future<void> deleteTransaction(int originalIndex) async {
-    final tx = transactions[originalIndex];
-    final amount = double.tryParse(tx['amount'].toString()) ?? 0.0;
-    final transactionCost =
-        double.tryParse(tx['transactionCost']?.toString() ?? '0') ?? 0.0;
-    final type = tx['type'];
-
-    if (isTransactionLinkedToAchievedGoal(tx)) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(children: [
-              const Icon(Icons.lock, color: Colors.white, size: 20),
-              const SizedBox(width: 8),
-              const Expanded(
-                child: Text(
-                  'Transactions linked to an achieved saving goal cannot be deleted.',
-                  style: TextStyle(fontSize: 14),
-                ),
-              ),
-            ]),
-            backgroundColor: Colors.orange.shade700,
-            behavior: SnackBarBehavior.floating,
-            duration: const Duration(seconds: 4),
-            action: SnackBarAction(
-                label: 'OK', textColor: Colors.white, onPressed: () {}),
-          ),
-        );
-      }
-      return;
-    }
-
-    if (isTransactionLinkedToCheckedBudget(tx)) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(children: [
-              const Icon(Icons.lock, color: Colors.white, size: 20),
-              const SizedBox(width: 8),
-              const Expanded(
-                child: Text(
-                  'Transactions from finalized budgets cannot be deleted.',
-                  style: TextStyle(fontSize: 14),
-                ),
-              ),
-            ]),
-            backgroundColor: Colors.orange.shade700,
-            behavior: SnackBarBehavior.floating,
-            duration: const Duration(seconds: 4),
-            action: SnackBarAction(
-                label: 'OK', textColor: Colors.white, onPressed: () {}),
-          ),
-        );
-      }
-      return;
-    }
-
-    final totalAmount = amount + transactionCost;
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete Transaction'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('Are you sure you want to delete this transaction?'),
-            const SizedBox(height: 12),
-            Text('${tx['title']}',
-                style: const TextStyle(fontWeight: FontWeight.bold)),
-            Text('Amount: ${CurrencyFormatter.format(amount)}'),
-            if (transactionCost > 0)
-              Text('+ Fee: ${CurrencyFormatter.format(transactionCost)}'),
-            if (transactionCost > 0)
-              Text('Total: ${CurrencyFormatter.format(totalAmount)}',
-                  style: const TextStyle(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.orange.shade50,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.orange.shade200),
-              ),
-              child: Row(children: [
-                Icon(Icons.warning_amber_rounded,
-                    color: Colors.orange.shade700, size: 20),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'This will affect your balance and statistics.',
-                    style: TextStyle(
-                        fontSize: 12, color: Colors.orange.shade900),
-                  ),
-                ),
-              ]),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Cancel')),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: errorColor,
-              foregroundColor: Colors.white,
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-            ),
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed == true) {
-      transactions.removeAt(originalIndex);
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(keyTransactions, json.encode(transactions));
-
-      if (type == 'income') {
-        totalIncome -= amount;
-        await prefs.setDouble(keyTotalIncome, totalIncome);
-      }
-
-      await recalculateSavingsGoals();
-      await loadTransactions();
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('✅ Transaction deleted and synced with Home page'),
-            backgroundColor: brandGreen,
-            behavior: SnackBarBehavior.floating,
-            duration: Duration(seconds: 2),
-          ),
-        );
-      }
-    }
-  }
-
-  // ✅ Applies type filter
+  // ── Filtering ─────────────────────────────────────────────────────────────
   List<Map<String, dynamic>> get typeFilteredTransactions {
     if (filter == 'all') return transactions;
     if (filter == 'income') {
@@ -278,7 +104,6 @@ class _TransactionsPageState extends State<TransactionsPage> {
     return transactions.where((tx) => tx['type'] != 'income').toList();
   }
 
-  // ✅ NEW: Search filter — case-insensitive, searches title, type, category, budget name
   List<Map<String, dynamic>> get filteredTransactions {
     final base = typeFilteredTransactions;
     if (_searchQuery.isEmpty) return base;
@@ -287,8 +112,8 @@ class _TransactionsPageState extends State<TransactionsPage> {
       final title = (tx['title'] ?? '').toString().toLowerCase();
       final type = getTypeLabel(tx['type'] ?? '').toLowerCase();
       final rawType = (tx['type'] ?? '').toString().toLowerCase();
+      final reason = (tx['reason'] ?? '').toString().toLowerCase();
 
-      // Also search budget name if applicable
       String budgetName = '';
       if (tx['budgetId'] != null) {
         final b = budgets.where((b) => b.id == tx['budgetId']).toList();
@@ -298,6 +123,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
       return title.contains(_searchQuery) ||
           type.contains(_searchQuery) ||
           rawType.contains(_searchQuery) ||
+          reason.contains(_searchQuery) ||
           budgetName.contains(_searchQuery);
     }).toList();
   }
@@ -307,9 +133,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
     for (var tx in filteredTransactions) {
       final date = DateTime.parse(tx['date']);
       final dateKey = DateFormat('dd MMM yyyy').format(date);
-      if (!grouped.containsKey(dateKey)) {
-        grouped[dateKey] = [];
-      }
+      if (!grouped.containsKey(dateKey)) grouped[dateKey] = [];
       grouped[dateKey]!.add(tx);
     }
     return grouped;
@@ -335,7 +159,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
                 ),
                 style: theme.textTheme.bodyLarge,
               )
-            : const Text("All Transactions"),
+            : const Text('All Transactions'),
         centerTitle: !_isSearchVisible,
         elevation: 0,
         actions: [
@@ -374,8 +198,10 @@ class _TransactionsPageState extends State<TransactionsPage> {
                     ],
                   ),
                 ),
+
                 buildSummaryCard(theme),
-                // Hint bar
+
+                // Info bar
                 Container(
                   margin: const EdgeInsets.symmetric(
                       horizontal: 16, vertical: 4),
@@ -383,15 +209,16 @@ class _TransactionsPageState extends State<TransactionsPage> {
                   decoration: BoxDecoration(
                     color: accentColor.withOpacity(0.08),
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: accentColor.withOpacity(0.25)),
+                    border:
+                        Border.all(color: accentColor.withOpacity(0.25)),
                   ),
                   child: Row(
                     children: [
-                      Icon(Icons.swipe, color: accentColor, size: 18),
+                      Icon(Icons.edit_note, color: accentColor, size: 18),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          'Swipe to delete. 🔒 Achieved goals & finalized budgets are protected.',
+                          'Tap any transaction to view details. Income & expense transactions can be edited.',
                           style: TextStyle(
                               fontSize: 12, color: Colors.grey.shade700),
                         ),
@@ -399,6 +226,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
                     ],
                   ),
                 ),
+
                 Expanded(
                   child: filteredTransactions.isEmpty
                       ? Center(
@@ -406,7 +234,8 @@ class _TransactionsPageState extends State<TransactionsPage> {
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Icon(Icons.receipt_long_outlined,
-                                  size: 64, color: Colors.grey.shade400),
+                                  size: 64,
+                                  color: Colors.grey.shade400),
                               const SizedBox(height: 16),
                               Text(
                                 _searchQuery.isNotEmpty
@@ -438,7 +267,8 @@ class _TransactionsPageState extends State<TransactionsPage> {
                               final txList = groupedTx[dateKey]!;
 
                               return Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
+                                crossAxisAlignment:
+                                    CrossAxisAlignment.start,
                                 children: [
                                   Padding(
                                     padding: const EdgeInsets.symmetric(
@@ -459,8 +289,27 @@ class _TransactionsPageState extends State<TransactionsPage> {
                                   ...txList.map((tx) {
                                     final originalIndex =
                                         transactions.indexOf(tx);
-                                    return buildTransactionCard(
-                                        tx, originalIndex, theme);
+                                    final isLocked =
+                                        isTransactionLinkedToAchievedGoal(
+                                                tx) ||
+                                            isTransactionLinkedToCheckedBudget(
+                                                tx);
+
+                                    return TransactionCard(
+                                      transaction: tx,
+                                      index: originalIndex,
+                                      isLocked: isLocked,
+                                      // Every card is tappable.
+                                      // Editable types (income/expense) open
+                                      // the edit form; all others show
+                                      // a read-only detail view.
+                                      onTap: () => EditTransactionSheet.show(
+                                        context,
+                                        transaction: tx,
+                                        index: originalIndex,
+                                        onSaved: loadTransactions,
+                                      ),
+                                    );
                                   }),
                                   const SizedBox(height: 8),
                                 ],
@@ -479,8 +328,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
     return GestureDetector(
       onTap: () => setState(() => filter = value),
       child: Container(
-        padding:
-            const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
         decoration: BoxDecoration(
           color: isSelected
               ? theme.colorScheme.primary
@@ -553,9 +401,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
             theme.colorScheme.onSurface,
           ),
           Container(
-              height: 40,
-              width: 1,
-              color: Colors.white.withOpacity(0.3)),
+              height: 40, width: 1, color: Colors.white.withOpacity(0.3)),
           buildSummaryStat(
             'Expenses',
             totalExpenseFiltered,
@@ -595,207 +441,6 @@ class _TransactionsPageState extends State<TransactionsPage> {
     );
   }
 
-  Widget buildTransactionCard(
-      Map<String, dynamic> tx, int originalIndex, ThemeData theme) {
-    final isIncome = tx['type'] == 'income';
-    final date = DateTime.parse(tx['date']);
-    // ✅ 24-hour format
-    final time = DateFormat('HH:mm').format(date);
-    final amount = double.tryParse(tx['amount'].toString()) ?? 0.0;
-    final transactionCost =
-        double.tryParse(tx['transactionCost']?.toString() ?? '0') ?? 0.0;
-    final totalDeducted = amount + transactionCost;
-    final isLocked = isTransactionLinkedToAchievedGoal(tx) ||
-        isTransactionLinkedToCheckedBudget(tx);
-
-    IconData txIcon;
-    Color iconBgColor;
-
-    switch (tx['type']) {
-      case 'income':
-        txIcon = Icons.arrow_circle_down_rounded;
-        iconBgColor = accentColor;
-        break;
-      case 'budget_expense':
-        txIcon = Icons.receipt_rounded;
-        iconBgColor = Colors.orange;
-        break;
-      case 'budget_finalized':
-        txIcon = Icons.check_circle;
-        iconBgColor = brandGreen;
-        break;
-      case 'savings_deduction':
-      case 'saving_deposit':
-        txIcon = Icons.savings;
-        iconBgColor = brandGreen;
-        break;
-      case 'savings_withdrawal':
-        txIcon = Icons.savings;
-        iconBgColor = Colors.orange;
-        break;
-      default:
-        txIcon = Icons.arrow_circle_up_outlined;
-        iconBgColor = errorColor;
-    }
-
-    return Dismissible(
-      key: Key('${tx['date']}_$originalIndex'),
-      direction:
-          isLocked ? DismissDirection.none : DismissDirection.horizontal,
-      confirmDismiss: (direction) async {
-        if (isLocked) return false;
-        await deleteTransaction(originalIndex);
-        return false;
-      },
-      background: isLocked
-          ? null
-          : Container(
-              margin: const EdgeInsets.only(bottom: 8),
-              decoration: BoxDecoration(
-                color: errorColor,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              alignment: Alignment.centerLeft,
-              padding: const EdgeInsets.only(left: 20),
-              child: const Icon(Icons.delete_outline,
-                  color: Colors.white, size: 32),
-            ),
-      secondaryBackground: isLocked
-          ? null
-          : Container(
-              margin: const EdgeInsets.only(bottom: 8),
-              decoration: BoxDecoration(
-                color: errorColor,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              alignment: Alignment.centerRight,
-              padding: const EdgeInsets.only(right: 20),
-              child: const Icon(Icons.delete_outline,
-                  color: Colors.white, size: 32),
-            ),
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 8),
-        decoration: BoxDecoration(
-          color: theme.colorScheme.surface,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: isLocked ? Colors.orange.shade300 : Colors.grey.shade200,
-            width: isLocked ? 2 : 1,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.03),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: ListTile(
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-          leading: Stack(
-            children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: iconBgColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(100),
-                ),
-                child: Icon(txIcon, color: iconBgColor, size: 30),
-              ),
-              if (isLocked)
-                Positioned(
-                  right: 0,
-                  bottom: 0,
-                  child: Container(
-                    padding: const EdgeInsets.all(2),
-                    decoration: BoxDecoration(
-                        color: Colors.orange.shade700,
-                        shape: BoxShape.circle),
-                    child: const Icon(Icons.lock,
-                        color: Colors.white, size: 12),
-                  ),
-                ),
-            ],
-          ),
-          title: Text(
-            tx['title'] ?? "Unknown",
-            style: theme.textTheme.bodyLarge
-                ?.copyWith(fontWeight: FontWeight.w600),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          subtitle: Row(
-            children: [
-              Icon(Icons.access_time,
-                  size: 12,
-                  color: Theme.of(context)
-                      .colorScheme
-                      .onSurface
-                      .withAlpha(80)),
-              const SizedBox(width: 4),
-              Text(
-                time,
-                style: theme.textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context)
-                        .colorScheme
-                        .onSurface
-                        .withAlpha(80)),
-              ),
-              if (transactionCost > 0) ...[
-                const SizedBox(width: 6),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                  decoration: BoxDecoration(
-                    color: Colors.orange.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Text(
-                    '+fee',
-                    style: TextStyle(
-                        fontSize: 10,
-                        color: Colors.orange.shade700,
-                        fontWeight: FontWeight.w600),
-                  ),
-                ),
-              ],
-            ],
-          ),
-          trailing: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: iconBgColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Text(
-                  getTypeLabel(tx['type']),
-                  style: Theme.of(context)
-                      .textTheme
-                      .bodySmall
-                      ?.copyWith(color: iconBgColor),
-                ),
-              ),
-              Text(
-                "${isIncome ? '+' : '-'} ${CurrencyFormatter.format(isIncome ? amount : totalDeducted)}",
-                style: theme.textTheme.bodyLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: isIncome ? brandGreen : errorColor,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
   String getDateLabel(String dateKey) {
     final date = DateFormat('dd MMM yyyy').parse(dateKey);
     final now = DateTime.now();
@@ -827,12 +472,11 @@ class _TransactionsPageState extends State<TransactionsPage> {
   }
 }
 
-// Models
+// ─── Models (kept local for page self-sufficiency) ─────────────────────────────
 class Budget {
-  String name;
+  String name, id;
   double total;
   List<Expense> expenses;
-  String id;
   bool isChecked;
   DateTime? checkedDate;
   DateTime createdDate;
@@ -849,7 +493,7 @@ class Budget {
         id = id ?? DateTime.now().millisecondsSinceEpoch.toString(),
         createdDate = createdDate ?? DateTime.now();
 
-  double get totalSpent => expenses.fold(0.0, (sum, e) => sum + e.amount);
+  double get totalSpent => expenses.fold(0.0, (s, e) => s + e.amount);
   double get amountLeft => total - totalSpent;
 
   Map<String, dynamic> toMap() => {
@@ -881,9 +525,8 @@ class Budget {
 }
 
 class Expense {
-  String name;
+  String name, id;
   double amount;
-  String id;
   DateTime createdDate;
 
   Expense({
@@ -913,8 +556,7 @@ class Expense {
 
 class Saving {
   String name;
-  double savedAmount;
-  double targetAmount;
+  double savedAmount, targetAmount;
   DateTime deadline;
   bool achieved;
   String walletType;
@@ -931,8 +573,6 @@ class Saving {
     this.walletName,
     DateTime? lastUpdated,
   }) : lastUpdated = lastUpdated ?? DateTime.now();
-
-  double get balance => targetAmount - savedAmount;
 
   Map<String, dynamic> toMap() => {
         'name': name,

@@ -720,7 +720,7 @@ class _BudgetDetailPageState extends State<BudgetDetailPage> {
                   child: Switch(
                     value: budget!.isChecked,
                     onChanged: _isToggling ? null : toggleCheckBudget,
-                    activeColor: brandGreen,
+                    activeThumbColor: brandGreen,
                     activeTrackColor: brandGreen.withOpacity(0.3),
                     inactiveThumbColor: Colors.grey.shade400,
                     inactiveTrackColor: Colors.grey.shade200,
