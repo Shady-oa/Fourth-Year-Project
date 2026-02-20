@@ -1,7 +1,6 @@
 import 'dart:convert';
 
 import 'package:final_project/Constants/colors.dart';
-import 'package:final_project/Constants/spacing.dart';
 import 'package:final_project/Primary_Screens/Savings/financial_service.dart';
 import 'package:final_project/SecondaryScreens/Transactions/edit_transaction.dart';
 import 'package:final_project/SecondaryScreens/Transactions/transaction_card.dart';
@@ -78,9 +77,13 @@ class _TransactionsPageState extends State<TransactionsPage> {
     setState(() => isLoading = false);
   }
 
-  /// Returns true for any transaction type that should be locked (read-only).
-  /// Savings and budget transactions are always locked to protect financial
-  /// history — regardless of whether the linked goal/budget is achieved.
+  /// Returns true for any transaction that must be read-only.
+  /// Rules:
+  ///  • Any saving/budget type is always locked.
+  ///  • 'expense' entries whose title starts with
+  ///    'Saving fees (non-refundable)' are saving-fee re-logs created by
+  ///    FinancialService.refundSavingsPrincipal — they must remain immutable
+  ///    even after the linked goal is deleted.
   bool isSavingsOrBudgetTransaction(Map<String, dynamic> tx) {
     const lockedTypes = {
       'savings_deduction',
@@ -89,15 +92,27 @@ class _TransactionsPageState extends State<TransactionsPage> {
       'budget_finalized',
       'budget_expense',
     };
-    return lockedTypes.contains(tx['type'] ?? '');
+    if (lockedTypes.contains(tx['type'] ?? '')) return true;
+    // Also lock saving-fee re-log entries (type == 'expense' but immutable).
+    final title = (tx['title'] ?? '').toString();
+    if (title.startsWith('Saving fees (non-refundable)')) return true;
+    return false;
   }
 
   // ── Filtering ─────────────────────────────────────────────────────────────
+  //
+  //  'all'     → every transaction
+  //  'income'  → only type == 'income'
+  //  'expense' → everything that is NOT income:
+  //              normal expenses, savings deposits, saving-fee re-logs,
+  //              budget entries, withdrawal display rows — all fall here
+  //              because they all reduce the available balance.
   List<Map<String, dynamic>> get typeFilteredTransactions {
     if (filter == 'all') return transactions;
     if (filter == 'income') {
       return transactions.where((tx) => tx['type'] == 'income').toList();
     }
+    // 'expense' filter: all non-income transactions
     return transactions.where((tx) => tx['type'] != 'income').toList();
   }
 
@@ -359,117 +374,145 @@ class _TransactionsPageState extends State<TransactionsPage> {
 
   // ── Summary card ──────────────────────────────────────────────────────────
   //
-  // Uses FinancialService totals (identical to Home / Analytics / Reports).
-  // Shows: Income · Expenses · Saved (principal, no fees) · Balance.
+  // Matches the Home page balance-card style (gradient, same typography).
+  // Intentionally shows ONLY Income and Expenses to keep the Transactions
+  // page focused. Balance and Saved are omitted here as they are shown on
+  // the Home page.
   Widget buildSummaryCard(ThemeData theme) {
     final s = _summary;
     final income = s?.totalIncome ?? 0.0;
     final expenses = s?.totalExpenses ?? 0.0;
-    final saved = s?.displayedSavingsAmount ?? 0.0;
-    // Do NOT clamp balance — negative values must be shown (overspent state).
-    final balance = s?.balance ?? (income - expenses);
+    final isOverspent = expenses > income;
+
+    // Use errorColor gradient when overspent — mirrors Home page behaviour.
+    final gradientStart = isOverspent ? errorColor : accentColor;
 
     return Container(
-      margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      width: double.infinity,
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
         gradient: LinearGradient(
-          colors: [
-            theme.colorScheme.primary,
-            theme.colorScheme.primary.withOpacity(0.8),
-          ],
+          colors: [gradientStart, gradientStart.withOpacity(0.78)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: radiusSmall,
         boxShadow: [
           BoxShadow(
-            color: theme.colorScheme.primary.withOpacity(0.3),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
+            color: gradientStart.withOpacity(0.28),
+            blurRadius: 18,
+            offset: const Offset(0, 6),
           ),
         ],
       ),
-      child: Column(
+      child: Stack(
         children: [
-          // Row 1: Income | Expenses
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              buildSummaryStat(
-                'Income',
-                income,
-                Icons.arrow_circle_down_rounded,
-                theme.colorScheme.onSurface,
+          // Decorative circles — same as Home page balance card
+          Positioned(
+            right: -24,
+            top: -24,
+            child: Container(
+              width: 100,
+              height: 100,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white.withOpacity(0.06),
               ),
-              Container(
-                height: 40,
-                width: 1,
-                color: Colors.white.withOpacity(0.3),
-              ),
-              buildSummaryStat(
-                'Expenses',
-                expenses,
-                Icons.arrow_circle_up_rounded,
-                theme.colorScheme.onSurface,
-              ),
-            ],
+            ),
           ),
-          Divider(color: Colors.white.withOpacity(0.2), height: 16),
-          // Row 2: Saved | Balance
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              buildSummaryStat(
-                'Saved',
-                saved,
-                Icons.savings_outlined,
-                theme.colorScheme.onSurface,
+          Positioned(
+            right: 24,
+            bottom: -16,
+            child: Container(
+              width: 64,
+              height: 64,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white.withOpacity(0.06),
               ),
-              Container(
-                height: 40,
-                width: 1,
-                color: Colors.white.withOpacity(0.3),
-              ),
-              buildSummaryStat(
-                'Balance',
-                balance,
-                Icons.account_balance_wallet_outlined,
-                theme.colorScheme.onSurface,
-              ),
-            ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+            child: Row(
+              children: [
+                // ── Income stat ────────────────────────────────────────
+                Expanded(
+                  child: _buildStat(
+                    label: 'Total Income',
+                    amount: income,
+                    icon: Icons.arrow_circle_down_rounded,
+                    alignLeft: true,
+                  ),
+                ),
+
+                // Divider
+                Container(
+                  height: 44,
+                  width: 1,
+                  color: Colors.white.withOpacity(0.25),
+                  margin: const EdgeInsets.symmetric(horizontal: 16),
+                ),
+
+                // ── Expenses stat ──────────────────────────────────────
+                Expanded(
+                  child: _buildStat(
+                    label: 'Total Expenses',
+                    amount: expenses,
+                    icon: Icons.arrow_circle_up_rounded,
+                    alignLeft: false,
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget buildSummaryStat(
-    String label,
-    double amount,
-    IconData icon,
-    Color color,
-  ) {
+  Widget _buildStat({
+    required String label,
+    required double amount,
+    required IconData icon,
+    required bool alignLeft,
+  }) {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: alignLeft
+          ? CrossAxisAlignment.start
+          : CrossAxisAlignment.end,
       children: [
         Row(
+          mainAxisAlignment: alignLeft
+              ? MainAxisAlignment.start
+              : MainAxisAlignment.end,
           children: [
-            Icon(icon, color: color, size: 16),
-            const SizedBox(width: 4),
+            if (alignLeft) ...[
+              Icon(icon, color: Colors.white70, size: 13),
+              const SizedBox(width: 5),
+            ],
             Text(
               label,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.onSurface,
+              style: const TextStyle(
+                color: Colors.white70,
+                fontSize: 11,
+                fontWeight: FontWeight.w500,
               ),
             ),
+            if (!alignLeft) ...[
+              const SizedBox(width: 5),
+              Icon(icon, color: Colors.white70, size: 13),
+            ],
           ],
         ),
-        const SizedBox(height: 4),
+        const SizedBox(height: 6),
         Text(
           CurrencyFormatter.format(amount),
-          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-            color: Theme.of(context).colorScheme.onSurface,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            letterSpacing: -0.3,
           ),
         ),
       ],
