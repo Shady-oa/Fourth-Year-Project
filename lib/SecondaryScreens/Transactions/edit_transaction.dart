@@ -64,8 +64,9 @@ class _EditTransactionSheetState extends State<EditTransactionSheet> {
   String get _type => (widget.transaction['type'] ?? 'expense') as String;
   bool get _isIncome => _type == 'income';
 
-  /// Transactions page is a read-only ledger — no transaction type is editable here.
-  bool get _isEditable => false;
+  /// Income and expense transactions (home-page entries) are editable.
+  /// All other types (savings, budget, etc.) remain read-only.
+  bool get _isEditable => _type == 'income' || _type == 'expense';
 
   @override
   void initState() {

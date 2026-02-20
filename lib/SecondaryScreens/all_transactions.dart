@@ -355,7 +355,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
                         child: Text(
                           _isMultiSelect
                               ? 'Select records to remove from history. Financial totals will NOT be affected.'
-                              : 'This is a read-only ledger. Tap any transaction to view its details.',
+                              : 'Income & expenses are editable. Savings and budget entries are read-only.',
                           style: TextStyle(
                             fontSize: 12,
                             color: Colors.grey.shade700,
@@ -434,6 +434,9 @@ class _TransactionsPageState extends State<TransactionsPage> {
                                     final isSelected = _selectedIndices
                                         .contains(displayIndex);
 
+                                    final locked = isSavingsOrBudgetTransaction(
+                                      tx,
+                                    );
                                     return _isMultiSelect
                                         ? _SelectableCard(
                                             transaction: tx,
@@ -444,9 +447,9 @@ class _TransactionsPageState extends State<TransactionsPage> {
                                         : TransactionCard(
                                             transaction: tx,
                                             index: displayIndex,
-                                            // All transactions show as locked
-                                            // (read-only ledger).
-                                            isLocked: true,
+                                            // Income & expense are editable;
+                                            // savings/budget types are locked.
+                                            isLocked: locked,
                                             onTap: () =>
                                                 EditTransactionSheet.show(
                                                   context,

@@ -939,5 +939,5 @@ class _BudgetConfirmRow {
   final String label;
   final String value;
   final bool highlight;
-  const _BudgetConfirmRow(this.label, this.value);
+  const _BudgetConfirmRow(this.label, this.value, {this.highlight = false});
 }
