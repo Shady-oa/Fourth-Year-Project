@@ -335,84 +335,37 @@ class _BudgetPageState extends State<BudgetPage> {
   }
 
   Future<void> _deleteBudget(Budget budget) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete Budget'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('Are you sure you want to delete this budget?'),
-            const SizedBox(height: 12),
-            Text(
-              budget.name,
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.orange.shade50,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.orange.shade200),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.info_outline,
-                    color: Colors.orange.shade700,
-                    size: 20,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'This will NOT affect your total balance or transactions.',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.orange.shade900,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: errorColor,
-              foregroundColor: Colors.white,
-            ),
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed == true) {
-      budgets.remove(budget);
-      await saveBudgets();
-      await sendNotification(
-        '🗑️ Budget Deleted',
-        'Budget "${budget.name}" has been deleted',
-      );
-      setState(() {});
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Budget deleted successfully'),
-            backgroundColor: brandGreen,
-          ),
+    _showBudgetConfirmSheet(
+      title: 'Delete Budget',
+      icon: Icons.delete_outline,
+      iconColor: errorColor,
+      rows: [
+        _BudgetConfirmRow('Budget', budget.name),
+        _BudgetConfirmRow('Amount', CurrencyFormatter.format(budget.total)),
+        _BudgetConfirmRow('Spent', CurrencyFormatter.format(budget.totalSpent)),
+      ],
+      note: 'This will NOT affect your total balance or transactions.',
+      noteColor: Colors.orange,
+      confirmLabel: 'Delete Budget',
+      confirmColor: errorColor,
+      onConfirm: () async {
+        budgets.remove(budget);
+        await saveBudgets();
+        await sendNotification(
+          '🗑️ Budget Deleted',
+          'Budget "${budget.name}" has been deleted',
         );
-      }
-    }
+        setState(() {});
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Budget deleted successfully'),
+              backgroundColor: brandGreen,
+            ),
+          );
+        }
+      },
+    );
   }
 
   List<Budget> get filteredBudgets {

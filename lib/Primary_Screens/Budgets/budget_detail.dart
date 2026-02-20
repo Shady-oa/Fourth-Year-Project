@@ -152,48 +152,26 @@ class _BudgetDetailPageState extends State<BudgetDetailPage> {
             child: const Text('Cancel'),
           ),
           ElevatedButton(
-            onPressed: () {
+            onPressed: () async {
               final name = nameCtrl.text.trim();
               final amount = double.tryParse(amountCtrl.text) ?? 0;
               if (name.isNotEmpty && amount > 0) {
+                final newExpense = Expense(name: name, amount: amount);
+                budget!.expenses.add(newExpense);
+                await saveBudgets();
                 Navigator.pop(context);
-                _showBudgetDetailConfirmSheet(
-                  title: 'Confirm Expense',
-                  icon: Icons.receipt_long,
-                  iconColor: accentColor,
-                  rows: [
-                    _BudgetDetailRow('Budget', budget!.name),
-                    _BudgetDetailRow('Expense', name),
-                    _BudgetDetailRow(
-                      'Amount',
-                      CurrencyFormatter.format(amount),
-                      highlight: true,
+                setState(() {});
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Expense "$name" added'),
+                      backgroundColor: brandGreen,
                     ),
-                    _BudgetDetailRow(
-                      'Remaining After',
-                      CurrencyFormatter.format(budget!.amountLeft - amount),
-                    ),
-                  ],
-                  confirmLabel: 'Add Expense',
-                  confirmColor: accentColor,
-                  onConfirm: () async {
-                    final newExpense = Expense(name: name, amount: amount);
-                    budget!.expenses.add(newExpense);
-                    await saveBudgets();
-                    setState(() {});
-                    if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Expense "$name" added'),
-                          backgroundColor: brandGreen,
-                        ),
-                      );
-                    }
-                  },
-                );
+                  );
+                }
               }
             },
-            child: const Text('Continue ›'),
+            child: const Text('Add'),
           ),
         ],
       ),
@@ -332,31 +310,50 @@ class _BudgetDetailPageState extends State<BudgetDetailPage> {
             child: const Text('Cancel'),
           ),
           ElevatedButton(
-            onPressed: () async {
+            onPressed: () {
               final name = nameCtrl.text.trim();
               final amount = double.tryParse(amountCtrl.text) ?? 0;
               if (name.isNotEmpty && amount > 0) {
-                expense.name = name;
-                expense.amount = amount;
-                await saveBudgets();
                 Navigator.pop(context);
-                setState(() {});
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Expense updated'),
-                    backgroundColor: brandGreen,
-                  ),
+                _showBudgetDetailConfirmSheet(
+                  title: 'Confirm Edit',
+                  icon: Icons.edit_outlined,
+                  iconColor: accentColor,
+                  rows: [
+                    _BudgetDetailRow('Expense', name),
+                    _BudgetDetailRow(
+                      'New Amount',
+                      CurrencyFormatter.format(amount),
+                      highlight: true,
+                    ),
+                  ],
+                  confirmLabel: 'Save Changes',
+                  confirmColor: accentColor,
+                  onConfirm: () async {
+                    expense.name = name;
+                    expense.amount = amount;
+                    await saveBudgets();
+                    setState(() {});
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Expense updated'),
+                          backgroundColor: brandGreen,
+                        ),
+                      );
+                    }
+                  },
                 );
               }
             },
-            child: const Text('Save'),
+            child: const Text('Continue ›'),
           ),
         ],
       ),
     );
   }
 
-  Future<void> _deleteExpense(Expense expense) async {
+  void _deleteExpense(Expense expense) {
     if (budget == null || budget!.isChecked) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -366,40 +363,36 @@ class _BudgetDetailPageState extends State<BudgetDetailPage> {
       );
       return;
     }
-
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete Expense'),
-        content: Text('Delete "${expense.name}"?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: errorColor,
-              foregroundColor: Colors.white,
-            ),
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed == true) {
-      budget!.expenses.remove(expense);
-      await saveBudgets();
-      setState(() {});
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Expense deleted'),
-          backgroundColor: brandGreen,
+    _showBudgetDetailConfirmSheet(
+      title: 'Delete Expense',
+      icon: Icons.delete_outline,
+      iconColor: errorColor,
+      rows: [
+        _BudgetDetailRow('Expense', expense.name),
+        _BudgetDetailRow(
+          'Amount',
+          CurrencyFormatter.format(expense.amount),
+          highlight: true,
         ),
-      );
-    }
+      ],
+      note: 'Deleting an expense does not affect your account balance.',
+      noteColor: Colors.orange,
+      confirmLabel: 'Delete Expense',
+      confirmColor: errorColor,
+      onConfirm: () async {
+        budget!.expenses.remove(expense);
+        await saveBudgets();
+        setState(() {});
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Expense deleted'),
+              backgroundColor: brandGreen,
+            ),
+          );
+        }
+      },
+    );
   }
 
   Future<void> exportAsPDF() async {
