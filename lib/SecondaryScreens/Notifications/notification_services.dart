@@ -1,30 +1,10 @@
 import 'dart:convert';
 
 import 'package:final_project/SecondaryScreens/Notifications/local_notification_store.dart';
+import 'package:final_project/SecondaryScreens/Notifications/notification_data_models.dart';
+import 'package:final_project/SecondaryScreens/Notifications/notification_keys.dart';
+import 'package:final_project/SecondaryScreens/Notifications/notification_type.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
-// ─── Keys for SmartNotificationService tracking ───────────────────────────────
-// These keys are separate from the notification list itself — they track *when*
-// a given smart-check was last triggered to avoid duplicate alerts.
-class _Keys {
-  static const transactions = 'transactions';
-  static const budgets = 'budgets';
-  static const savings = 'savings';
-  static const totalIncome = 'total_income';
-  static const streakCount = 'streak_count';
-  static const lastSaveDate = 'last_save_date';
-  static const lastAppOpen = 'last_app_open';
-
-  // Smart-check dedup keys
-  static const lastWeeklySummaryDate = 'last_weekly_summary_date';
-  static const lastMonthlySummaryDate = 'last_monthly_summary_date';
-  static const lastAnalysisDate = 'last_analysis_date';
-  static const budgetAlerts = 'budget_alert_flags'; // JSON map
-  static const savingsDueAlerts = 'savings_due_alerts'; // JSON list
-  static const unusualSpendingAlert = 'unusual_spending_alert_date';
-  static const streakReminderDate = 'streak_reminder_date';
-  static const inactivityAlertDate = 'inactivity_alert_date';
-}
 
 // ─── Smart Notification Service ───────────────────────────────────────────────
 /// Generates and persists contextual, intelligent notifications.
@@ -56,18 +36,18 @@ class SmartNotificationService {
 
     // Update last-open timestamp (used by inactivity check)
     final todayKey = _dateKey(DateTime.now());
-    await prefs.setString(_Keys.lastAppOpen, todayKey);
+    await prefs.setString(NotificationKeys.lastAppOpen, todayKey);
 
     final txList = List<Map<String, dynamic>>.from(
-      json.decode(prefs.getString(_Keys.transactions) ?? '[]'),
+      json.decode(prefs.getString(NotificationKeys.transactions) ?? '[]'),
     );
-    final budgetList = (prefs.getStringList(_Keys.budgets) ?? [])
-        .map((s) => _BudgetData.fromMap(json.decode(s)))
+    final budgetList = (prefs.getStringList(NotificationKeys.budgets) ?? [])
+        .map((s) => BudgetData.fromMap(json.decode(s)))
         .toList();
-    final savingsList = (prefs.getStringList(_Keys.savings) ?? [])
-        .map((s) => _SavingData.fromMap(json.decode(s)))
+    final savingsList = (prefs.getStringList(NotificationKeys.savings) ?? [])
+        .map((s) => SavingData.fromMap(json.decode(s)))
         .toList();
-    final totalIncome = prefs.getDouble(_Keys.totalIncome) ?? 0.0;
+    final totalIncome = prefs.getDouble(NotificationKeys.totalIncome) ?? 0.0;
 
     // Run all checks in parallel for performance
     await Future.wait([
@@ -85,9 +65,9 @@ class SmartNotificationService {
   // ── Budget Near Limit (80%) & Overspent Alerts ─────────────────────────────
   static Future<void> _checkBudgetAlerts(
     SharedPreferences prefs,
-    List<_BudgetData> budgets,
+    List<BudgetData> budgets,
   ) async {
-    final flagsRaw = prefs.getString(_Keys.budgetAlerts) ?? '{}';
+    final flagsRaw = prefs.getString(NotificationKeys.budgetAlerts) ?? '{}';
     final flags = Map<String, dynamic>.from(json.decode(flagsRaw));
     bool changed = false;
 
@@ -130,16 +110,17 @@ class SmartNotificationService {
     }
 
     if (changed) {
-      await prefs.setString(_Keys.budgetAlerts, json.encode(flags));
+      await prefs.setString(NotificationKeys.budgetAlerts, json.encode(flags));
     }
   }
 
   // ── Savings Goal Due Reminders ──────────────────────────────────────────────
   static Future<void> _checkSavingsGoalDue(
     SharedPreferences prefs,
-    List<_SavingData> savings,
+    List<SavingData> savings,
   ) async {
-    final alertedRaw = prefs.getString(_Keys.savingsDueAlerts) ?? '[]';
+    final alertedRaw =
+        prefs.getString(NotificationKeys.savingsDueAlerts) ?? '[]';
     final alerted = List<String>.from(json.decode(alertedRaw));
     bool changed = false;
 
@@ -199,7 +180,8 @@ class SmartNotificationService {
     }
 
     if (changed) {
-      await prefs.setString(_Keys.savingsDueAlerts, json.encode(alerted));
+      await prefs.setString(
+          NotificationKeys.savingsDueAlerts, json.encode(alerted));
     }
   }
 
@@ -213,7 +195,8 @@ class SmartNotificationService {
     if (now.weekday != DateTime.monday) return;
 
     final thisWeekKey = '${now.year}-W${_weekNumber(now)}';
-    if (prefs.getString(_Keys.lastWeeklySummaryDate) == thisWeekKey) return;
+    if (prefs.getString(NotificationKeys.lastWeeklySummaryDate) ==
+        thisWeekKey) return;
 
     final weekStart = now.subtract(const Duration(days: 7));
     double income = 0, expenses = 0, savings = 0;
@@ -250,7 +233,7 @@ class SmartNotificationService {
       type: NotificationType.report,
     );
 
-    await prefs.setString(_Keys.lastWeeklySummaryDate, thisWeekKey);
+    await prefs.setString(NotificationKeys.lastWeeklySummaryDate, thisWeekKey);
   }
 
   // ── Monthly Financial Summary (1st of month) ────────────────────────────────
@@ -263,7 +246,8 @@ class SmartNotificationService {
     if (now.day != 1) return;
 
     final thisMonthKey = '${now.year}-${now.month}';
-    if (prefs.getString(_Keys.lastMonthlySummaryDate) == thisMonthKey) return;
+    if (prefs.getString(NotificationKeys.lastMonthlySummaryDate) ==
+        thisMonthKey) return;
 
     final prevMonth = now.month == 1 ? 12 : now.month - 1;
     final prevYear = now.month == 1 ? now.year - 1 : now.year;
@@ -306,7 +290,8 @@ class SmartNotificationService {
       type: NotificationType.report,
     );
 
-    await prefs.setString(_Keys.lastMonthlySummaryDate, thisMonthKey);
+    await prefs.setString(
+        NotificationKeys.lastMonthlySummaryDate, thisMonthKey);
   }
 
   // ── Unusual Spending Detection (>2.5× daily average) ───────────────────────
@@ -315,7 +300,7 @@ class SmartNotificationService {
     List<Map<String, dynamic>> txList,
   ) async {
     final today = _dateKey(DateTime.now());
-    if (prefs.getString(_Keys.unusualSpendingAlert) == today) return;
+    if (prefs.getString(NotificationKeys.unusualSpendingAlert) == today) return;
 
     final now = DateTime.now();
     double todaySpend = 0;
@@ -361,21 +346,22 @@ class SmartNotificationService {
             'of Ksh ${_fmt(avgDaily)}. Everything okay?',
         type: NotificationType.insight,
       );
-      await prefs.setString(_Keys.unusualSpendingAlert, today);
+      await prefs.setString(NotificationKeys.unusualSpendingAlert, today);
     }
   }
 
   // ── Streak Reminder (2 days without saving) ─────────────────────────────────
   static Future<void> _checkStreakReminder(SharedPreferences prefs) async {
-    final lastSaveDate = prefs.getString(_Keys.lastSaveDate) ?? '';
+    final lastSaveDate =
+        prefs.getString(NotificationKeys.lastSaveDate) ?? '';
     if (lastSaveDate.isEmpty) return;
 
     final today = _dateKey(DateTime.now());
-    if (prefs.getString(_Keys.streakReminderDate) == today) return;
+    if (prefs.getString(NotificationKeys.streakReminderDate) == today) return;
 
     final lastSave = DateTime.parse(lastSaveDate);
     final daysSince = DateTime.now().difference(lastSave).inDays;
-    final streakCount = prefs.getInt(_Keys.streakCount) ?? 0;
+    final streakCount = prefs.getInt(NotificationKeys.streakCount) ?? 0;
 
     if (daysSince == 2 && streakCount > 0) {
       await send(
@@ -385,7 +371,7 @@ class SmartNotificationService {
             'Add funds to a savings goal today to keep it alive.',
         type: NotificationType.streak,
       );
-      await prefs.setString(_Keys.streakReminderDate, today);
+      await prefs.setString(NotificationKeys.streakReminderDate, today);
     }
   }
 
@@ -399,7 +385,8 @@ class SmartNotificationService {
     if (now.weekday != DateTime.sunday) return;
 
     final thisWeekKey = '${now.year}-W${_weekNumber(now)}-insight';
-    if (prefs.getString(_Keys.lastAnalysisDate) == thisWeekKey) return;
+    if (prefs.getString(NotificationKeys.lastAnalysisDate) == thisWeekKey)
+      return;
 
     final thisMonthStart = DateTime(now.year, now.month, 1);
     final lastMonthStart = DateTime(
@@ -418,8 +405,8 @@ class SmartNotificationService {
       final amt = double.tryParse(tx['amount'].toString()) ?? 0.0;
       final fee =
           double.tryParse(tx['transactionCost']?.toString() ?? '0') ?? 0.0;
-      final isSavings =
-          tx['type'] == 'savings_deduction' || tx['type'] == 'saving_deposit';
+      final isSavings = tx['type'] == 'savings_deduction' ||
+          tx['type'] == 'saving_deposit';
 
       if (d.isAfter(thisMonthStart)) {
         thisMonthExp += amt + fee;
@@ -471,12 +458,12 @@ class SmartNotificationService {
       }
     }
 
-    await prefs.setString(_Keys.lastAnalysisDate, thisWeekKey);
+    await prefs.setString(NotificationKeys.lastAnalysisDate, thisWeekKey);
   }
 
   // ── Inactivity Reminder (7+ days without opening app) ──────────────────────
   static Future<void> _checkInactivity(SharedPreferences prefs) async {
-    final lastOpenStr = prefs.getString(_Keys.lastAppOpen) ?? '';
+    final lastOpenStr = prefs.getString(NotificationKeys.lastAppOpen) ?? '';
     if (lastOpenStr.isEmpty) return;
 
     // This check runs *after* updating last_app_open, so we compare against
@@ -485,7 +472,7 @@ class SmartNotificationService {
     // storage value by checking days between the stored datetime and now.
     // We track a separate inactivity alert date so it fires only once per week.
     final today = _dateKey(DateTime.now());
-    if (prefs.getString(_Keys.inactivityAlertDate) == today) return;
+    if (prefs.getString(NotificationKeys.inactivityAlertDate) == today) return;
 
     try {
       final lastOpen = DateTime.parse(lastOpenStr);
@@ -499,7 +486,7 @@ class SmartNotificationService {
               'Stay on top of your money — open the app and review your spending!',
           type: NotificationType.system,
         );
-        await prefs.setString(_Keys.inactivityAlertDate, today);
+        await prefs.setString(NotificationKeys.inactivityAlertDate, today);
       }
     } catch (_) {}
   }
@@ -537,67 +524,4 @@ class SmartNotificationService {
     ];
     return m >= 1 && m <= 12 ? names[m] : '';
   }
-}
-
-// ─── Lightweight local data models ────────────────────────────────────────────
-// Used only by SmartNotificationService to read budget / savings data from prefs.
-
-class _BudgetData {
-  final String id;
-  final String name;
-  final double total;
-  final double totalSpent;
-  final bool isChecked;
-
-  _BudgetData({
-    required this.id,
-    required this.name,
-    required this.total,
-    required this.totalSpent,
-    required this.isChecked,
-  });
-
-  factory _BudgetData.fromMap(Map<String, dynamic> map) {
-    final expenses = (map['expenses'] as List? ?? []);
-    final spent = expenses.fold<double>(
-      0.0,
-      (s, e) => s + ((e['amount'] as num?)?.toDouble() ?? 0.0),
-    );
-    return _BudgetData(
-      id: map['id'] ?? '',
-      name: map['name'] ?? '',
-      total: (map['total'] as num?)?.toDouble() ?? 0.0,
-      totalSpent: spent,
-      isChecked: map['isChecked'] ?? false,
-    );
-  }
-}
-
-class _SavingData {
-  final String name;
-  final double savedAmount;
-  final double targetAmount;
-  final DateTime deadline;
-  final bool achieved;
-
-  _SavingData({
-    required this.name,
-    required this.savedAmount,
-    required this.targetAmount,
-    required this.deadline,
-    required this.achieved,
-  });
-
-  double get progressPercent =>
-      targetAmount > 0 ? (savedAmount / targetAmount).clamp(0.0, 1.0) : 0.0;
-
-  factory _SavingData.fromMap(Map<String, dynamic> map) => _SavingData(
-    name: map['name'] ?? '',
-    savedAmount: (map['savedAmount'] as num?)?.toDouble() ?? 0.0,
-    targetAmount: (map['targetAmount'] as num?)?.toDouble() ?? 0.0,
-    deadline: map['deadline'] != null
-        ? DateTime.parse(map['deadline'])
-        : DateTime.now().add(const Duration(days: 30)),
-    achieved: map['achieved'] ?? false,
-  );
 }
