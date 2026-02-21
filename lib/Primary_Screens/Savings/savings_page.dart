@@ -644,8 +644,9 @@ class _SavingsPageState extends State<SavingsPage> {
                                   goalName: saving.name,
                                 ),
                               );
-                              if (saving.savedAmount < saving.targetAmount)
+                              if (saving.savedAmount < saving.targetAmount) {
                                 saving.achieved = false;
+                              }
                               await _sync();
                               await FinancialService.processWithdrawal(
                                 goalName: saving.name,

@@ -196,7 +196,9 @@ class SmartNotificationService {
 
     final thisWeekKey = '${now.year}-W${_weekNumber(now)}';
     if (prefs.getString(NotificationKeys.lastWeeklySummaryDate) ==
-        thisWeekKey) return;
+        thisWeekKey) {
+      return;
+    }
 
     final weekStart = now.subtract(const Duration(days: 7));
     double income = 0, expenses = 0, savings = 0;
@@ -247,7 +249,9 @@ class SmartNotificationService {
 
     final thisMonthKey = '${now.year}-${now.month}';
     if (prefs.getString(NotificationKeys.lastMonthlySummaryDate) ==
-        thisMonthKey) return;
+        thisMonthKey) {
+      return;
+    }
 
     final prevMonth = now.month == 1 ? 12 : now.month - 1;
     final prevYear = now.month == 1 ? now.year - 1 : now.year;
@@ -385,8 +389,9 @@ class SmartNotificationService {
     if (now.weekday != DateTime.sunday) return;
 
     final thisWeekKey = '${now.year}-W${_weekNumber(now)}-insight';
-    if (prefs.getString(NotificationKeys.lastAnalysisDate) == thisWeekKey)
+    if (prefs.getString(NotificationKeys.lastAnalysisDate) == thisWeekKey) {
       return;
+    }
 
     final thisMonthStart = DateTime(now.year, now.month, 1);
     final lastMonthStart = DateTime(

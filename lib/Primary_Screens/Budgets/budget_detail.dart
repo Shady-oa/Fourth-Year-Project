@@ -226,11 +226,12 @@ class _BudgetDetailPageState extends State<BudgetDetailPage> {
             'Budget "${budget!.name}" has been finalized. ${CurrencyFormatter.format(budget!.totalSpent)} deducted from balance.',
           );
           setState(() {});
-          if (mounted)
+          if (mounted) {
             AppToast.success(
               context,
               'Budget finalized. ${CurrencyFormatter.format(budget!.totalSpent)} deducted',
             );
+          }
         },
       );
     } else {
@@ -275,11 +276,12 @@ class _BudgetDetailPageState extends State<BudgetDetailPage> {
             'Budget "${budget!.name}" has been unfinalized. ${CurrencyFormatter.format(budget!.totalSpent)} restored to balance.',
           );
           setState(() {});
-          if (mounted)
+          if (mounted) {
             AppToast.info(
               context,
               'Budget unfinalized. ${CurrencyFormatter.format(budget!.totalSpent)} restored',
             );
+          }
         },
       );
     }

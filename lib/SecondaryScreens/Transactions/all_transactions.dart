@@ -11,7 +11,6 @@ import 'package:final_project/SecondaryScreens/Transactions/transaction_models.d
 import 'package:final_project/SecondaryScreens/Transactions/transaction_summary_card.dart';
 
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class TransactionsPage extends StatefulWidget {

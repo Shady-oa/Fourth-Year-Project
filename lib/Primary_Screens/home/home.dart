@@ -9,7 +9,6 @@ import 'package:final_project/Components/toast.dart';
 import 'package:final_project/Constants/currency_formatter.dart';
 import 'package:final_project/Constants/spacing.dart';
 import 'package:final_project/Firebase/cloudinary_service.dart';
-import 'package:final_project/Primary_Screens/Budgets/budget_detail.dart';
 import 'package:final_project/Primary_Screens/Savings/financial_service.dart';
 import 'package:final_project/Primary_Screens/home/add_expense_sheet.dart';
 import 'package:final_project/Primary_Screens/home/add_income_sheet.dart';
@@ -199,11 +198,13 @@ class _HomePageState extends State<HomePage> {
       await FirebaseFirestore.instance.collection('users').doc(userUid).update({
         'profileUrl': url,
       });
-      if (mounted)
+      if (mounted) {
         AppToast.success(context, 'Profile image changed successfully!');
+      }
     } catch (_) {
-      if (mounted)
+      if (mounted) {
         AppToast.error(context, 'An error occurred, please try again');
+      }
     }
   }
 

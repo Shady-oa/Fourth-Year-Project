@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// Primary_Screens/Budgets/budget.dart  (UPDATED — screen only)
+// Primary_Screens/Budgets/budget.dart  (UPDATED — search + newest-first)
 // ─────────────────────────────────────────────────────────────────────────────
 
 import 'dart:convert';
@@ -41,10 +41,29 @@ class _BudgetPageState extends State<BudgetPage> {
   bool isLoading = true;
   final userUid = FirebaseAuth.instance.currentUser!.uid;
 
+  // ── Search ────────────────────────────────────────────────────────────────
+  final TextEditingController _searchCtrl = TextEditingController();
+  final FocusNode _searchFocus = FocusNode();
+  String _searchQuery = '';
+  bool _isSearchFocused = false;
+
   @override
   void initState() {
     super.initState();
     loadBudgets();
+    _searchCtrl.addListener(() {
+      setState(() => _searchQuery = _searchCtrl.text.trim().toLowerCase());
+    });
+    _searchFocus.addListener(() {
+      setState(() => _isSearchFocused = _searchFocus.hasFocus);
+    });
+  }
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    _searchFocus.dispose();
+    super.dispose();
   }
 
   Future<void> loadBudgets() async {
@@ -77,7 +96,8 @@ class _BudgetPageState extends State<BudgetPage> {
       context: context,
       onBudgetCreated: (name, amount) async {
         final newBudget = Budget(name: name, total: amount);
-        budgets.add(newBudget);
+        // Insert at the front so new budgets appear first
+        budgets.insert(0, newBudget);
         await saveBudgets();
         await sendNotification(
           'Budget Created',
@@ -140,11 +160,28 @@ class _BudgetPageState extends State<BudgetPage> {
     );
   }
 
+  // ── Filtered + searched list ──────────────────────────────────────────────
+
   List<Budget> get filteredBudgets {
-    if (filter == 'all') return budgets;
-    if (filter == 'checked') return budgets.where((b) => b.isChecked).toList();
-    return budgets.where((b) => !b.isChecked).toList();
+    List<Budget> result;
+    if (filter == 'all') {
+      result = budgets;
+    } else if (filter == 'checked') {
+      result = budgets.where((b) => b.isChecked).toList();
+    } else {
+      result = budgets.where((b) => !b.isChecked).toList();
+    }
+
+    if (_searchQuery.isNotEmpty) {
+      result = result
+          .where((b) => b.name.toLowerCase().contains(_searchQuery))
+          .toList();
+    }
+
+    return result;
   }
+
+  // ── Build ─────────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
@@ -161,7 +198,52 @@ class _BudgetPageState extends State<BudgetPage> {
           ? const Center(child: CircularProgressIndicator())
           : Column(
               children: [
-                // Filter Tabs
+                // ── Search Bar ───────────────────────────────────────────
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
+                  child: TextField(
+                    controller: _searchCtrl,
+                    focusNode: _searchFocus,
+                    textInputAction: TextInputAction.search,
+                    decoration: InputDecoration(
+                      hintText: 'Search budgets…',
+                      prefixIcon: Icon(
+                        Icons.search_rounded,
+                        color: _isSearchFocused ? brandGreen : Colors.grey,
+                      ),
+                      suffixIcon: _searchQuery.isNotEmpty
+                          ? IconButton(
+                              icon: const Icon(Icons.close_rounded),
+                              onPressed: () {
+                                _searchCtrl.clear();
+                                _searchFocus.unfocus();
+                              },
+                            )
+                          : null,
+                      filled: true,
+                      fillColor: theme.colorScheme.surface,
+                      contentPadding: const EdgeInsets.symmetric(
+                        vertical: 0,
+                        horizontal: 16,
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(
+                          color: theme.colorScheme.onSurface.withAlpha(40),
+                        ),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(
+                          color: brandGreen,
+                          width: 2,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+
+                // ── Filter Chips ─────────────────────────────────────────
                 Padding(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 16.0,
@@ -192,6 +274,8 @@ class _BudgetPageState extends State<BudgetPage> {
                     ],
                   ),
                 ),
+
+                // ── Budget List ──────────────────────────────────────────
                 Expanded(
                   child: filteredBudgets.isEmpty
                       ? Center(
@@ -199,20 +283,26 @@ class _BudgetPageState extends State<BudgetPage> {
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Icon(
-                                Icons.account_balance_wallet_outlined,
+                                _searchQuery.isNotEmpty
+                                    ? Icons.search_off_rounded
+                                    : Icons.account_balance_wallet_outlined,
                                 size: 64,
                                 color: Colors.grey.shade400,
                               ),
                               const SizedBox(height: 16),
                               Text(
-                                'No budgets found',
+                                _searchQuery.isNotEmpty
+                                    ? 'No budgets match "$_searchQuery"'
+                                    : 'No budgets found',
                                 style: theme.textTheme.bodyLarge?.copyWith(
                                   color: Colors.grey.shade600,
                                 ),
                               ),
                               const SizedBox(height: 8),
                               Text(
-                                'Tap + to create your first budget',
+                                _searchQuery.isNotEmpty
+                                    ? 'Try a different search term'
+                                    : 'Tap + to create your first budget',
                                 style: theme.textTheme.bodySmall?.copyWith(
                                   color: Colors.grey.shade500,
                                 ),

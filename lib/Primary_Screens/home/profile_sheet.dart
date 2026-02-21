@@ -1,7 +1,6 @@
 import 'package:final_project/Primary_Screens/home/settings_card.dart';
 import 'package:flutter/material.dart';
 import 'package:final_project/SecondaryScreens/AuthScreens/login.dart';
-import 'package:final_project/Components/them_toggle.dart';
 import 'package:final_project/Components/toast.dart';
 import 'package:final_project/Constants/colors.dart';
 import 'package:final_project/Constants/spacing.dart';
