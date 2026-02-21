@@ -23,6 +23,7 @@ import 'package:final_project/Primary_Screens/analytics_page/analytics_savings_p
 import 'package:final_project/Primary_Screens/analytics_page/analytics_spending_category_table.dart';
 import 'package:final_project/Primary_Screens/analytics_page/analytics_summary_hero.dart';
 import 'package:final_project/Primary_Screens/analytics_page/analytics_top_expenses.dart';
+import 'package:final_project/SecondaryScreens/Report/saving.dart' hide Saving;
 import 'package:flutter/material.dart';
 import 'package:final_project/SecondaryScreens/Report/report_page.dart' as report;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -481,7 +482,7 @@ class _AnalyticsPageState extends State<AnalyticsPage>
         expensesByCategory: expensesByCategory,
         monthlyComparison: monthlyComparison,
         budgets: budgets,
-        savings: savings.map((s) => report.Saving(
+        savings: savings.map((s) => Saving(
           name: s.name,
           savedAmount: s.savedAmount,
           targetAmount: s.targetAmount,
