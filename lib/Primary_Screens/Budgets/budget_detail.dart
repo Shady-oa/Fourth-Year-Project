@@ -1,26 +1,27 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// Primary_Screens/Budgets/budget_detail.dart  (UPDATED — screen only)
+// ─────────────────────────────────────────────────────────────────────────────
+
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:final_project/Components/back_button.dart';
 import 'package:final_project/Components/toast.dart';
 import 'package:final_project/Constants/colors.dart';
+import 'package:final_project/Constants/currency_formatter.dart';
+import 'package:final_project/Primary_Screens/Budgets/add_expense_sheet.dart';
+import 'package:final_project/Primary_Screens/Budgets/budget_confirm_sheet.dart';
+import 'package:final_project/Primary_Screens/Budgets/budget_finalized_banner.dart';
+import 'package:final_project/Primary_Screens/Budgets/budget_model.dart';
+import 'package:final_project/Primary_Screens/Budgets/budget_pdf_exporter.dart';
+import 'package:final_project/Primary_Screens/Budgets/budget_summary_card.dart';
+import 'package:final_project/Primary_Screens/Budgets/edit_expense_sheet.dart';
+import 'package:final_project/Primary_Screens/Budgets/expense_card.dart';
+import 'package:final_project/Primary_Screens/Budgets/expense_options_sheet.dart';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:intl/intl.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:pdf/pdf.dart';
-import 'package:pdf/widgets.dart' as pw;
-import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
-// Currency formatting utility
-class CurrencyFormatter {
-  static final NumberFormat _formatter = NumberFormat('#,##0', 'en_US');
-  static String format(double amount) =>
-      'Ksh ${_formatter.format(amount.round())}';
-}
 
 class BudgetDetailPage extends StatefulWidget {
   final String budgetId;
@@ -97,6 +98,8 @@ class _BudgetDetailPageState extends State<BudgetDetailPage> {
     }
   }
 
+  // ── Handlers passed into sheets ───────────────────────────────────────────
+
   void showAddExpenseDialog() {
     if (budget == null || budget!.isChecked) {
       AppToast.warning(
@@ -105,394 +108,38 @@ class _BudgetDetailPageState extends State<BudgetDetailPage> {
       );
       return;
     }
-
-    final nameCtrl = TextEditingController();
-    final amountCtrl = TextEditingController();
-
-    showModalBottomSheet(
+    showAddExpenseSheet(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) => Padding(
-        padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
-        child: Container(
-          decoration: BoxDecoration(
-            color: Theme.of(ctx).colorScheme.surface,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-          ),
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(24, 8, 24, 32),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Center(
-                  child: Container(
-                    width: 40,
-                    height: 4,
-                    margin: const EdgeInsets.only(top: 8, bottom: 20),
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade300,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                ),
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: brandGreen.withOpacity(0.12),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Icon(
-                        Icons.add_circle_outline_rounded,
-                        color: brandGreen,
-                        size: 22,
-                      ),
-                    ),
-                    const SizedBox(width: 14),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Add Expense',
-                          style: GoogleFonts.urbanist(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        Text(
-                          'Log a budget expense',
-                          style: GoogleFonts.urbanist(
-                            fontSize: 12,
-                            color: Colors.grey.shade500,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 24),
-                TextField(
-                  controller: nameCtrl,
-                  textCapitalization: TextCapitalization.words,
-                  decoration: const InputDecoration(
-                    labelText: 'Expense Title',
-                    hintText: 'e.g. Lunch, Fuel',
-                    prefixIcon: Icon(Icons.receipt_outlined),
-                  ),
-                ),
-                const SizedBox(height: 14),
-                TextField(
-                  controller: amountCtrl,
-                  keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(
-                    labelText: 'Amount (Ksh)',
-                    hintText: '0',
-                    prefixIcon: Icon(Icons.attach_money_rounded),
-                  ),
-                ),
-                const SizedBox(height: 24),
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: () => Navigator.pop(ctx),
-                        child: const Text('Cancel'),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      flex: 2,
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: brandGreen,
-                          foregroundColor: Colors.white,
-                        ),
-                        onPressed: () async {
-                          final name = nameCtrl.text.trim();
-                          final amount = double.tryParse(amountCtrl.text) ?? 0;
-                          if (name.isNotEmpty && amount > 0) {
-                            final newExpense = Expense(
-                              name: name,
-                              amount: amount,
-                            );
-                            budget!.expenses.add(newExpense);
-                            await saveBudgets();
-                            if (ctx.mounted) Navigator.pop(ctx);
-                            setState(() {});
-                            if (mounted)
-                              AppToast.success(
-                                context,
-                                'Expense "$name" added',
-                              );
-                          } else {
-                            AppToast.warning(
-                              context,
-                              'Please enter a valid name and amount',
-                            );
-                          }
-                        },
-                        child: const Text('Add Expense'),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
+      onExpenseAdded: (newExpense) async {
+        budget!.expenses.add(newExpense);
+        await saveBudgets();
+        setState(() {});
+        if (mounted) AppToast.success(context, 'Expense "${newExpense.name}" added');
+      },
     );
   }
 
-  /// ✅ UPDATED: Bottom sheet for expense edit & delete
   void showExpenseOptionsBottomSheet(Expense expense) {
-    showModalBottomSheet(
+    showExpenseOptionsSheet(
       context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (ctx) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 40,
-                height: 4,
-                margin: const EdgeInsets.only(bottom: 16),
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade300,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              Text(
-                expense.name,
-                style: Theme.of(
-                  context,
-                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-              ),
-              Text(
-                CurrencyFormatter.format(expense.amount),
-                style: TextStyle(
-                  color: errorColor,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 14,
-                ),
-              ),
-              const SizedBox(height: 12),
-              const Divider(height: 1),
-              const SizedBox(height: 8),
-              ListTile(
-                leading: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: accentColor.withOpacity(0.12),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Icon(
-                    Icons.edit_outlined,
-                    color: accentColor,
-                    size: 20,
-                  ),
-                ),
-                title: const Text(
-                  'Edit Expense',
-                  style: TextStyle(fontWeight: FontWeight.w600),
-                ),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  _showEditExpenseDialog(expense);
-                },
-              ),
-              ListTile(
-                leading: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: errorColor.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Icon(
-                    Icons.delete_outline,
-                    color: errorColor,
-                    size: 20,
-                  ),
-                ),
-                title: const Text(
-                  'Delete Expense',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    color: errorColor,
-                  ),
-                ),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  _deleteExpense(expense);
-                },
-              ),
-              const SizedBox(height: 8),
-            ],
-          ),
-        ),
-      ),
+      expense: expense,
+      onEdit: () => _showEditExpenseDialog(expense),
+      onDelete: () => _deleteExpense(expense),
     );
   }
 
   void _showEditExpenseDialog(Expense expense) {
     if (budget == null || budget!.isChecked) return;
-
-    final nameCtrl = TextEditingController(text: expense.name);
-    final amountCtrl = TextEditingController(
-      text: expense.amount.toStringAsFixed(0),
-    );
-
-    showModalBottomSheet(
+    showEditExpenseSheet(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) => Padding(
-        padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
-        child: Container(
-          decoration: BoxDecoration(
-            color: Theme.of(ctx).colorScheme.surface,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-          ),
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(24, 8, 24, 32),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Center(
-                  child: Container(
-                    width: 40,
-                    height: 4,
-                    margin: const EdgeInsets.only(top: 8, bottom: 20),
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade300,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                ),
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: accentColor.withOpacity(0.12),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Icon(
-                        Icons.edit_rounded,
-                        color: accentColor,
-                        size: 22,
-                      ),
-                    ),
-                    const SizedBox(width: 14),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Edit Expense',
-                          style: GoogleFonts.urbanist(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        Text(
-                          'Update expense details',
-                          style: GoogleFonts.urbanist(
-                            fontSize: 12,
-                            color: Colors.grey.shade500,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 24),
-                TextField(
-                  controller: nameCtrl,
-                  textCapitalization: TextCapitalization.words,
-                  decoration: const InputDecoration(
-                    labelText: 'Expense Title',
-                    prefixIcon: Icon(Icons.receipt_outlined),
-                  ),
-                ),
-                const SizedBox(height: 14),
-                TextField(
-                  controller: amountCtrl,
-                  keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(
-                    labelText: 'Amount (Ksh)',
-                    prefixIcon: Icon(Icons.attach_money_rounded),
-                  ),
-                ),
-                const SizedBox(height: 24),
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: () => Navigator.pop(ctx),
-                        child: const Text('Cancel'),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      flex: 2,
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: accentColor,
-                          foregroundColor: Colors.white,
-                        ),
-                        onPressed: () {
-                          final name = nameCtrl.text.trim();
-                          final amount = double.tryParse(amountCtrl.text) ?? 0;
-                          if (name.isNotEmpty && amount > 0) {
-                            Navigator.pop(ctx);
-                            _showBudgetDetailConfirmSheet(
-                              title: 'Confirm Edit',
-                              icon: Icons.edit_outlined,
-                              iconColor: accentColor,
-                              rows: [
-                                _BudgetDetailRow('Expense', name),
-                                _BudgetDetailRow(
-                                  'New Amount',
-                                  CurrencyFormatter.format(amount),
-                                  highlight: true,
-                                ),
-                              ],
-                              confirmLabel: 'Save Changes',
-                              confirmColor: accentColor,
-                              onConfirm: () async {
-                                expense.name = name;
-                                expense.amount = amount;
-                                await saveBudgets();
-                                setState(() {});
-                                if (mounted)
-                                  AppToast.success(context, 'Expense updated');
-                              },
-                            );
-                          } else {
-                            AppToast.warning(
-                              context,
-                              'Please enter valid name and amount',
-                            );
-                          }
-                        },
-                        child: const Text('Continue ›'),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
+      expense: expense,
+      onSaved: (name, amount) async {
+        expense.name = name;
+        expense.amount = amount;
+        await saveBudgets();
+        setState(() {});
+        if (mounted) AppToast.success(context, 'Expense updated');
+      },
     );
   }
 
@@ -501,13 +148,14 @@ class _BudgetDetailPageState extends State<BudgetDetailPage> {
       AppToast.warning(context, 'Budget is finalized. Toggle off to delete.');
       return;
     }
-    _showBudgetDetailConfirmSheet(
+    showBudgetConfirmSheet(
+      context: context,
       title: 'Delete Expense',
       icon: Icons.delete_outline,
       iconColor: errorColor,
       rows: [
-        _BudgetDetailRow('Expense', expense.name),
-        _BudgetDetailRow(
+        BudgetConfirmRow('Expense', expense.name),
+        BudgetConfirmRow(
           'Amount',
           CurrencyFormatter.format(expense.amount),
           highlight: true,
@@ -526,194 +174,21 @@ class _BudgetDetailPageState extends State<BudgetDetailPage> {
     );
   }
 
-  Future<void> exportAsPDF() async {
-    if (budget == null) return;
-    try {
-      final pdf = pw.Document();
-      final dateFormat = DateFormat('dd MMM yyyy');
-      final now = DateTime.now();
-
-      pdf.addPage(
-        pw.Page(
-          pageFormat: PdfPageFormat.a4,
-          build: (pw.Context context) {
-            return pw.Column(
-              crossAxisAlignment: pw.CrossAxisAlignment.start,
-              children: [
-                pw.Text(
-                  'BUDGET REPORT',
-                  style: pw.TextStyle(
-                    fontSize: 24,
-                    fontWeight: pw.FontWeight.bold,
-                  ),
-                ),
-                pw.SizedBox(height: 20),
-                pw.Divider(),
-                pw.SizedBox(height: 10),
-                pw.Text(
-                  'Budget Name: ${budget!.name}',
-                  style: pw.TextStyle(fontSize: 16),
-                ),
-                pw.Text(
-                  'Generated: ${dateFormat.format(now)}',
-                  style: pw.TextStyle(fontSize: 12),
-                ),
-                pw.SizedBox(height: 20),
-                pw.Container(
-                  padding: const pw.EdgeInsets.all(10),
-                  decoration: pw.BoxDecoration(
-                    border: pw.Border.all(color: PdfColors.grey),
-                    borderRadius: const pw.BorderRadius.all(
-                      pw.Radius.circular(5),
-                    ),
-                  ),
-                  child: pw.Column(
-                    crossAxisAlignment: pw.CrossAxisAlignment.start,
-                    children: [
-                      pw.Text(
-                        'BUDGET SUMMARY',
-                        style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
-                      ),
-                      pw.SizedBox(height: 10),
-                      pw.Text(
-                        'Budget Amount: ${CurrencyFormatter.format(budget!.total)}',
-                      ),
-                      pw.Text(
-                        'Amount Spent: ${CurrencyFormatter.format(budget!.totalSpent)}',
-                      ),
-                      pw.Text(
-                        'Remaining Balance: ${CurrencyFormatter.format(budget!.amountLeft)}',
-                      ),
-                      pw.Text(
-                        'Status: ${budget!.isChecked ? "FINALIZED" : "ACTIVE"}',
-                      ),
-                      if (budget!.isChecked && budget!.checkedDate != null)
-                        pw.Text(
-                          'Finalized on: ${dateFormat.format(budget!.checkedDate!)}',
-                        ),
-                    ],
-                  ),
-                ),
-                pw.SizedBox(height: 20),
-                pw.Text(
-                  'EXPENSE BREAKDOWN',
-                  style: pw.TextStyle(
-                    fontSize: 16,
-                    fontWeight: pw.FontWeight.bold,
-                  ),
-                ),
-                pw.SizedBox(height: 10),
-                if (budget!.expenses.isEmpty)
-                  pw.Text('No expenses recorded')
-                else
-                  pw.Table(
-                    border: pw.TableBorder.all(color: PdfColors.grey),
-                    children: [
-                      pw.TableRow(
-                        decoration: const pw.BoxDecoration(
-                          color: PdfColors.grey300,
-                        ),
-                        children: [
-                          pw.Padding(
-                            padding: const pw.EdgeInsets.all(8),
-                            child: pw.Text(
-                              'Expense',
-                              style: pw.TextStyle(
-                                fontWeight: pw.FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                          pw.Padding(
-                            padding: const pw.EdgeInsets.all(8),
-                            child: pw.Text(
-                              'Amount',
-                              style: pw.TextStyle(
-                                fontWeight: pw.FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                          pw.Padding(
-                            padding: const pw.EdgeInsets.all(8),
-                            child: pw.Text(
-                              'Date',
-                              style: pw.TextStyle(
-                                fontWeight: pw.FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      ...budget!.expenses.map(
-                        (exp) => pw.TableRow(
-                          children: [
-                            pw.Padding(
-                              padding: const pw.EdgeInsets.all(8),
-                              child: pw.Text(exp.name),
-                            ),
-                            pw.Padding(
-                              padding: const pw.EdgeInsets.all(8),
-                              child: pw.Text(
-                                CurrencyFormatter.format(exp.amount),
-                              ),
-                            ),
-                            pw.Padding(
-                              padding: const pw.EdgeInsets.all(8),
-                              child: pw.Text(
-                                dateFormat.format(exp.createdDate),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                pw.SizedBox(height: 20),
-                pw.Divider(),
-                pw.Text(
-                  'Total Expenses: ${CurrencyFormatter.format(budget!.totalSpent)}',
-                  style: pw.TextStyle(
-                    fontSize: 14,
-                    fontWeight: pw.FontWeight.bold,
-                  ),
-                ),
-              ],
-            );
-          },
-        ),
-      );
-
-      final directory = await getApplicationDocumentsDirectory();
-      final file = File('${directory.path}/budget_${budget!.id}.pdf');
-      await file.writeAsBytes(await pdf.save());
-      await Share.shareXFiles([
-        XFile(file.path),
-      ], text: 'Budget Report: ${budget!.name}');
-
-      if (mounted) {
-        AppToast.success(context, 'PDF exported successfully');
-      }
-    } catch (e) {
-      debugPrint('Error exporting PDF: $e');
-      if (mounted) {
-        AppToast.error(context, 'Error exporting PDF: $e');
-      }
-    }
-  }
-
   /// Called from toggle switch — replaces AlertDialog with bottom sheet.
   Future<void> toggleCheckBudget(bool newValue) async {
     if (budget == null || _isToggling) return;
     setState(() => _isToggling = true);
 
     if (newValue) {
-      // ── Finalize ────────────────────────────────────────────────────────────
-      _showBudgetDetailConfirmSheet(
+      // ── Finalize ──────────────────────────────────────────────────────────
+      showBudgetConfirmSheet(
+        context: context,
         title: 'Finalize Budget',
         icon: Icons.check_circle_outline,
         iconColor: brandGreen,
         rows: [
-          _BudgetDetailRow('Budget', budget!.name),
-          _BudgetDetailRow(
+          BudgetConfirmRow('Budget', budget!.name),
+          BudgetConfirmRow(
             'Amount to Deduct',
             CurrencyFormatter.format(budget!.totalSpent),
             highlight: true,
@@ -759,14 +234,15 @@ class _BudgetDetailPageState extends State<BudgetDetailPage> {
         },
       );
     } else {
-      // ── Unfinalize ──────────────────────────────────────────────────────────
-      _showBudgetDetailConfirmSheet(
+      // ── Unfinalize ────────────────────────────────────────────────────────
+      showBudgetConfirmSheet(
+        context: context,
         title: 'Unfinalize Budget',
         icon: Icons.undo_rounded,
         iconColor: Colors.orange,
         rows: [
-          _BudgetDetailRow('Budget', budget!.name),
-          _BudgetDetailRow(
+          BudgetConfirmRow('Budget', budget!.name),
+          BudgetConfirmRow(
             'Amount to Restore',
             CurrencyFormatter.format(budget!.totalSpent),
             highlight: true,
@@ -822,10 +298,6 @@ class _BudgetDetailPageState extends State<BudgetDetailPage> {
       );
     }
 
-    final totalSpent = budget!.totalSpent;
-    final amountLeft = budget!.amountLeft;
-    final isOverBudget = totalSpent > budget!.total;
-
     return Scaffold(
       backgroundColor: theme.colorScheme.surface,
       appBar: AppBar(
@@ -839,10 +311,10 @@ class _BudgetDetailPageState extends State<BudgetDetailPage> {
           // Export PDF Button
           IconButton(
             icon: const Icon(Icons.picture_as_pdf),
-            onPressed: exportAsPDF,
+            onPressed: () => exportBudgetAsPDF(context, budget!),
             tooltip: 'Export as PDF',
           ),
-          // ✅ UPDATED: Toggle switch replacing icon button
+          // Toggle switch replacing icon button
           Padding(
             padding: const EdgeInsets.only(right: 8),
             child: Row(
@@ -876,133 +348,7 @@ class _BudgetDetailPageState extends State<BudgetDetailPage> {
       body: Column(
         children: [
           // Summary Card
-          Container(
-            margin: const EdgeInsets.all(16),
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [accentColor, accentColor.withOpacity(0.8)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: accentColor.withOpacity(0.3),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Column(
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Budget Amount',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: Colors.white.withOpacity(0.8),
-                          ),
-                        ),
-                        Text(
-                          CurrencyFormatter.format(budget!.total),
-                          style: theme.textTheme.headlineSmall?.copyWith(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                    if (budget!.isChecked)
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: brandGreen,
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: const Row(
-                          children: [
-                            Icon(
-                              Icons.check_circle,
-                              size: 16,
-                              color: Colors.white,
-                            ),
-                            SizedBox(width: 4),
-                            Text(
-                              'FINALIZED',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                  ],
-                ),
-                const SizedBox(height: 20),
-                Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Spent',
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: Colors.white.withOpacity(0.8),
-                            ),
-                          ),
-                          Text(
-                            CurrencyFormatter.format(totalSpent),
-                            style: theme.textTheme.titleLarge?.copyWith(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Container(
-                      height: 40,
-                      width: 1,
-                      color: Colors.white.withOpacity(0.3),
-                    ),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Text(
-                            'Balance',
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: Colors.white.withOpacity(0.8),
-                            ),
-                          ),
-                          Text(
-                            CurrencyFormatter.format(amountLeft),
-                            style: theme.textTheme.titleLarge?.copyWith(
-                              color: isOverBudget
-                                  ? Colors.red.shade200
-                                  : Colors.white,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
+          BudgetSummaryCard(budget: budget!),
 
           // Expenses Header
           Padding(
@@ -1027,31 +373,7 @@ class _BudgetDetailPageState extends State<BudgetDetailPage> {
           ),
           const SizedBox(height: 8),
 
-          if (budget!.isChecked)
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.orange.shade50,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.orange.shade300),
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.lock, color: Colors.orange.shade700, size: 20),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Budget is finalized. Toggle off to modify expenses.',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.orange.shade900,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
+          if (budget!.isChecked) const BudgetFinalizedBanner(),
 
           // Expenses List
           Expanded(
@@ -1086,7 +408,12 @@ class _BudgetDetailPageState extends State<BudgetDetailPage> {
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     itemCount: budget!.expenses.length,
                     itemBuilder: (context, index) {
-                      return buildExpenseCard(budget!.expenses[index]);
+                      final expense = budget!.expenses[index];
+                      return ExpenseCard(
+                        expense: expense,
+                        isFinalized: budget!.isChecked,
+                        onTap: () => showExpenseOptionsBottomSheet(expense),
+                      );
                     },
                   ),
           ),
@@ -1101,351 +428,4 @@ class _BudgetDetailPageState extends State<BudgetDetailPage> {
             ),
     );
   }
-
-  /// ✅ UPDATED: No icons, 24h time, tap opens bottom sheet
-  Widget buildExpenseCard(Expense expense) {
-    final theme = Theme.of(context);
-    // ✅ 24-hour format
-    final timeStr = DateFormat('HH:mm').format(expense.createdDate);
-    final dateStr = DateFormat('dd MMM yyyy').format(expense.createdDate);
-
-    return GestureDetector(
-      onTap: budget!.isChecked
-          ? null
-          : () => showExpenseOptionsBottomSheet(expense),
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 10),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        decoration: BoxDecoration(
-          color: theme.colorScheme.surface,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: budget!.isChecked
-                ? Colors.orange.shade200
-                : theme.colorScheme.onSurface.withAlpha(15),
-            width: budget!.isChecked ? 1.5 : 1,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.03),
-              blurRadius: 6,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            // ✅ No icon — clean minimal list
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    expense.name,
-                    style: theme.textTheme.bodyLarge?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    '$dateStr · $timeStr',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurface.withAlpha(100),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  CurrencyFormatter.format(expense.amount),
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: errorColor,
-                  ),
-                ),
-                if (!budget!.isChecked)
-                  Text(
-                    'tap to edit',
-                    style: TextStyle(fontSize: 10, color: Colors.grey.shade400),
-                  ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // ── BUDGET DETAIL CONFIRMATION BOTTOM SHEET ──────────────────────────────
-  void _showBudgetDetailConfirmSheet({
-    required String title,
-    required IconData icon,
-    required Color iconColor,
-    required List<_BudgetDetailRow> rows,
-    String? note,
-    Color noteColor = Colors.orange,
-    required String confirmLabel,
-    required Color confirmColor,
-    required Future<void> Function() onConfirm,
-  }) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) {
-        bool isBusy = false;
-        return StatefulBuilder(
-          builder: (ctx, setSheet) => Container(
-            padding: EdgeInsets.only(
-              left: 24,
-              right: 24,
-              top: 24,
-              bottom: MediaQuery.of(ctx).viewInsets.bottom + 32,
-            ),
-            decoration: BoxDecoration(
-              color: Theme.of(ctx).colorScheme.surface,
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(24),
-              ),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Center(
-                  child: Container(
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade300,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 20),
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: iconColor.withOpacity(0.12),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Icon(icon, color: iconColor, size: 26),
-                    ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Text(
-                        title,
-                        style: Theme.of(ctx).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 20),
-                const Divider(),
-                const SizedBox(height: 12),
-                for (final row in rows)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 5),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          row.label,
-                          style: TextStyle(
-                            color: Colors.grey.shade600,
-                            fontSize: 13,
-                          ),
-                        ),
-                        Text(
-                          row.value,
-                          style: TextStyle(
-                            fontWeight: row.highlight
-                                ? FontWeight.bold
-                                : FontWeight.w600,
-                            fontSize: row.highlight ? 15 : 13,
-                            color: row.highlight ? iconColor : null,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                if (note != null) ...[
-                  const SizedBox(height: 12),
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: noteColor.withOpacity(0.08),
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: noteColor.withOpacity(0.3)),
-                    ),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Icon(Icons.info_outline, color: noteColor, size: 16),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            note,
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey.shade700,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-                const SizedBox(height: 24),
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: () => Navigator.pop(ctx),
-                        child: const Text('Go Back'),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      flex: 2,
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: confirmColor,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        onPressed: isBusy
-                            ? null
-                            : () async {
-                                setSheet(() => isBusy = true);
-                                await onConfirm();
-                                if (ctx.mounted) Navigator.pop(ctx);
-                              },
-                        child: isBusy
-                            ? const SizedBox(
-                                height: 18,
-                                width: 18,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Colors.white,
-                                ),
-                              )
-                            : Text(
-                                confirmLabel,
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-}
-
-// Budget Model
-class Budget {
-  String id;
-  String name;
-  double total;
-  List<Expense> expenses;
-  bool isChecked;
-  DateTime? checkedDate;
-  DateTime createdDate;
-
-  Budget({
-    String? id,
-    required this.name,
-    required this.total,
-    List<Expense>? expenses,
-    this.isChecked = false,
-    this.checkedDate,
-    DateTime? createdDate,
-  }) : expenses = expenses ?? [],
-       id = id ?? DateTime.now().millisecondsSinceEpoch.toString(),
-       createdDate = createdDate ?? DateTime.now();
-
-  double get totalSpent => expenses.fold(0.0, (sum, e) => sum + e.amount);
-  double get amountLeft => total - totalSpent;
-
-  Map<String, dynamic> toMap() => {
-    'id': id,
-    'name': name,
-    'total': total,
-    'expenses': expenses.map((e) => e.toMap()).toList(),
-    'isChecked': isChecked,
-    'checkedDate': checkedDate?.toIso8601String(),
-    'createdDate': createdDate.toIso8601String(),
-  };
-
-  factory Budget.fromMap(Map<String, dynamic> map) => Budget(
-    id: map['id'] ?? DateTime.now().millisecondsSinceEpoch.toString(),
-    name: map['name'],
-    total: (map['total'] as num).toDouble(),
-    expenses:
-        (map['expenses'] as List?)?.map((e) => Expense.fromMap(e)).toList() ??
-        [],
-    isChecked: map['isChecked'] ?? map['checked'] ?? false,
-    checkedDate: map['checkedDate'] != null
-        ? DateTime.parse(map['checkedDate'])
-        : null,
-    createdDate: map['createdDate'] != null
-        ? DateTime.parse(map['createdDate'])
-        : DateTime.now(),
-  );
-}
-
-class Expense {
-  String id;
-  String name;
-  double amount;
-  DateTime createdDate;
-
-  Expense({
-    String? id,
-    required this.name,
-    required this.amount,
-    DateTime? createdDate,
-  }) : id = id ?? DateTime.now().millisecondsSinceEpoch.toString(),
-       createdDate = createdDate ?? DateTime.now();
-
-  Map<String, dynamic> toMap() => {
-    'id': id,
-    'name': name,
-    'amount': amount,
-    'createdDate': createdDate.toIso8601String(),
-  };
-
-  factory Expense.fromMap(Map<String, dynamic> map) => Expense(
-    id: map['id'] ?? DateTime.now().millisecondsSinceEpoch.toString(),
-    name: map['name'],
-    amount: (map['amount'] as num).toDouble(),
-    createdDate: map['createdDate'] != null
-        ? DateTime.parse(map['createdDate'])
-        : DateTime.now(),
-  );
-}
-
-/// Data class for [_BudgetDetailPageState._showBudgetDetailConfirmSheet].
-class _BudgetDetailRow {
-  final String label;
-  final String value;
-  final bool highlight;
-  const _BudgetDetailRow(this.label, this.value, {this.highlight = false});
 }

@@ -6,6 +6,7 @@ import 'package:final_project/Components/notification_icon.dart';
 import 'package:final_project/Components/quick_actions.dart';
 import 'package:final_project/Components/them_toggle.dart';
 import 'package:final_project/Components/toast.dart';
+import 'package:final_project/Constants/currency_formatter.dart';
 import 'package:final_project/Constants/spacing.dart';
 import 'package:final_project/Firebase/cloudinary_service.dart';
 import 'package:final_project/Primary_Screens/Budgets/budget_detail.dart';
