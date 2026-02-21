@@ -6,7 +6,7 @@ import 'package:final_project/Components/toast.dart';
 import 'package:final_project/Constants/colors.dart';
 import 'package:final_project/Constants/spacing.dart';
 import 'package:final_project/Primary_Screens/Savings/view/models.dart';
-import 'package:final_project/Primary_Screens/Notifications/local_notification_store.dart';
+import 'package:final_project/SecondaryScreens/Notifications/local_notification_store.dart';
 import 'package:final_project/Primary_Screens/Savings/financial_service.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';

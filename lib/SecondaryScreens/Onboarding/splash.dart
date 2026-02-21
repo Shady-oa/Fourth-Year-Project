@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:final_project/Components/bottom_nav.dart';
 import 'package:final_project/Constants/colors.dart';
 import 'package:final_project/Firebase/main_page.dart';
-import 'package:final_project/Primary_Screens/onboarding.dart';
+import 'package:final_project/SecondaryScreens/Onboarding/onboarding.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';

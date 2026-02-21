@@ -1,6 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:final_project/Constants/colors.dart';
-import 'package:final_project/Primary_Screens/splash.dart';
+import 'package:final_project/SecondaryScreens/Onboarding/splash.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:onesignal_flutter/onesignal_flutter.dart';

@@ -1,5 +1,5 @@
-import 'package:final_project/Primary_Screens/Notifications/local_notification_store.dart';
-import 'package:final_project/Primary_Screens/Notifications/notifications.dart';
+import 'package:final_project/SecondaryScreens/Notifications/local_notification_store.dart';
+import 'package:final_project/SecondaryScreens/Notifications/notifications.dart';
 import 'package:flutter/material.dart';
 
 /// Bell icon button that shows a live unread-count badge.

@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:final_project/Primary_Screens/Notifications/local_notification_store.dart';
+import 'package:final_project/SecondaryScreens/Notifications/local_notification_store.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 // ─── Keys for SmartNotificationService tracking ───────────────────────────────

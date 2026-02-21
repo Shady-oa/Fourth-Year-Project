@@ -4,7 +4,7 @@ import 'package:final_project/Components/Custom_header.dart';
 import 'package:final_project/Components/toast.dart';
 import 'package:final_project/Constants/colors.dart';
 import 'package:final_project/Primary_Screens/Budgets/budget_detail.dart';
-import 'package:final_project/Primary_Screens/Notifications/local_notification_store.dart';
+import 'package:final_project/SecondaryScreens/Notifications/local_notification_store.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
