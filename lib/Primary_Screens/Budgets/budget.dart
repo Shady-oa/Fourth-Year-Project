@@ -8,15 +8,10 @@ import 'package:final_project/SecondaryScreens/Notifications/local_notification_
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 // Currency formatting utility
-class CurrencyFormatter {
-  static final NumberFormat _formatter = NumberFormat('#,##0', 'en_US');
-  static String format(double amount) =>
-      'Ksh ${_formatter.format(amount.round())}';
-}
+
 
 class BudgetPage extends StatefulWidget {
   final Function(String, double, String)? onTransactionAdded;
