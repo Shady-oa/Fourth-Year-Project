@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:final_project/Components/Custom_header.dart';
 import 'package:final_project/Constants/colors.dart';
 import 'package:final_project/Constants/spacing.dart';
+import 'package:final_project/Constants/currency_formatter.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -14,18 +15,7 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-// ─── Currency Formatter ───────────────────────────────────────────────────────
-class CurrencyFormatter {
-  static final NumberFormat _fmt = NumberFormat('#,##0', 'en_US');
-  static String format(double amount) => 'Ksh ${_fmt.format(amount.round())}';
-  static String compact(double amount) {
-    if (amount >= 1000000) {
-      return 'Ksh ${(amount / 1000000).toStringAsFixed(1)}M';
-    }
-    if (amount >= 1000) return 'Ksh ${(amount / 1000).toStringAsFixed(1)}K';
-    return format(amount);
-  }
-}
+
 
 // ─── Analytics Page ───────────────────────────────────────────────────────────
 class AnalyticsPage extends StatefulWidget {
@@ -1500,7 +1490,7 @@ class _AnalyticsPageState extends State<AnalyticsPage>
             CurrencyFormatter.compact(amount),
             style: const TextStyle(
               color: Colors.white,
-              fontSize: 14,
+              fontSize: 12,
               fontWeight: FontWeight.bold,
             ),
           ),

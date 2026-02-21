@@ -3,58 +3,28 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:final_project/SecondaryScreens/AuthScreens/login.dart';
 import 'package:final_project/Components/notification_icon.dart';
 import 'package:final_project/Components/quick_actions.dart';
 import 'package:final_project/Components/them_toggle.dart';
 import 'package:final_project/Components/toast.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:final_project/Constants/colors.dart';
+import 'package:final_project/Constants/currency_formatter.dart';
 import 'package:final_project/Constants/spacing.dart';
 import 'package:final_project/Firebase/cloudinary_service.dart';
+import 'package:final_project/Primary_Screens/Savings/financial_service.dart';
+import 'package:final_project/Primary_Screens/home/functions/transaction_Toast.dart';
+import 'package:final_project/Primary_Screens/home/widgets/top_five_expenses.dart';
+import 'package:final_project/SecondaryScreens/AuthScreens/login.dart';
 import 'package:final_project/SecondaryScreens/Notifications/local_notification_store.dart';
 import 'package:final_project/SecondaryScreens/Notifications/notification_services.dart';
-import 'package:final_project/Primary_Screens/Savings/financial_service.dart';
+import 'package:final_project/SecondaryScreens/Report/report_page.dart';
 import 'package:final_project/SecondaryScreens/Transactions/all_transactions.dart';
-import 'package:final_project/SecondaryScreens/report_page/report_page.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
-// Currency formatting utility (local copy — full methods)
-class CurrencyFormatter {
-  static final NumberFormat _formatter = NumberFormat('#,##0', 'en_US');
-  static final NumberFormat _decimalFmt = NumberFormat('#,##0.00', 'en_US');
-
-  /// Whole-number format:  1234 → "Ksh 1,234"
-  static String format(double amount) {
-    final abs = amount.abs();
-    final s = _formatter.format(abs.round());
-    return amount < 0 ? '-Ksh $s' : 'Ksh $s';
-  }
-
-  /// Two-decimal format:  1234.5 → "Ksh 1,234.50"
-  static String formatDecimal(double amount) {
-    final abs = amount.abs();
-    final s = _decimalFmt.format(abs);
-    return amount < 0 ? '-Ksh $s' : 'Ksh $s';
-  }
-
-  static String compact(double amount) {
-    final abs = amount.abs();
-    String s;
-    if (abs >= 1000000) {
-      s = 'Ksh ${(abs / 1000000).toStringAsFixed(1)}M';
-    } else if (abs >= 1000) {
-      s = 'Ksh ${(abs / 1000).toStringAsFixed(1)}K';
-    } else {
-      s = format(abs);
-    }
-    return amount < 0 ? '-$s' : s;
-  }
-}
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -68,9 +38,6 @@ class _HomePageState extends State<HomePage> {
   static const String keyBudgets = 'budgets';
   static const String keySavings = 'savings';
   static const String keyTotalIncome = 'total_income';
-  static const String keyStreakCount = 'streak_count';
-  static const String keyLastSaveDate = 'last_save_date';
-  static const String keyStreakLevel = 'streak_level';
 
   final cloudinary = CloudinaryService(
     backendUrl: 'https://fourth-year-backend.onrender.com',
@@ -81,7 +48,6 @@ class _HomePageState extends State<HomePage> {
   String? profileImage;
   StreamSubscription? userSubscription;
 
-  List<Map<String, dynamic>> transactions = [];
   List<Budget> budgets = [];
   List<Saving> savings = [];
 
@@ -145,7 +111,6 @@ class _HomePageState extends State<HomePage> {
     displayedSavingsAmount = summary.displayedSavingsAmount;
     _balance = summary.balance;
 
-    checkSavingsDeadlines();
     setState(() => isLoading = false);
   }
 
@@ -176,25 +141,12 @@ class _HomePageState extends State<HomePage> {
     displayedSavingsAmount = summary.displayedSavingsAmount;
     _balance = summary.balance;
     setState(() {});
-    showTransactionToast(type, amount, transactionCost: transactionCost);
-  }
-
-  void showTransactionToast(
-    String type,
-    double amount, {
-    double transactionCost = 0.0,
-  }) {
-    final isIncome = type == 'income';
-    final action = isIncome ? 'Income Added' : 'Expense Recorded';
-    final totalDeducted = amount + transactionCost;
-    final msg = transactionCost > 0
-        ? '$action: ${CurrencyFormatter.format(totalDeducted)} (incl. ${CurrencyFormatter.format(transactionCost)} fee)'
-        : '$action: ${CurrencyFormatter.format(amount)}';
-    if (isIncome) {
-      AppToast.success(context, msg);
-    } else {
-      AppToast.error(context, msg);
-    }
+    showTransactionToast(
+      context,
+      type,
+      amount,
+      transactionCost: transactionCost,
+    );
   }
 
   bool isTransactionLinkedToAchievedGoal(Map<String, dynamic> tx) {
@@ -219,44 +171,6 @@ class _HomePageState extends State<HomePage> {
     return false;
   }
 
-  // ── Top 5 expenses ──────────────────────────────────────────────────────────
-  List<Map<String, dynamic>> get top5Expenses {
-    final expenses = transactions
-        .where(
-          (tx) => tx['type'] == 'expense' || tx['type'] == 'budget_finalized',
-        )
-        .toList();
-    expenses.sort((a, b) {
-      final aTotal =
-          (double.tryParse(a['amount'].toString()) ?? 0) +
-          (double.tryParse(a['transactionCost']?.toString() ?? '0') ?? 0);
-      final bTotal =
-          (double.tryParse(b['amount'].toString()) ?? 0) +
-          (double.tryParse(b['transactionCost']?.toString() ?? '0') ?? 0);
-      return bTotal.compareTo(aTotal);
-    });
-    return expenses.take(5).toList();
-  }
-
-  Future<void> onSavingsTransactionAdded(
-    String title,
-    double amount,
-    String type,
-  ) async {
-    await saveTransaction(title, amount, type);
-    await updateStreak();
-    await refreshData();
-  }
-
-  Future<void> onBudgetTransactionAdded(
-    String title,
-    double amount,
-    String type,
-  ) async {
-    await saveTransaction(title, amount, type);
-    await refreshData();
-  }
-
   Future<void> onBudgetExpenseDeleted(String title, double amount) async {
     transactions.removeWhere(
       (tx) =>
@@ -276,37 +190,6 @@ class _HomePageState extends State<HomePage> {
     if (count < 90) return 'Gold';
     if (count < 180) return 'Platinum';
     return 'Diamond';
-  }
-
-  Future<void> updateStreak() async {
-    final prefs = await SharedPreferences.getInstance();
-    final now = DateTime.now();
-    final todayStr = DateFormat('yyyy-MM-dd').format(now);
-
-    int streakCount = prefs.getInt(keyStreakCount) ?? 0;
-    String lastSaveDateStr = prefs.getString(keyLastSaveDate) ?? '';
-
-    if (lastSaveDateStr == todayStr) return;
-
-    if (lastSaveDateStr.isNotEmpty) {
-      final lastDate = DateFormat('yyyy-MM-dd').parse(lastSaveDateStr);
-      final difference = now.difference(lastDate).inDays;
-      streakCount = difference == 1 ? streakCount + 1 : 1;
-    } else {
-      streakCount = 1;
-    }
-
-    String streakLevel = getStreakLevel(streakCount);
-    await prefs.setInt(keyStreakCount, streakCount);
-    await prefs.setString(keyStreakLevel, streakLevel);
-    await prefs.setString(keyLastSaveDate, todayStr);
-
-    if (streakCount % 7 == 0) {
-      sendNotification(
-        '🔥 Streak Milestone!',
-        'Amazing! You\'ve maintained a $streakCount day savings streak at $streakLevel level!',
-      );
-    }
   }
 
   void checkSavingsDeadlines() {
@@ -1298,7 +1181,7 @@ class _HomePageState extends State<HomePage> {
                     sizedBoxHeightSmall,
                     buildQuickActions(),
                     sizedBoxHeightLarge,
-                    buildTop5ExpensesSection(),
+                    buildTop5ExpensesSection(context),
                     sizedBoxHeightLarge,
                   ],
                 ),
@@ -1397,7 +1280,7 @@ class _HomePageState extends State<HomePage> {
                   CurrencyFormatter.format(balance),
                   style: const TextStyle(
                     color: Colors.white,
-                    fontSize: 34,
+                    fontSize: 32,
                     fontWeight: FontWeight.bold,
                     letterSpacing: -0.5,
                     height: 1.1,
@@ -1538,163 +1421,6 @@ class _HomePageState extends State<HomePage> {
   // ═══════════════════════════════════════════════════════════════════════════
   //  TOP 5 EXPENSES SECTION
   // ═══════════════════════════════════════════════════════════════════════════
-  Widget buildTop5ExpensesSection() {
-    final top = top5Expenses;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text(
-              'Top 5 Expenses',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-            TextButton.icon(
-              onPressed: () async {
-                await Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const ReportPage()),
-                );
-              },
-              icon: const Icon(Icons.open_in_new, size: 14),
-              label: const Text('View All Reports'),
-              style: TextButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        if (top.isEmpty)
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surface,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                color: Theme.of(context).colorScheme.onSurface.withAlpha(15),
-              ),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.bar_chart_rounded,
-                  size: 32,
-                  color: Colors.grey.shade300,
-                ),
-                const SizedBox(width: 12),
-                Text(
-                  'No expenses yet. Add some transactions!',
-                  style: TextStyle(color: Colors.grey.shade500, fontSize: 13),
-                ),
-              ],
-            ),
-          )
-        else
-          ...top.asMap().entries.map((entry) {
-            final idx = entry.key;
-            final tx = entry.value;
-            final amount = double.tryParse(tx['amount'].toString()) ?? 0.0;
-            final fee =
-                double.tryParse(tx['transactionCost']?.toString() ?? '0') ??
-                0.0;
-            final total = amount + fee;
-
-            final rankColors = [
-              Colors.amber.shade400,
-              Colors.grey.shade400,
-              Colors.brown.shade300,
-              errorColor.withOpacity(0.7),
-              errorColor.withOpacity(0.5),
-            ];
-
-            return Container(
-              margin: const EdgeInsets.only(bottom: 8),
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surface,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(
-                  color: Theme.of(context).colorScheme.onSurface.withAlpha(12),
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.04),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    width: 32,
-                    height: 32,
-                    decoration: BoxDecoration(
-                      color: rankColors[idx].withOpacity(0.2),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Center(
-                      child: Text(
-                        '${idx + 1}',
-                        style: TextStyle(
-                          color: rankColors[idx],
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          tx['title'] ?? 'Unknown',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 14,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        if ((tx['reason'] ?? '').toString().isNotEmpty)
-                          Text(
-                            tx['reason'].toString(),
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: Colors.grey.shade500,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Flexible(
-                    flex: 0,
-                    child: Text(
-                      '- ${CurrencyFormatter.format(total)}',
-                      textAlign: TextAlign.end,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: errorColor,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 13,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }),
-      ],
-    );
-  }
 }
 
 // ─── Models ────────────────────────────────────────────────────────────────────

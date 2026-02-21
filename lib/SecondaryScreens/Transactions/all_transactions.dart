@@ -641,7 +641,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
           CurrencyFormatter.format(amount),
           style: const TextStyle(
             color: Colors.white,
-            fontSize: 16,
+            fontSize: 14,
             fontWeight: FontWeight.bold,
             letterSpacing: -0.3,
           ),

@@ -13,18 +13,9 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-// ─── Currency Formatter ───────────────────────────────────────────────────────
-class CurrencyFormatter {
-  static final NumberFormat _fmt = NumberFormat('#,##0', 'en_US');
-  static String format(double amount) => 'Ksh ${_fmt.format(amount.round())}';
-  static String compact(double amount) {
-    if (amount >= 1000000) {
-      return 'Ksh ${(amount / 1000000).toStringAsFixed(1)}M';
-    }
-    if (amount >= 1000) return 'Ksh ${(amount / 1000).toStringAsFixed(1)}K';
-    return format(amount);
-  }
-}
+import '../../Constants/currency_formatter.dart';
+
+
 
 // ─── Date Preset ─────────────────────────────────────────────────────────────
 enum DatePreset {
@@ -1314,9 +1305,52 @@ class _ReportPageState extends State<ReportPage>
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'Net Balance',
-                        style: TextStyle(color: Colors.white70, fontSize: 13),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Net Balance',
+                            style: TextStyle(
+                              color: Colors.white70,
+                              fontSize: 13,
+                            ),
+                          ),
+                          
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  isUp
+                                      ? Icons.trending_up
+                                      : Icons.trending_down,
+                                  color: isUp
+                                      ? Colors.red.shade200
+                                      : Colors.green.shade200,
+                                  size: 16,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  '${changePct.abs().toStringAsFixed(1)}%',
+                                  style: TextStyle(
+                                    color: isUp
+                                        ? Colors.red.shade200
+                                        : Colors.green.shade200,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 4),
                       Text(
@@ -1328,38 +1362,6 @@ class _ReportPageState extends State<ReportPage>
                         ),
                       ),
                     ],
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          isUp ? Icons.trending_up : Icons.trending_down,
-                          color: isUp
-                              ? Colors.red.shade200
-                              : Colors.green.shade200,
-                          size: 16,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          '${changePct.abs().toStringAsFixed(1)}%',
-                          style: TextStyle(
-                            color: isUp
-                                ? Colors.red.shade200
-                                : Colors.green.shade200,
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
                   ),
                 ],
               ),
