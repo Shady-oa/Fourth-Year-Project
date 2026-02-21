@@ -1,4 +1,5 @@
 import 'package:final_project/Constants/colors.dart';
+import 'package:final_project/SecondaryScreens/Transactions/transaction_type_config.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -48,7 +49,8 @@ class TransactionCard extends StatelessWidget {
     final timeStr = DateFormat('h:mm a').format(date);
     final dateStr = DateFormat('d MMM').format(date);
 
-    final cfg = _typeConfig(type);
+    // Uses the shared TypeCfg (renamed from _TypeCfg for export)
+    final cfg = getTypeCfg(type);
 
     final cardColor = isDark ? theme.colorScheme.surface : Colors.white;
     final borderColor = isDark
@@ -134,7 +136,8 @@ class TransactionCard extends StatelessWidget {
                                         padding: const EdgeInsets.symmetric(
                                             horizontal: 6, vertical: 2),
                                         decoration: BoxDecoration(
-                                          color: cfg.accent.withOpacity(0.12),
+                                          color:
+                                              cfg.accent.withOpacity(0.12),
                                           borderRadius:
                                               BorderRadius.circular(5),
                                         ),
@@ -269,8 +272,7 @@ class _IconBadge extends StatelessWidget {
                   width: 1.5,
                 ),
               ),
-              child:
-                  const Icon(Icons.lock, color: Colors.white, size: 10),
+              child: const Icon(Icons.lock, color: Colors.white, size: 10),
             ),
           ),
       ],
@@ -312,39 +314,5 @@ class _FeeBadge extends StatelessWidget {
         ],
       ),
     );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-//  Type config
-// ─────────────────────────────────────────────────────────────────────────────
-class _TypeCfg {
-  final Color accent;
-  final IconData icon;
-  final String label;
-  const _TypeCfg(this.accent, this.icon, this.label);
-}
-
-_TypeCfg _typeConfig(String type) {
-  switch (type) {
-    case 'income':
-      return const _TypeCfg(
-          brandGreen, Icons.arrow_circle_down_rounded, 'INCOME');
-    case 'budget_expense':
-      return _TypeCfg(
-          Colors.orange.shade600, Icons.receipt_rounded, 'BUDGET');
-    case 'budget_finalized':
-      return const _TypeCfg(
-          brandGreen, Icons.check_circle_outline, 'BUDGET ✓');
-    case 'savings_deduction':
-    case 'saving_deposit':
-      return const _TypeCfg(
-          Color(0xFF5B8AF0), Icons.savings_outlined, 'SAVINGS');
-    case 'savings_withdrawal':
-      return _TypeCfg(Colors.purple.shade400,
-          Icons.account_balance_wallet_outlined, 'WITHDRAWAL');
-    default:
-      return const _TypeCfg(
-          errorColor, Icons.arrow_circle_up_outlined, 'EXPENSE');
   }
 }

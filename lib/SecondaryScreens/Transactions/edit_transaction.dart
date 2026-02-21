@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:final_project/Components/toast.dart';
 import 'package:final_project/Constants/colors.dart';
 import 'package:final_project/Primary_Screens/Savings/financial_service.dart';
+import 'package:final_project/SecondaryScreens/Transactions/transaction_type_config.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -173,7 +174,8 @@ class _EditTransactionSheetState extends State<EditTransactionSheet> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final bottomPad = MediaQuery.of(context).viewInsets.bottom;
-    final cfg = _typeCfg(_type);
+    // Uses shared getTypeCfg — label capitalisation matches original _typeCfg
+    final cfg = _sheetCfg(_type);
 
     return Container(
       decoration: BoxDecoration(
@@ -407,7 +409,7 @@ class _EditTransactionSheetState extends State<EditTransactionSheet> {
 // ─────────────────────────────────────────────────────────────────────────────
 class _ReadOnlyView extends StatelessWidget {
   final Map<String, dynamic> transaction;
-  final _SheetCfg cfg;
+  final TypeCfg cfg;
 
   static final _numFmt = NumberFormat('#,##0', 'en_US');
   static String _ksh(double v) => 'Ksh ${_numFmt.format(v.round())}';
@@ -419,7 +421,7 @@ class _ReadOnlyView extends StatelessWidget {
     final amount = double.tryParse(transaction['amount'].toString()) ?? 0.0;
     final txCost =
         double.tryParse(transaction['transactionCost']?.toString() ?? '0') ??
-        0.0;
+            0.0;
     final reason = (transaction['reason'] ?? '').toString().trim();
     final date = DateTime.tryParse(transaction['date'] ?? '') ?? DateTime.now();
 
@@ -519,55 +521,52 @@ class _ReadOnlyView extends StatelessWidget {
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  Sheet visual config per type
+//  Uses the shared TypeCfg from transaction_type_config.dart.
+//  This private function maps to the full verbose labels used in the edit sheet
+//  (e.g. 'Budget Expense', 'Budget Finalised') rather than the short badge
+//  labels used by the card (e.g. 'BUDGET').
 // ─────────────────────────────────────────────────────────────────────────────
-class _SheetCfg {
-  final Color accent;
-  final IconData icon;
-  final String label;
-  const _SheetCfg(this.accent, this.icon, this.label);
-}
-
-_SheetCfg _typeCfg(String type) {
+TypeCfg _sheetCfg(String type) {
   switch (type) {
     case 'income':
-      return const _SheetCfg(
+      return const TypeCfg(
         brandGreen,
         Icons.arrow_circle_down_rounded,
         'Income',
       );
     case 'expense':
-      return const _SheetCfg(
+      return const TypeCfg(
         errorColor,
         Icons.arrow_circle_up_outlined,
         'Expense',
       );
     case 'budget_expense':
-      return _SheetCfg(
+      return TypeCfg(
         Colors.orange.shade600,
         Icons.receipt_rounded,
         'Budget Expense',
       );
     case 'budget_finalized':
-      return const _SheetCfg(
+      return const TypeCfg(
         brandGreen,
         Icons.check_circle_outline,
         'Budget Finalised',
       );
     case 'savings_deduction':
     case 'saving_deposit':
-      return const _SheetCfg(
+      return const TypeCfg(
         Color(0xFF5B8AF0),
         Icons.savings_outlined,
         'Savings Deposit',
       );
     case 'savings_withdrawal':
-      return _SheetCfg(
+      return TypeCfg(
         Colors.purple.shade400,
         Icons.account_balance_wallet_outlined,
         'Savings Withdrawal',
       );
     default:
-      return const _SheetCfg(
+      return const TypeCfg(
         errorColor,
         Icons.arrow_circle_up_outlined,
         'Transaction',
