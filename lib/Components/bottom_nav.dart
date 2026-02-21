@@ -1,5 +1,5 @@
 import 'package:final_project/Primary_Screens/Budgets/budget.dart';
-import 'package:final_project/Primary_Screens/Savings/savings.dart';
+import 'package:final_project/Primary_Screens/Savings/savings_page.dart';
 import 'package:final_project/Primary_Screens/ai/ai.dart';
 import 'package:final_project/Primary_Screens/home/home.dart';
 import 'package:final_project/Primary_Screens/analytics_page/analytics_page.dart';
