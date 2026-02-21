@@ -3,6 +3,7 @@ import 'package:final_project/Components/form_logo.dart';
 import 'package:final_project/Constants/colors.dart';
 import 'package:final_project/Constants/spacing.dart';
 import 'package:final_project/Firebase/auth_services.dart';
+import 'package:final_project/SecondaryScreens/AuthScreens/social_login_button.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:toasty_box/toast_enums.dart';
@@ -87,6 +88,71 @@ class _LoginState extends State<Login> {
     }
   }
 
+  // ── Google sign-in handler ─────────────────────────────────────────────────
+  Future<void> _handleGoogleSignIn() async {
+    try {
+      await AuthService().signInWithGoogle();
+      if (!context.mounted) return;
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const BottomNav()),
+      );
+    } on NoGoogleAccountChoosenException {
+      return;
+    } catch (e) {
+      if (!context.mounted) return;
+      ToastService.showToast(
+        context,
+        backgroundColor: errorColor,
+        dismissDirection: DismissDirection.endToStart,
+        expandedHeight: 80,
+        isClosable: true,
+        leading: const Icon(Icons.error_outline),
+        message: 'Unexpected error occurred,try again!',
+        length: ToastLength.medium,
+        positionCurve: Curves.bounceInOut,
+        messageStyle: Theme.of(context).textTheme.bodyLarge?.copyWith(
+          color: Theme.of(context).colorScheme.surface,
+        ),
+        slideCurve: Curves.easeInOut,
+        shadowColor: Theme.of(
+          context,
+        ).colorScheme.onSurface.withAlpha((255 * 0.5).round()),
+      );
+    }
+  }
+
+  // ── Facebook sign-in handler ───────────────────────────────────────────────
+  Future<void> _handleFacebookSignIn() async {
+    try {
+      // Call the Facebook function
+      final userCredential = await AuthService().signInWithFacebook();
+
+      // If userCredential is null, it means the user cancelled the login
+      if (userCredential == null) return;
+
+      if (!context.mounted) return;
+
+      // Success! Navigate to Home
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const BottomNav()),
+      );
+    } catch (e) {
+      if (!context.mounted) return;
+
+      // Show error toast
+      ToastService.showToast(
+        context,
+        backgroundColor: errorColor,
+        message: 'Facebook Login failed. Please try again!',
+        leading: const Icon(Icons.error_outline),
+        // ... include your other styling here ...
+      );
+      print("Facebook Error✅✅✅: $e"); // Helpful for debugging the Key Hash!
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
@@ -108,129 +174,28 @@ class _LoginState extends State<Login> {
                 style: Theme.of(context).textTheme.headlineSmall,
               ),
               sizedBoxHeightLarge,
-              GestureDetector(
-                onTap: () async {
-                  try {
-                    await AuthService().signInWithGoogle();
-                    if (!context.mounted) return;
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const BottomNav(),
-                      ),
-                    );
-                  } on NoGoogleAccountChoosenException {
-                    return;
-                  } catch (e) {
-                    if (!context.mounted) return;
-                    ToastService.showToast(
-                      context,
-                      backgroundColor: errorColor,
-                      dismissDirection: DismissDirection.endToStart,
-                      expandedHeight: 80,
-                      isClosable: true,
-                      leading: const Icon(Icons.error_outline),
-                      message: 'Unexpected error occurred,try again!',
-                      length: ToastLength.medium,
-                      positionCurve: Curves.bounceInOut,
-                      messageStyle: Theme.of(context).textTheme.bodyLarge
-                          ?.copyWith(
-                            color: Theme.of(context).colorScheme.surface,
-                          ),
-                      slideCurve: Curves.easeInOut,
-                      shadowColor: Theme.of(
-                        context,
-                      ).colorScheme.onSurface.withAlpha((255 * 0.5).round()),
-                    );
-                  }
-                },
-                child: Container(
-                  height: 50,
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.surface,
-                    borderRadius: radiusMedium,
-                    border: Border.all(
-                      color: Theme.of(context).colorScheme.onSurface,
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Image(image: AssetImage('assets/image/google.png')),
-                      sizedBoxWidthSmall,
-                      Text(
-                        'Continue with Google',
-                        style: Theme.of(context).textTheme.bodyLarge,
-                      ),
-                    ],
-                  ),
-                ),
+
+              // ── Google sign-in button ──────────────────────────────────────
+              SocialLoginButton(
+                assetPath: 'assets/image/google.png',
+                label: 'Continue with Google',
+                onTap: _handleGoogleSignIn,
+                imageSpacer: sizedBoxWidthSmall,
               ),
+
               sizedBoxHeightLarge,
-              GestureDetector(
-                onTap: () async {
-                  try {
-                    // Call the Facebook function
-                    final userCredential = await AuthService()
-                        .signInWithFacebook();
 
-                    // If userCredential is null, it means the user cancelled the login
-                    if (userCredential == null) return;
-
-                    if (!context.mounted) return;
-
-                    // Success! Navigate to Home
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const BottomNav(),
-                      ),
-                    );
-                  } catch (e) {
-                    if (!context.mounted) return;
-
-                    // Show error toast
-                    ToastService.showToast(
-                      context,
-                      backgroundColor: errorColor,
-                      message: 'Facebook Login failed. Please try again!',
-                      leading: const Icon(Icons.error_outline),
-                      // ... include your other styling here ...
-                    );
-                    print(
-                      "Facebook Error✅✅✅: $e",
-                    ); // Helpful for debugging the Key Hash!
-                  }
-                },
-                child: Container(
-                  height: 50,
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.surface,
-                    borderRadius: radiusMedium,
-                    border: Border.all(
-                      color: Theme.of(context).colorScheme.onSurface,
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Image(
-                        image: AssetImage('assets/image/facebook.png'),
-                        width: 32,
-                        height: 32,
-                      ),
-                      sizedBoxWidthMedium,
-                      Text(
-                        'Continue with Facebook',
-                        style: Theme.of(context).textTheme.bodyLarge,
-                      ),
-                    ],
-                  ),
-                ),
+              // ── Facebook sign-in button ────────────────────────────────────
+              SocialLoginButton(
+                assetPath: 'assets/image/facebook.png',
+                label: 'Continue with Facebook',
+                onTap: _handleFacebookSignIn,
+                imageWidth: 32,
+                imageHeight: 32,
+                imageSpacer: sizedBoxWidthMedium,
               ),
-              SizedBox(height: 140),
+
+              const SizedBox(height: 140),
             ],
           ),
         ),
