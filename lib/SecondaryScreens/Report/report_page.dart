@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:final_project/Components/Custom_header.dart';
 import 'package:final_project/Constants/colors.dart';
 import 'package:final_project/Constants/currency_formatter.dart';
 import 'package:final_project/Constants/spacing.dart';
@@ -29,8 +28,6 @@ import 'package:final_project/SecondaryScreens/Report/report_transaction_card.da
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
-
 
 // ─── Report Page ──────────────────────────────────────────────────────────────
 class ReportPage extends StatefulWidget {
@@ -215,7 +212,8 @@ class _ReportPageState extends State<ReportPage>
       )
       .fold(
         0.0,
-        (s, tx) => (s + reportAmt(tx) - reportFee(tx)).clamp(0.0, double.infinity),
+        (s, tx) =>
+            (s + reportAmt(tx) - reportFee(tx)).clamp(0.0, double.infinity),
       );
 
   double get totalFeesPaid => filteredTransactions
@@ -249,7 +247,8 @@ class _ReportPageState extends State<ReportPage>
         .toList();
     if (exp.isEmpty) return null;
     exp.sort(
-      (a, b) => (reportAmt(b) + reportFee(b)).compareTo(reportAmt(a) + reportFee(a)),
+      (a, b) =>
+          (reportAmt(b) + reportFee(b)).compareTo(reportAmt(a) + reportFee(a)),
     );
     return exp.first;
   }
@@ -307,14 +306,18 @@ class _ReportPageState extends State<ReportPage>
   }
 
   List<Map<String, dynamic>> get topExpenses {
-    final exp = filteredTransactions
-        .where(
-          (tx) => tx['type'] != 'income' && tx['type'] != 'savings_withdrawal',
-        )
-        .toList()
-      ..sort(
-        (a, b) => (reportAmt(b) + reportFee(b)).compareTo(reportAmt(a) + reportFee(a)),
-      );
+    final exp =
+        filteredTransactions
+            .where(
+              (tx) =>
+                  tx['type'] != 'income' && tx['type'] != 'savings_withdrawal',
+            )
+            .toList()
+          ..sort(
+            (a, b) => (reportAmt(b) + reportFee(b)).compareTo(
+              reportAmt(a) + reportFee(a),
+            ),
+          );
     return exp.take(5).toList();
   }
 
@@ -394,7 +397,8 @@ class _ReportPageState extends State<ReportPage>
       backgroundColor: theme.colorScheme.surface,
       appBar: AppBar(
         backgroundColor: theme.colorScheme.surface,
-        title: const CustomHeader(headerName: 'Report'),
+        title: const Text('Financial Report'),
+        centerTitle: true,
         elevation: 0,
         bottom: TabBar(
           controller: _tabController,
@@ -416,19 +420,6 @@ class _ReportPageState extends State<ReportPage>
             ),
           ],
         ),
-        actions: [
-          IconButton(
-            onPressed: isGeneratingPDF ? null : generatePDF,
-            icon: isGeneratingPDF
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(Icons.picture_as_pdf),
-            tooltip: 'Share PDF',
-          ),
-        ],
       ),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -485,8 +476,7 @@ class _ReportPageState extends State<ReportPage>
             ReportCollapsible(
               title: 'Summary',
               expanded: _summaryExpanded,
-              onTap: () =>
-                  setState(() => _summaryExpanded = !_summaryExpanded),
+              onTap: () => setState(() => _summaryExpanded = !_summaryExpanded),
               child: ReportSummarySection(
                 netBalance: netBalance,
                 filteredIncome: filteredIncome,
@@ -520,16 +510,14 @@ class _ReportPageState extends State<ReportPage>
             ReportCollapsible(
               title: 'Budget Status',
               expanded: _budgetsExpanded,
-              onTap: () =>
-                  setState(() => _budgetsExpanded = !_budgetsExpanded),
+              onTap: () => setState(() => _budgetsExpanded = !_budgetsExpanded),
               child: ReportBudgetsSection(budgets: budgets),
             ),
             sizedBoxHeightMedium,
             ReportCollapsible(
               title: 'Savings Goals',
               expanded: _savingsExpanded,
-              onTap: () =>
-                  setState(() => _savingsExpanded = !_savingsExpanded),
+              onTap: () => setState(() => _savingsExpanded = !_savingsExpanded),
               child: ReportSavingsSection(savings: savings),
             ),
             sizedBoxHeightLarge,
@@ -561,9 +549,7 @@ class _ReportPageState extends State<ReportPage>
               onPresetChanged: _onPresetChanged,
             ),
             sizedBoxHeightLarge,
-            ReportSpendingCategoryChart(
-              spendingByCategory: spendingByCategory,
-            ),
+            ReportSpendingCategoryChart(spendingByCategory: spendingByCategory),
             sizedBoxHeightLarge,
             ReportDailySpendingBars(
               dailySpending: dailySpending,
@@ -681,9 +667,7 @@ class _ReportPageState extends State<ReportPage>
                         ],
                       ),
                     ),
-                    ...entry.value.map(
-                      (tx) => ReportTransactionCard(tx: tx),
-                    ),
+                    ...entry.value.map((tx) => ReportTransactionCard(tx: tx)),
                     sizedBoxHeightSmall,
                   ],
                 ),

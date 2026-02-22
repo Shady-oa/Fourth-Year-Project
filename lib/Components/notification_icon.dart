@@ -17,24 +17,29 @@ class NotificationIcon extends StatelessWidget {
       builder: (context, unreadCount, _) {
         return Stack(
           children: [
-            IconButton(
-              icon: Icon(
-                Icons.circle_notifications_rounded,
-                size: 30,
-                color: Theme.of(context).colorScheme.onSurface,
+            Padding(
+              padding: const EdgeInsets.all(4.0),
+              child: IconButton(
+                icon: Icon(
+                  Icons.circle_notifications_rounded,
+                  size: 34,
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+                onPressed: () async {
+                  await Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => const NotificationsPage(),
+                    ),
+                  );
+                  // Refresh count when returning from notification page
+                  await LocalNotificationStore.init();
+                },
               ),
-              onPressed: () async {
-                await Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const NotificationsPage()),
-                );
-                // Refresh count when returning from notification page
-                await LocalNotificationStore.init();
-              },
             ),
             if (unreadCount > 0)
               Positioned(
-                right: 8,
-                top: 8,
+                right: 30,
+                top: 26,
                 child: Container(
                   padding: const EdgeInsets.all(4),
                   decoration: const BoxDecoration(

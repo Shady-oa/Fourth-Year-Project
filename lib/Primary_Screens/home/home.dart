@@ -4,7 +4,6 @@ import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:final_project/Components/notification_icon.dart';
 import 'package:final_project/Components/quick_actions.dart';
-import 'package:final_project/Components/them_toggle.dart';
 import 'package:final_project/Components/toast.dart';
 import 'package:final_project/Constants/currency_formatter.dart';
 import 'package:final_project/Constants/spacing.dart';
@@ -378,7 +377,7 @@ class _HomePageState extends State<HomePage> {
       actions: [
         Padding(
           padding: paddingAllTiny,
-          child: Row(children: [const ThemeToggleIcon(), NotificationIcon()]),
+          child: Row(children: [const NotificationIcon()]),
         ),
       ],
     );

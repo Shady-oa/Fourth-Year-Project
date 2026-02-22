@@ -480,15 +480,19 @@ class _AnalyticsPageState extends State<AnalyticsPage>
         expensesByCategory: expensesByCategory,
         monthlyComparison: monthlyComparison,
         budgets: budgets,
-        savings: savings.map((s) => Saving(
-          name: s.name,
-          savedAmount: s.savedAmount,
-          targetAmount: s.targetAmount,
-          deadline: s.deadline,
-          achieved: s.achieved,
-          lastUpdated: s.lastUpdated,
-          transactions: s.transactions,
-        )).toList(),
+        savings: savings
+            .map(
+              (s) => Saving(
+                name: s.name,
+                savedAmount: s.savedAmount,
+                targetAmount: s.targetAmount,
+                deadline: s.deadline,
+                achieved: s.achieved,
+                lastUpdated: s.lastUpdated,
+                transactions: s.transactions,
+              ),
+            )
+            .toList(),
         smartInsights: smartInsights,
       );
       await service.generate(context);
@@ -520,19 +524,6 @@ class _AnalyticsPageState extends State<AnalyticsPage>
             ),
           ],
         ),
-        actions: [
-          IconButton(
-            onPressed: isGeneratingPDF ? null : generatePDF,
-            icon: isGeneratingPDF
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(Icons.picture_as_pdf),
-            tooltip: 'Share Analytics PDF',
-          ),
-        ],
       ),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())

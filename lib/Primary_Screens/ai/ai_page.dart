@@ -131,42 +131,6 @@ class _AiPageState extends State<AiPage> {
         backgroundColor: Theme.of(context).colorScheme.surface,
         elevation: 0,
         title: const CustomHeader(headerName: 'Penny AI'),
-        actions: [
-          Tooltip(
-            message: 'Quick Insights',
-            child: InkWell(
-              onTap: _showQuestionsSheet,
-              borderRadius: BorderRadius.circular(20),
-              child: Container(
-                margin: const EdgeInsets.only(right: 12),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: brandGreen.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: brandGreen.withOpacity(0.3)),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.auto_awesome, color: brandGreen, size: 16),
-                    const SizedBox(width: 5),
-                    Text(
-                      'Ask',
-                      style: aiUrbanist(
-                        size: 13,
-                        weight: FontWeight.w700,
-                        color: brandGreen,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ],
       ),
       body: Column(
         children: [
