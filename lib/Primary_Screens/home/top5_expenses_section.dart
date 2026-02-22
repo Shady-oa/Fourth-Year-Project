@@ -63,6 +63,8 @@ class _EmptyExpensesPlaceholder extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
+      width: double.infinity,
+
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
@@ -71,12 +73,14 @@ class _EmptyExpensesPlaceholder extends StatelessWidget {
           color: Theme.of(context).colorScheme.onSurface.withAlpha(15),
         ),
       ),
-      child: Row(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Icon(Icons.bar_chart_rounded, size: 32, color: Colors.grey.shade300),
-          const SizedBox(width: 12),
+          const SizedBox(height: 12),
           Text(
-            'No expenses today. Add some transactions!',
+            'You haven\'t recorded any expenses yet.',
             style: TextStyle(color: Colors.grey.shade500, fontSize: 13),
           ),
         ],
