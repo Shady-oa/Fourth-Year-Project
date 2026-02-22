@@ -1,8 +1,7 @@
+import 'package:final_project/Constants/colors.dart';
 import 'package:final_project/Constants/currency_formatter.dart';
 import 'package:final_project/SecondaryScreens/Report/report_page.dart';
 import 'package:flutter/material.dart';
-import 'package:final_project/Constants/colors.dart';
-
 
 /// Displays the top-5 highest expenses ranked list.
 class Top5ExpensesSection extends StatelessWidget {
@@ -20,18 +19,31 @@ class Top5ExpensesSection extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             const Text(
-              'Top 5 Expenses',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              "Today's Top 5 Expenses",
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
-            TextButton.icon(
-              onPressed: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const ReportPage()),
+            Container(
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surface,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: Theme.of(context).colorScheme.onSurface.withAlpha(15),
+                ),
               ),
-              icon: const Icon(Icons.open_in_new, size: 14),
-              label: const Text('View All Reports'),
-              style:
-                  TextButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 8)),
+              child: TextButton.icon(
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const ReportPage()),
+                ),
+                icon: const Icon(Icons.open_in_new, size: 14),
+                label: const Text(
+                  'View All Reports',
+                  style: TextStyle(fontSize: 12),
+                ),
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                ),
+              ),
             ),
           ],
         ),
@@ -40,8 +52,7 @@ class Top5ExpensesSection extends StatelessWidget {
           _EmptyExpensesPlaceholder()
         else
           ...top5Expenses.asMap().entries.map((entry) {
-            return _ExpenseRankTile(
-                idx: entry.key, tx: entry.value);
+            return _ExpenseRankTile(idx: entry.key, tx: entry.value);
           }),
       ],
     );
@@ -65,7 +76,7 @@ class _EmptyExpensesPlaceholder extends StatelessWidget {
           Icon(Icons.bar_chart_rounded, size: 32, color: Colors.grey.shade300),
           const SizedBox(width: 12),
           Text(
-            'No expenses yet. Add some transactions!',
+            'No expenses today. Add some transactions!',
             style: TextStyle(color: Colors.grey.shade500, fontSize: 13),
           ),
         ],
@@ -111,9 +122,10 @@ class _ExpenseRankTile extends StatelessWidget {
         ),
         boxShadow: [
           BoxShadow(
-              color: Colors.black.withOpacity(0.04),
-              blurRadius: 8,
-              offset: const Offset(0, 2)),
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
         ],
       ),
       child: Row(
@@ -130,7 +142,10 @@ class _ExpenseRankTile extends StatelessWidget {
               child: Text(
                 '${idx + 1}',
                 style: TextStyle(
-                    color: color, fontWeight: FontWeight.bold, fontSize: 14),
+                  color: color,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                ),
               ),
             ),
           ),
@@ -143,15 +158,16 @@ class _ExpenseRankTile extends StatelessWidget {
                 Text(
                   tx['title'] ?? 'Unknown',
                   style: const TextStyle(
-                      fontWeight: FontWeight.w600, fontSize: 14),
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                  ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
                 if ((tx['reason'] ?? '').toString().isNotEmpty)
                   Text(
                     tx['reason'].toString(),
-                    style:
-                        TextStyle(fontSize: 11, color: Colors.grey.shade500),
+                    style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -167,9 +183,10 @@ class _ExpenseRankTile extends StatelessWidget {
               textAlign: TextAlign.end,
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(
-                  color: errorColor,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 13),
+                color: errorColor,
+                fontWeight: FontWeight.bold,
+                fontSize: 13,
+              ),
             ),
           ),
         ],

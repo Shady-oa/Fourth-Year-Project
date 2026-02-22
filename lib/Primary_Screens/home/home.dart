@@ -175,11 +175,22 @@ class _HomePageState extends State<HomePage> {
 
   // ── Derived data ──────────────────────────────────────────────────────────────
   List<Map<String, dynamic>> get top5Expenses {
-    final expenses = transactions
-        .where(
-          (tx) => tx['type'] == 'expense' || tx['type'] == 'budget_finalized',
-        )
-        .toList();
+    final now = DateTime.now();
+    final expenses = transactions.where((tx) {
+      if (tx['type'] != 'expense' && tx['type'] != 'budget_finalized') {
+        return false;
+      }
+      final txDateStr = tx['date'] as String?;
+      if (txDateStr == null) return false;
+      try {
+        final txDate = DateTime.parse(txDateStr);
+        return txDate.year == now.year &&
+            txDate.month == now.month &&
+            txDate.day == now.day;
+      } catch (_) {
+        return false;
+      }
+    }).toList();
     expenses.sort((a, b) {
       final aTotal =
           (double.tryParse(a['amount'].toString()) ?? 0) +
