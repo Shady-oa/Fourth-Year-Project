@@ -1,11 +1,11 @@
-import 'package:final_project/Primary_Screens/home/settings_card.dart';
-import 'package:flutter/material.dart';
-import 'package:final_project/SecondaryScreens/AuthScreens/login.dart';
 import 'package:final_project/Components/toast.dart';
 import 'package:final_project/Constants/colors.dart';
 import 'package:final_project/Constants/spacing.dart';
+import 'package:final_project/Primary_Screens/home/settings_card.dart';
+import 'package:final_project/SecondaryScreens/AuthScreens/login.dart';
+import 'package:final_project/SecondaryScreens/Settings/developers_page.dart';
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
 
 /// Shows the user profile & settings bottom sheet.
 void showProfileSheet(
@@ -46,12 +46,16 @@ void showProfileSheet(
                 padding: paddingAllLarge,
                 decoration: BoxDecoration(
                   borderRadius: radiusLarge,
-                  color: brandGreen,
+                  gradient: LinearGradient(
+                    colors: [brandGreen, brandGreen.withOpacity(0.8)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
                   boxShadow: [
                     BoxShadow(
-                      color: brandGreen.withOpacity(0.25),
-                      blurRadius: 18,
-                      offset: const Offset(0, 8),
+                      color: brandGreen.withOpacity(0.3),
+                      blurRadius: 20,
+                      offset: const Offset(0, 10),
                     ),
                   ],
                 ),
@@ -64,9 +68,9 @@ void showProfileSheet(
                           backgroundColor: Colors.white,
                           backgroundImage:
                               (profileImage == null || profileImage.isEmpty)
-                                  ? const AssetImage('assets/image/icon.png')
-                                      as ImageProvider
-                                  : NetworkImage(profileImage),
+                              ? const AssetImage('assets/image/icon.png')
+                                    as ImageProvider
+                              : NetworkImage(profileImage),
                         ),
                         Positioned(
                           right: 0,
@@ -96,9 +100,7 @@ void showProfileSheet(
                         children: [
                           Text(
                             username ?? 'Penny User',
-                            style: Theme.of(ctx)
-                                .textTheme
-                                .headlineSmall
+                            style: Theme.of(ctx).textTheme.headlineSmall
                                 ?.copyWith(
                                   color: Colors.white,
                                   fontWeight: FontWeight.bold,
@@ -107,11 +109,16 @@ void showProfileSheet(
                           const SizedBox(height: 6),
                           const Row(
                             children: [
-                              Icon(Icons.location_on_rounded,
-                                  size: 16, color: Colors.white70),
+                              Icon(
+                                Icons.location_on_rounded,
+                                size: 16,
+                                color: Colors.white70,
+                              ),
                               SizedBox(width: 4),
-                              Text('Kisii, Kenya',
-                                  style: TextStyle(color: Colors.white70)),
+                              Text(
+                                'Kisii, Kenya',
+                                style: TextStyle(color: Colors.white70),
+                              ),
                             ],
                           ),
                         ],
@@ -134,19 +141,23 @@ void showProfileSheet(
                 icon: Icons.dark_mode_outlined,
                 title: 'Dark Mode',
                 trailing: Switch(
-                  value: Provider.of<ThemeProvider>(ctx, listen: true)
-                          .currentTheme
-                          .brightness ==
+                  value:
+                      Provider.of<ThemeProvider>(
+                        ctx,
+                        listen: true,
+                      ).currentTheme.brightness ==
                       Brightness.dark,
-                  onChanged: (_) =>
-                      Provider.of<ThemeProvider>(ctx, listen: false)
-                          .toggleTheme(),
+                  onChanged: (_) => Provider.of<ThemeProvider>(
+                    ctx,
+                    listen: false,
+                  ).toggleTheme(),
                   activeTrackColor: brandGreen.withOpacity(0.4),
                   activeThumbColor: brandGreen,
                 ),
-                onTap: () =>
-                    Provider.of<ThemeProvider>(ctx, listen: false)
-                        .toggleTheme(),
+                onTap: () => Provider.of<ThemeProvider>(
+                  ctx,
+                  listen: false,
+                ).toggleTheme(),
               ),
               SettingsCard(
                 icon: Icons.info_outline,
@@ -160,6 +171,17 @@ void showProfileSheet(
                 },
               ),
               SettingsCard(
+                icon: Icons.code,
+                title: 'Developers',
+                onTap: () {
+                  Navigator.pop(ctx);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const DevelopersPage()),
+                  );
+                },
+              ),
+              SettingsCard(
                 icon: Icons.logout_rounded,
                 title: 'Logout',
                 onTap: () {
@@ -168,7 +190,8 @@ void showProfileSheet(
                   Navigator.pushReplacement(
                     context,
                     MaterialPageRoute(
-                        builder: (_) => Login(showSignupPage: () {})),
+                      builder: (_) => Login(showSignupPage: () {}),
+                    ),
                   );
                 },
               ),

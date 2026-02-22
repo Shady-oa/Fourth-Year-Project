@@ -45,6 +45,7 @@ class _HomePageState extends State<HomePage> {
   String? username;
   String? profileImage;
   StreamSubscription? _userSubscription;
+  Timer? _reminderTimer;
 
   // ── Financial state ───────────────────────────────────────────────────────────
   List<Map<String, dynamic>> transactions = [];
@@ -67,10 +68,17 @@ class _HomePageState extends State<HomePage> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ReminderScheduler.runChecks(context);
     });
+    // Set up a periodic timer to check reminders every minute
+    _reminderTimer = Timer.periodic(const Duration(minutes: 1), (timer) {
+      if (mounted) {
+        ReminderScheduler.runChecks(context);
+      }
+    });
   }
 
   @override
   void dispose() {
+    _reminderTimer?.cancel();
     _userSubscription?.cancel();
     super.dispose();
   }

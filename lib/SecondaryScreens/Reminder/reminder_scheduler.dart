@@ -23,7 +23,7 @@ class ReminderScheduler {
 
     for (final reminder in reminders) {
       if (!reminder.isActive) continue;
-      if (!reminder.nextTriggerDate.isBefore(now)) continue;
+      if (reminder.nextTriggerDate.isAfter(now)) continue;
 
       // ── Push to Notifications page (type: reminder) ───────────────────
       await LocalNotificationStore.saveNotification(

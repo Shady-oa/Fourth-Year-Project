@@ -13,8 +13,6 @@ import 'package:final_project/Primary_Screens/ai/quick_questions_data.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
-
-
 // ─── AI Page ──────────────────────────────────────────────────────────────────
 class AiPage extends StatefulWidget {
   const AiPage({super.key});
@@ -61,9 +59,32 @@ class _AiPageState extends State<AiPage> {
 
     // 2️⃣  Call AI backend – backend saves AI reply to Firestore.
     //     Any enriched context bubble is filtered out in the StreamBuilder.
-    await AiService.sendMessageToAI(userText, promptText, userUid);
+    final reply = await AiService.sendMessageToAI(
+      userText,
+      promptText,
+      userUid,
+    );
 
-    if (mounted) setState(() => _isSending = false);
+    if (mounted) {
+      setState(() => _isSending = false);
+      if (reply.startsWith('Error connecting to AI backend') ||
+          reply.startsWith('Error: AI backend returned')) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Cannot reach Penny AI. Please check your internet connection.',
+              style: const TextStyle(color: Colors.white),
+            ),
+            backgroundColor: errorColor,
+            behavior: SnackBarBehavior.floating,
+            margin: const EdgeInsets.all(16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        );
+      }
+    }
     _scrollToBottom();
   }
 
@@ -263,9 +284,7 @@ class _AiPageState extends State<AiPage> {
                           }).toList(),
                         ),
                       ),
-                    ...messages.map(
-                      (m) => AiMessageBubble(message: m),
-                    ),
+                    ...messages.map((m) => AiMessageBubble(message: m)),
                     // Typing indicator while the AI is responding.
                     if (_isSending)
                       AiMessageBubble(

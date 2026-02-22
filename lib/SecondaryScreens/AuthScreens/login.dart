@@ -58,6 +58,25 @@ class _LoginState extends State<Login> {
         password: _passwordcontroller.text.trim(),
       );
       if (!context.mounted) return;
+
+      ToastService.showToast(
+        context,
+        backgroundColor: brandGreen,
+        dismissDirection: DismissDirection.endToStart,
+        expandedHeight: 80,
+        isClosable: true,
+        leading: const Icon(Icons.check_circle_outline, color: Colors.white),
+        message: 'Login Successful!',
+        length: ToastLength.medium,
+        positionCurve: Curves.bounceInOut,
+        messageStyle: Theme.of(context).textTheme.bodyLarge?.copyWith(
+          color: Colors.white,
+          fontWeight: FontWeight.bold,
+        ),
+        slideCurve: Curves.easeInOut,
+        shadowColor: Theme.of(context).colorScheme.onSurface.withAlpha(50),
+      );
+
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => const BottomNav()),
@@ -93,6 +112,25 @@ class _LoginState extends State<Login> {
     try {
       await AuthService().signInWithGoogle();
       if (!context.mounted) return;
+
+      ToastService.showToast(
+        context,
+        backgroundColor: brandGreen,
+        dismissDirection: DismissDirection.endToStart,
+        expandedHeight: 80,
+        isClosable: true,
+        leading: const Icon(Icons.check_circle_outline, color: Colors.white),
+        message: 'Google Login Successful!',
+        length: ToastLength.medium,
+        positionCurve: Curves.bounceInOut,
+        messageStyle: Theme.of(context).textTheme.bodyLarge?.copyWith(
+          color: Colors.white,
+          fontWeight: FontWeight.bold,
+        ),
+        slideCurve: Curves.easeInOut,
+        shadowColor: Theme.of(context).colorScheme.onSurface.withAlpha(50),
+      );
+
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => const BottomNav()),
@@ -134,6 +172,24 @@ class _LoginState extends State<Login> {
       if (!context.mounted) return;
 
       // Success! Navigate to Home
+      ToastService.showToast(
+        context,
+        backgroundColor: brandGreen,
+        dismissDirection: DismissDirection.endToStart,
+        expandedHeight: 80,
+        isClosable: true,
+        leading: const Icon(Icons.check_circle_outline, color: Colors.white),
+        message: 'Facebook Login Successful!',
+        length: ToastLength.medium,
+        positionCurve: Curves.bounceInOut,
+        messageStyle: Theme.of(context).textTheme.bodyLarge?.copyWith(
+          color: Colors.white,
+          fontWeight: FontWeight.bold,
+        ),
+        slideCurve: Curves.easeInOut,
+        shadowColor: Theme.of(context).colorScheme.onSurface.withAlpha(50),
+      );
+
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => const BottomNav()),
