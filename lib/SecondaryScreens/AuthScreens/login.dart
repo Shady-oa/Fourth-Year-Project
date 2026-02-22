@@ -1,13 +1,10 @@
 import 'package:final_project/Components/bottom_nav.dart';
 import 'package:final_project/Components/form_logo.dart';
-import 'package:final_project/Constants/colors.dart';
+import 'package:final_project/Components/toast.dart';
 import 'package:final_project/Constants/spacing.dart';
 import 'package:final_project/Firebase/auth_services.dart';
 import 'package:final_project/SecondaryScreens/AuthScreens/social_login_button.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:toasty_box/toast_enums.dart';
-import 'package:toasty_box/toast_service.dart';
 
 class Login extends StatefulWidget {
   final VoidCallback showSignupPage;
@@ -19,93 +16,7 @@ class Login extends StatefulWidget {
 }
 
 class _LoginState extends State<Login> {
-  final _emailcontroller = TextEditingController();
-  final _passwordcontroller = TextEditingController();
-
-  @override
-  void dispose() {
-    _emailcontroller.dispose();
-    _passwordcontroller.dispose();
-    super.dispose();
-  }
-
-  Future signin() async {
-    if (_emailcontroller.text.isEmpty || _passwordcontroller.text.isEmpty) {
-      ToastService.showToast(
-        context,
-        backgroundColor: errorColor,
-        dismissDirection: DismissDirection.endToStart,
-        expandedHeight: 80,
-        isClosable: true,
-        leading: const Icon(Icons.error_outline),
-        message: 'Please enter both email and password!',
-        length: ToastLength.medium,
-        positionCurve: Curves.bounceInOut,
-        messageStyle: Theme.of(context).textTheme.bodyLarge?.copyWith(
-          color: Theme.of(context).colorScheme.surface,
-        ),
-        slideCurve: Curves.easeInOut,
-        shadowColor: Theme.of(
-          context,
-        ).colorScheme.onSurface.withAlpha((255 * 0.5).round()),
-      );
-      return;
-    }
-    //confirm
-    try {
-      await FirebaseAuth.instance.signInWithEmailAndPassword(
-        email: _emailcontroller.text.trim(),
-        password: _passwordcontroller.text.trim(),
-      );
-      if (!context.mounted) return;
-
-      ToastService.showToast(
-        context,
-        backgroundColor: brandGreen,
-        dismissDirection: DismissDirection.endToStart,
-        expandedHeight: 80,
-        isClosable: true,
-        leading: const Icon(Icons.check_circle_outline, color: Colors.white),
-        message: 'Login Successful!',
-        length: ToastLength.medium,
-        positionCurve: Curves.bounceInOut,
-        messageStyle: Theme.of(context).textTheme.bodyLarge?.copyWith(
-          color: Colors.white,
-          fontWeight: FontWeight.bold,
-        ),
-        slideCurve: Curves.easeInOut,
-        shadowColor: Theme.of(context).colorScheme.onSurface.withAlpha(50),
-      );
-
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const BottomNav()),
-      );
-    } catch (e) {
-      if (!context.mounted) return;
-      ToastService.showToast(
-        context,
-        backgroundColor: errorColor,
-        dismissDirection: DismissDirection.endToStart,
-        expandedHeight: 80,
-        isClosable: true,
-        leading: const Icon(Icons.error_outline),
-        message: 'Wrong email or password!',
-        length: ToastLength.medium,
-        positionCurve: Curves.bounceInOut,
-        messageStyle: Theme.of(context).textTheme.bodyLarge?.copyWith(
-          color: Theme.of(context).colorScheme.surface,
-        ),
-        slideCurve: Curves.easeInOut,
-        shadowColor: Theme.of(
-          context,
-        ).colorScheme.onSurface.withAlpha((255 * 0.5).round()),
-      );
-
-      _emailcontroller.clear();
-      _passwordcontroller.clear();
-    }
-  }
+  
 
   // ── Google sign-in handler ─────────────────────────────────────────────────
   Future<void> _handleGoogleSignIn() async {
@@ -113,23 +24,7 @@ class _LoginState extends State<Login> {
       await AuthService().signInWithGoogle();
       if (!context.mounted) return;
 
-      ToastService.showToast(
-        context,
-        backgroundColor: brandGreen,
-        dismissDirection: DismissDirection.endToStart,
-        expandedHeight: 80,
-        isClosable: true,
-        leading: const Icon(Icons.check_circle_outline, color: Colors.white),
-        message: 'Google Login Successful!',
-        length: ToastLength.medium,
-        positionCurve: Curves.bounceInOut,
-        messageStyle: Theme.of(context).textTheme.bodyLarge?.copyWith(
-          color: Colors.white,
-          fontWeight: FontWeight.bold,
-        ),
-        slideCurve: Curves.easeInOut,
-        shadowColor: Theme.of(context).colorScheme.onSurface.withAlpha(50),
-      );
+      AppToast.success(context, 'Google Sign in successfully!');
 
       Navigator.pushReplacement(
         context,
@@ -139,24 +34,7 @@ class _LoginState extends State<Login> {
       return;
     } catch (e) {
       if (!context.mounted) return;
-      ToastService.showToast(
-        context,
-        backgroundColor: errorColor,
-        dismissDirection: DismissDirection.endToStart,
-        expandedHeight: 80,
-        isClosable: true,
-        leading: const Icon(Icons.error_outline),
-        message: 'Unexpected error occurred,try again!',
-        length: ToastLength.medium,
-        positionCurve: Curves.bounceInOut,
-        messageStyle: Theme.of(context).textTheme.bodyLarge?.copyWith(
-          color: Theme.of(context).colorScheme.surface,
-        ),
-        slideCurve: Curves.easeInOut,
-        shadowColor: Theme.of(
-          context,
-        ).colorScheme.onSurface.withAlpha((255 * 0.5).round()),
-      );
+      AppToast.error(context, 'Unexpected error occurred,try again!');
     }
   }
 
@@ -172,23 +50,7 @@ class _LoginState extends State<Login> {
       if (!context.mounted) return;
 
       // Success! Navigate to Home
-      ToastService.showToast(
-        context,
-        backgroundColor: brandGreen,
-        dismissDirection: DismissDirection.endToStart,
-        expandedHeight: 80,
-        isClosable: true,
-        leading: const Icon(Icons.check_circle_outline, color: Colors.white),
-        message: 'Facebook Login Successful!',
-        length: ToastLength.medium,
-        positionCurve: Curves.bounceInOut,
-        messageStyle: Theme.of(context).textTheme.bodyLarge?.copyWith(
-          color: Colors.white,
-          fontWeight: FontWeight.bold,
-        ),
-        slideCurve: Curves.easeInOut,
-        shadowColor: Theme.of(context).colorScheme.onSurface.withAlpha(50),
-      );
+      AppToast.success(context, 'Facebook Sign in successfully!');
 
       Navigator.pushReplacement(
         context,
@@ -198,13 +60,7 @@ class _LoginState extends State<Login> {
       if (!context.mounted) return;
 
       // Show error toast
-      ToastService.showToast(
-        context,
-        backgroundColor: errorColor,
-        message: 'Facebook Login failed. Please try again!',
-        leading: const Icon(Icons.error_outline),
-        // ... include your other styling here ...
-      );
+      AppToast.error(context, 'Facebook Sign in failed. Please try again!');
       print("Facebook Error✅✅✅: $e"); // Helpful for debugging the Key Hash!
     }
   }

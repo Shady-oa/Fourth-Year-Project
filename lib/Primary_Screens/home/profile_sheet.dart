@@ -3,6 +3,7 @@ import 'package:final_project/Constants/colors.dart';
 import 'package:final_project/Constants/spacing.dart';
 import 'package:final_project/Primary_Screens/home/settings_card.dart';
 import 'package:final_project/SecondaryScreens/AuthScreens/login.dart';
+import 'package:final_project/SecondaryScreens/Settings/about_page.dart';
 import 'package:final_project/SecondaryScreens/Settings/developers_page.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -132,68 +133,89 @@ void showProfileSheet(
                 alignment: Alignment.centerLeft,
                 child: Text(
                   'Settings',
-                  style: Theme.of(ctx).textTheme.headlineSmall,
+                  style: Theme.of(ctx).textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
               const SizedBox(height: 16),
-              // Dark mode toggle
-              SettingsCard(
-                icon: Icons.dark_mode_outlined,
-                title: 'Dark Mode',
-                trailing: Switch(
-                  value:
-                      Provider.of<ThemeProvider>(
-                        ctx,
-                        listen: true,
-                      ).currentTheme.brightness ==
-                      Brightness.dark,
-                  onChanged: (_) => Provider.of<ThemeProvider>(
+
+              // Settings Container
+              Container(
+                decoration: BoxDecoration(
+                  color: Theme.of(
                     ctx,
-                    listen: false,
-                  ).toggleTheme(),
-                  activeTrackColor: brandGreen.withOpacity(0.4),
-                  activeThumbColor: brandGreen,
+                  ).colorScheme.surfaceContainerHighest.withOpacity(0.3),
+                  borderRadius: radiusLarge,
+                  border: Border.all(
+                    color: Theme.of(ctx).colorScheme.outline.withOpacity(0.1),
+                  ),
                 ),
-                onTap: () => Provider.of<ThemeProvider>(
-                  ctx,
-                  listen: false,
-                ).toggleTheme(),
-              ),
-              SettingsCard(
-                icon: Icons.info_outline,
-                title: 'About Penny Wise',
-                onTap: () {
-                  Navigator.pop(ctx);
-                  AppToast.info(
-                    context,
-                    'Penny Wise helps you track your expenses and budgets.',
-                  );
-                },
-              ),
-              SettingsCard(
-                icon: Icons.code,
-                title: 'Developers',
-                onTap: () {
-                  Navigator.pop(ctx);
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const DevelopersPage()),
-                  );
-                },
-              ),
-              SettingsCard(
-                icon: Icons.logout_rounded,
-                title: 'Logout',
-                onTap: () {
-                  Navigator.pop(ctx);
-                  AppToast.success(context, 'Logged out successfully!');
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => Login(showSignupPage: () {}),
+                child: Column(
+                  children: [
+                    // Dark mode toggle
+                    SettingsCard(
+                      icon: Icons.dark_mode_outlined,
+                      title: 'Dark Mode',
+                      trailing: Switch(
+                        value:
+                            Provider.of<ThemeProvider>(
+                              ctx,
+                              listen: true,
+                            ).currentTheme.brightness ==
+                            Brightness.dark,
+                        onChanged: (_) => Provider.of<ThemeProvider>(
+                          ctx,
+                          listen: false,
+                        ).toggleTheme(),
+                        activeTrackColor: brandGreen.withOpacity(0.4),
+                        activeThumbColor: brandGreen,
+                      ),
+                      onTap: () => Provider.of<ThemeProvider>(
+                        ctx,
+                        listen: false,
+                      ).toggleTheme(),
                     ),
-                  );
-                },
+                    SettingsCard(
+                      icon: Icons.info_outline,
+                      title: 'About Penny Wise',
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const AboutPage()),
+                        );
+                      },
+                    ),
+                    SettingsCard(
+                      icon: Icons.code,
+                      title: 'Developers',
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const DevelopersPage(),
+                          ),
+                        );
+                      },
+                    ),
+                    SettingsCard(
+                      icon: Icons.logout_rounded,
+                      title: 'Logout',
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        AppToast.success(context, 'Logged out successfully!');
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => Login(showSignupPage: () {}),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
               ),
               const SizedBox(height: 30),
             ],
