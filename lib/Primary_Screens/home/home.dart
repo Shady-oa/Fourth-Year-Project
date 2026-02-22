@@ -19,7 +19,8 @@ import 'package:final_project/Primary_Screens/home/top5_expenses_section.dart';
 import 'package:final_project/Primary_Screens/home/transaction_confirmation_sheet.dart';
 import 'package:final_project/SecondaryScreens/Notifications/local_notification_store.dart';
 import 'package:final_project/SecondaryScreens/Notifications/notification_services.dart';
-import 'package:final_project/SecondaryScreens/Report/report_page.dart';
+import 'package:final_project/SecondaryScreens/Reminder/financial_reminder_page.dart';
+import 'package:final_project/SecondaryScreens/Reminder/reminder_scheduler.dart';
 import 'package:final_project/SecondaryScreens/Transactions/all_transactions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -62,6 +63,10 @@ class _HomePageState extends State<HomePage> {
     refreshData();
     LocalNotificationStore.init();
     SmartNotificationService.runAllChecks();
+    // Run reminder checks — fires toasts for any due reminders
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ReminderScheduler.runChecks(context);
+    });
   }
 
   @override
@@ -186,7 +191,6 @@ class _HomePageState extends State<HomePage> {
     });
     return expenses.take(5).toList();
   }
-
 
   // ── Profile image upload ──────────────────────────────────────────────────────
   Future<void> _pickAndUploadImage() async {
@@ -377,7 +381,7 @@ class _HomePageState extends State<HomePage> {
         ),
         QuickActionCard(
           icon: Icons.receipt_long,
-          label: 'All Trans',
+          label: 'Transactions',
           onTap: () async {
             await Navigator.push(
               context,
@@ -387,11 +391,11 @@ class _HomePageState extends State<HomePage> {
           },
         ),
         QuickActionCard(
-          icon: Icons.bar_chart_rounded,
-          label: 'Reports',
+          icon: Icons.watch_later,
+          label: 'Reminders',
           onTap: () => Navigator.push(
             context,
-            MaterialPageRoute(builder: (_) => const ReportPage()),
+            MaterialPageRoute(builder: (_) => const FinancialReminderPage()),
           ),
         ),
       ],

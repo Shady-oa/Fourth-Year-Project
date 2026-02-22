@@ -18,6 +18,8 @@ extension NotifTypeUI on NotificationType {
         return Icons.receipt_long_rounded;
       case NotificationType.insight:
         return Icons.lightbulb_rounded;
+      case NotificationType.reminder:
+        return Icons.alarm_rounded;
       case NotificationType.system:
         return Icons.info_rounded;
     }
@@ -38,4 +40,5 @@ const notificationFilters = [
   NotificationFilterTab('Streak', NotificationType.streak),
   NotificationFilterTab('Reports', NotificationType.report),
   NotificationFilterTab('AI', NotificationType.insight),
+  NotificationFilterTab('Reminders', NotificationType.reminder),
 ];

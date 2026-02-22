@@ -6,6 +6,7 @@ enum NotificationType {
   analysis,
   report,
   insight,
+  reminder,
   system,
 }
 
@@ -25,6 +26,8 @@ extension NotificationTypeX on NotificationType {
         return 'report';
       case NotificationType.insight:
         return 'insight';
+      case NotificationType.reminder:
+        return 'reminder';
       case NotificationType.system:
         return 'system';
     }
@@ -44,6 +47,8 @@ extension NotificationTypeX on NotificationType {
         return NotificationType.report;
       case 'insight':
         return NotificationType.insight;
+      case 'reminder':
+        return NotificationType.reminder;
       default:
         return NotificationType.system;
     }
@@ -63,6 +68,8 @@ extension NotificationTypeX on NotificationType {
         return 'Report';
       case NotificationType.insight:
         return 'Insight';
+      case NotificationType.reminder:
+        return 'Reminder';
       case NotificationType.system:
         return 'System';
     }
