@@ -13,7 +13,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// All results are written to [LocalNotificationStore] — zero network required.
 class SmartNotificationService {
   // ── Core send helper ────────────────────────────────────────────────────────
-  /// Convenience wrapper to save a notification to [LocalNotificationStore].
   static Future<void> send({
     required String title,
     required String message,
@@ -29,12 +28,9 @@ class SmartNotificationService {
   }
 
   // ── Master check runner ─────────────────────────────────────────────────────
-  /// Run all smart notification checks.
-  /// Call this every time the app opens (e.g., in [HomePage.initState]).
   static Future<void> runAllChecks() async {
     final prefs = await SharedPreferences.getInstance();
 
-    // Update last-open timestamp (used by inactivity check)
     final todayKey = _dateKey(DateTime.now());
     await prefs.setString(NotificationKeys.lastAppOpen, todayKey);
 
@@ -49,7 +45,6 @@ class SmartNotificationService {
         .toList();
     final totalIncome = prefs.getDouble(NotificationKeys.totalIncome) ?? 0.0;
 
-    // Run all checks in parallel for performance
     await Future.wait([
       _checkBudgetAlerts(prefs, budgetList),
       _checkSavingsGoalDue(prefs, savingsList),
@@ -60,6 +55,26 @@ class SmartNotificationService {
       _checkSpendingInsights(prefs, txList, totalIncome),
       _checkInactivity(prefs),
     ]);
+  }
+
+  // ── Safe date parser ────────────────────────────────────────────────────────
+  /// Reads the transaction date from either 'createdAt' or 'date' key.
+  /// Returns null if neither key exists or the value cannot be parsed.
+  /// This handles the mix of old records (key: 'date') and new records
+  /// (key: 'createdAt') that may coexist in SharedPreferences.
+  static DateTime? _txDate(Map<String, dynamic> tx) {
+    // Prefer 'createdAt', fall back to 'date'.
+    final raw = tx['createdAt'] ?? tx['date'];
+    if (raw == null) return null;
+    // 'createdAt' from budget_detail is a plain ISO-8601 string.
+    // Guard against non-string values (e.g. Firestore Timestamp maps that
+    // somehow ended up in local storage).
+    if (raw is! String) return null;
+    try {
+      return DateTime.parse(raw);
+    } catch (_) {
+      return null;
+    }
   }
 
   // ── Budget Near Limit (80%) & Overspent Alerts ─────────────────────────────
@@ -76,7 +91,6 @@ class SmartNotificationService {
       final pct = budget.totalSpent / budget.total;
       final key = budget.id;
 
-      // 80% warning — fire once per budget
       if (pct >= 0.8 && pct < 1.0 && flags[key] != '80') {
         await send(
           title: 'Budget Alert: ${budget.name}',
@@ -89,7 +103,6 @@ class SmartNotificationService {
         changed = true;
       }
 
-      // Overspent — fire once per budget
       if (pct >= 1.0 && flags[key] != 'over') {
         await send(
           title: 'Budget Exceeded: ${budget.name}',
@@ -102,7 +115,6 @@ class SmartNotificationService {
         changed = true;
       }
 
-      // Reset flag if usage dropped back below 80%
       if (pct < 0.8 && flags.containsKey(key)) {
         flags.remove(key);
         changed = true;
@@ -128,7 +140,6 @@ class SmartNotificationService {
       if (goal.achieved) continue;
       final daysLeft = goal.deadline.difference(DateTime.now()).inDays;
 
-      // 7-day reminder
       final alertKey = '${goal.name}_due';
       if (daysLeft <= 7 && daysLeft > 1 && !alerted.contains(alertKey)) {
         await send(
@@ -143,7 +154,6 @@ class SmartNotificationService {
         changed = true;
       }
 
-      // 1-day urgent reminder
       final urgentKey = '${goal.name}_urgent';
       if (daysLeft == 1 && !alerted.contains(urgentKey)) {
         await send(
@@ -157,7 +167,6 @@ class SmartNotificationService {
         changed = true;
       }
 
-      // Overdue (fire for the first day past deadline only)
       final overdueKey = '${goal.name}_overdue';
       if (daysLeft < 0 && daysLeft >= -1 && !alerted.contains(overdueKey)) {
         await send(
@@ -172,7 +181,6 @@ class SmartNotificationService {
         changed = true;
       }
 
-      // Reset due alerts if goal was extended / edited back
       if (daysLeft > 7) {
         alerted.removeWhere((k) => k.startsWith('${goal.name}_'));
         changed = true;
@@ -204,8 +212,10 @@ class SmartNotificationService {
     double income = 0, expenses = 0, savings = 0;
 
     for (final tx in txList) {
-      final d = DateTime.parse(tx['date']);
-      if (d.isBefore(weekStart)) continue;
+      // Use safe date parser — skip records with no parseable date.
+      final d = _txDate(tx);
+      if (d == null || d.isBefore(weekStart)) continue;
+
       final amt = double.tryParse(tx['amount'].toString()) ?? 0.0;
       final fee =
           double.tryParse(tx['transactionCost']?.toString() ?? '0') ?? 0.0;
@@ -238,7 +248,7 @@ class SmartNotificationService {
     await prefs.setString(NotificationKeys.lastWeeklySummaryDate, thisWeekKey);
   }
 
-  // ── Monthly Financial Summary (1st of month) ────────────────────────────────
+  // ── Monthly Financial Summary (1st of month) ───────────────────────────────
   static Future<void> _checkMonthlySummary(
     SharedPreferences prefs,
     List<Map<String, dynamic>> txList,
@@ -262,8 +272,11 @@ class SmartNotificationService {
     int txCount = 0;
 
     for (final tx in txList) {
-      final d = DateTime.parse(tx['date']);
-      if (d.isBefore(prevMonthStart) || d.isAfter(prevMonthEnd)) continue;
+      final d = _txDate(tx);
+      if (d == null || d.isBefore(prevMonthStart) || d.isAfter(prevMonthEnd)) {
+        continue;
+      }
+
       final amt = double.tryParse(tx['amount'].toString()) ?? 0.0;
       final fee =
           double.tryParse(tx['transactionCost']?.toString() ?? '0') ?? 0.0;
@@ -308,9 +321,12 @@ class SmartNotificationService {
 
     final now = DateTime.now();
     double todaySpend = 0;
+
     for (final tx in txList) {
       if (tx['type'] == 'income') continue;
-      final d = DateTime.parse(tx['date']);
+      // Use safe parser — skip if date is missing or unparseable.
+      final d = _txDate(tx);
+      if (d == null) continue;
       if (d.year == now.year && d.month == now.month && d.day == now.day) {
         final amt = double.tryParse(tx['amount'].toString()) ?? 0.0;
         final fee =
@@ -319,15 +335,15 @@ class SmartNotificationService {
       }
     }
 
-    // Build daily totals for the past 30 days (excluding today)
     final thirtyDaysAgo = now.subtract(const Duration(days: 30));
     final dailyMap = <String, double>{};
+
     for (final tx in txList) {
       if (tx['type'] == 'income') continue;
-      final d = DateTime.parse(tx['date']);
-      if (d.isBefore(thirtyDaysAgo)) continue;
+      final d = _txDate(tx);
+      if (d == null || d.isBefore(thirtyDaysAgo)) continue;
       if (d.year == now.year && d.month == now.month && d.day == now.day) {
-        continue;
+        continue; // exclude today from average
       }
       final key = _dateKey(d);
       final amt = double.tryParse(tx['amount'].toString()) ?? 0.0;
@@ -336,7 +352,7 @@ class SmartNotificationService {
       dailyMap[key] = (dailyMap[key] ?? 0) + amt + fee;
     }
 
-    if (dailyMap.length < 5) return; // Not enough history
+    if (dailyMap.length < 5) return;
     final avgDaily =
         dailyMap.values.fold(0.0, (a, b) => a + b) / dailyMap.length;
     if (avgDaily <= 0) return;
@@ -406,7 +422,10 @@ class SmartNotificationService {
 
     for (final tx in txList) {
       if (tx['type'] == 'income') continue;
-      final d = DateTime.parse(tx['date']);
+      // Use safe parser — skip if date is missing or unparseable.
+      final d = _txDate(tx);
+      if (d == null) continue;
+
       final amt = double.tryParse(tx['amount'].toString()) ?? 0.0;
       final fee =
           double.tryParse(tx['transactionCost']?.toString() ?? '0') ?? 0.0;
@@ -447,7 +466,6 @@ class SmartNotificationService {
       );
     }
 
-    // Savings improvement
     if (lastMonthSavings > 0 && thisMonthSavings > lastMonthSavings) {
       final savingsPct =
           ((thisMonthSavings - lastMonthSavings) / lastMonthSavings) * 100;
@@ -471,11 +489,6 @@ class SmartNotificationService {
     final lastOpenStr = prefs.getString(NotificationKeys.lastAppOpen) ?? '';
     if (lastOpenStr.isEmpty) return;
 
-    // This check runs *after* updating last_app_open, so we compare against
-    // the value that was saved last session (before today's update). However
-    // since we overwrite it above before calling this, we use the previous raw
-    // storage value by checking days between the stored datetime and now.
-    // We track a separate inactivity alert date so it fires only once per week.
     final today = _dateKey(DateTime.now());
     if (prefs.getString(NotificationKeys.inactivityAlertDate) == today) return;
 

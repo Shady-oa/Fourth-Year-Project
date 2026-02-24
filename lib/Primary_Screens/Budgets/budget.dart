@@ -1,7 +1,8 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// Primary_Screens/Budgets/budget.dart  (UPDATED — search + newest-first)
+// Primary_Screens/Budgets/budget.dart  (UPDATED — dirty-flag sync)
 // ─────────────────────────────────────────────────────────────────────────────
 
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:final_project/Components/Custom_header.dart';
@@ -14,6 +15,7 @@ import 'package:final_project/Primary_Screens/Budgets/budget_detail.dart';
 import 'package:final_project/Primary_Screens/Budgets/budget_filter_chip.dart';
 import 'package:final_project/Primary_Screens/Budgets/budget_model.dart';
 import 'package:final_project/Primary_Screens/Budgets/budget_options_sheet.dart';
+import 'package:final_project/Primary_Screens/Budgets/budget_sync_service.dart';
 import 'package:final_project/Primary_Screens/Budgets/create_budget_sheet.dart';
 import 'package:final_project/Primary_Screens/Budgets/edit_budget_sheet.dart';
 
@@ -34,12 +36,14 @@ class BudgetPage extends StatefulWidget {
 }
 
 class _BudgetPageState extends State<BudgetPage> {
-  static const String keyBudgets = 'budgets';
+  static const String _keyBudgets = 'budgets';
 
   List<Budget> budgets = [];
   String filter = 'all';
   bool isLoading = true;
   final userUid = FirebaseAuth.instance.currentUser!.uid;
+
+  late final BudgetSyncService _sync;
 
   // ── Search ────────────────────────────────────────────────────────────────
   final TextEditingController _searchCtrl = TextEditingController();
@@ -50,13 +54,14 @@ class _BudgetPageState extends State<BudgetPage> {
   @override
   void initState() {
     super.initState();
+    _sync = BudgetSyncService(uid: userUid);
     loadBudgets();
-    _searchCtrl.addListener(() {
-      setState(() => _searchQuery = _searchCtrl.text.trim().toLowerCase());
-    });
-    _searchFocus.addListener(() {
-      setState(() => _isSearchFocused = _searchFocus.hasFocus);
-    });
+    _searchCtrl.addListener(
+      () => setState(() => _searchQuery = _searchCtrl.text.trim().toLowerCase()),
+    );
+    _searchFocus.addListener(
+      () => setState(() => _isSearchFocused = _searchFocus.hasFocus),
+    );
   }
 
   @override
@@ -66,21 +71,58 @@ class _BudgetPageState extends State<BudgetPage> {
     super.dispose();
   }
 
+  // ── Load ──────────────────────────────────────────────────────────────────
+  // Step 1 — read from SharedPreferences immediately and show the UI.
+  //           This works online and offline with zero delay.
+  // Step 2 — run Firestore sync in the background (unawaited):
+  //   a. syncDirtyBudgets() pushes any locally dirty budgets to Firestore.
+  //   b. pullAndMerge() fetches remote changes and updates SharedPreferences.
+  //   c. Once both finish, refresh the UI with the merged result.
+  // If offline both calls fail silently — the UI is already showing local
+  // data so the user sees their budgets instantly.
+
   Future<void> loadBudgets() async {
     setState(() => isLoading = true);
+
+    // ── Step 1: show local data immediately — no network wait. ──────────────
     final prefs = await SharedPreferences.getInstance();
-    final budgetStrings = prefs.getStringList(keyBudgets) ?? [];
-    budgets = budgetStrings.map((s) => Budget.fromMap(json.decode(s))).toList();
+    final strings = prefs.getStringList(_keyBudgets) ?? [];
+    budgets = strings.map((s) => Budget.fromMap(json.decode(s))).toList();
     setState(() => isLoading = false);
+
+    // ── Step 2: sync with Firestore in the background. ──────────────────────
+    // Do not await — the UI is already visible and usable.
+    unawaited(_syncInBackground());
   }
 
-  Future<void> saveBudgets() async {
+  Future<void> _syncInBackground() async {
+    try {
+      await _sync.syncDirtyBudgets();
+      await _sync.pullAndMerge();
+
+      // Refresh UI with any changes pulled from Firestore.
+      if (!mounted) return;
+      final prefs = await SharedPreferences.getInstance();
+      final strings = prefs.getStringList(_keyBudgets) ?? [];
+      if (!mounted) return;
+      setState(() {
+        budgets = strings.map((s) => Budget.fromMap(json.decode(s))).toList();
+      });
+    } catch (_) {
+      // Network unavailable — local data already shown, nothing to do.
+    }
+  }
+
+  // ── Save local (SharedPreferences only) ──────────────────────────────────
+
+  Future<void> _saveLocal() async {
     final prefs = await SharedPreferences.getInstance();
-    final data = budgets.map((b) => json.encode(b.toMap())).toList();
-    await prefs.setStringList(keyBudgets, data);
+    await prefs.setStringList(
+      _keyBudgets,
+      budgets.map((b) => json.encode(b.toMap())).toList(),
+    );
   }
 
-  /// Save a local notification (offline, no Firestore).
   Future<void> sendNotification(String title, String message) async {
     await LocalNotificationStore.saveNotification(
       title: title,
@@ -89,22 +131,32 @@ class _BudgetPageState extends State<BudgetPage> {
     );
   }
 
-  // ── Handlers passed into sheets ───────────────────────────────────────────
+  // ── Handlers ──────────────────────────────────────────────────────────────
 
   void showCreateBudgetDialog() {
     showCreateBudgetSheet(
       context: context,
       onBudgetCreated: (name, amount) async {
+        // isDirty defaults to true in the Budget constructor.
         final newBudget = Budget(name: name, total: amount);
-        // Insert at the front so new budgets appear first
         budgets.insert(0, newBudget);
-        await saveBudgets();
+
+        // 1. Save locally — works offline.
+        await _saveLocal();
+
+        // 2. Sync to Firestore in the background — do NOT await.
+        //    The UI returns immediately so the user never waits on network.
+        //    If offline, isDirty=true ensures retry on next loadBudgets().
+        unawaited(_sync.syncDirtyBudgets());
+
         await sendNotification(
           'Budget Created',
           'New budget "$name" created with ${CurrencyFormatter.format(amount)}',
         );
         setState(() {});
-        if (mounted) AppToast.success(context, 'Budget "$name" created successfully');
+        if (mounted) {
+          AppToast.success(context, 'Budget "$name" created successfully');
+        }
       },
     );
   }
@@ -125,7 +177,11 @@ class _BudgetPageState extends State<BudgetPage> {
       onSaved: (name, amount) async {
         budget.name = name;
         budget.total = amount;
-        await saveBudgets();
+        budget.isDirty = true; // mark for sync
+
+        await _saveLocal();
+        unawaited(_sync.syncDirtyBudgets());
+
         setState(() {});
         if (mounted) AppToast.success(context, 'Budget updated successfully');
       },
@@ -149,7 +205,12 @@ class _BudgetPageState extends State<BudgetPage> {
       confirmColor: errorColor,
       onConfirm: () async {
         budgets.remove(budget);
-        await saveBudgets();
+        await _saveLocal();
+
+        // Records the ID in deleted-IDs list locally (instant, offline-safe),
+        // then attempts Firestore delete in the background.
+        unawaited(_sync.deleteBudgetRemote(budget));
+
         await sendNotification(
           'Budget Deleted',
           'Budget "${budget.name}" has been deleted',
