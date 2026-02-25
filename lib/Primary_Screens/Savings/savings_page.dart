@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:final_project/Components/Custom_header.dart';
@@ -15,14 +16,15 @@ import 'package:final_project/Primary_Screens/Savings/savings_filter_chips.dart'
 import 'package:final_project/Primary_Screens/Savings/savings_helpers.dart';
 import 'package:final_project/Primary_Screens/Savings/savings_search_bar.dart';
 import 'package:final_project/Primary_Screens/Savings/savings_summary_box.dart';
+import 'package:final_project/Primary_Screens/Savings/savings_sync_service.dart';
 import 'package:final_project/Primary_Screens/Savings/streak_banner.dart';
 import 'package:final_project/SecondaryScreens/Notifications/local_notification_store.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'saving_history_page.dart';
-
 
 class SavingsPage extends StatefulWidget {
   final Function(String, double, String)? onTransactionAdded;
@@ -42,9 +44,14 @@ class _SavingsPageState extends State<SavingsPage> {
   String _streakLevel = 'Base';
   final _searchCtrl = TextEditingController();
 
+  late final SavingsSyncService _sync;
+
   @override
   void initState() {
     super.initState();
+    _sync = SavingsSyncService(
+      uid: FirebaseAuth.instance.currentUser!.uid,
+    );
     _load();
   }
 
@@ -54,14 +61,21 @@ class _SavingsPageState extends State<SavingsPage> {
     super.dispose();
   }
 
+  // ── LOAD ──────────────────────────────────────────────────────────────────
+  // Step 1 — read SharedPreferences and show the UI immediately (offline-safe).
+  // Step 2 — sync with Firestore in the background (unawaited).
+
   Future<void> _load() async {
     setState(() => _isLoading = true);
+
+    // ── Step 1: load from SharedPreferences — always instant. ───────────────
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getStringList(keySavings) ?? [];
     _savings = raw.map((s) => Saving.fromMap(json.decode(s))).toList()
       ..sort((a, b) => b.lastUpdated.compareTo(a.lastUpdated));
     _streakCount = prefs.getInt(keyStreakCount) ?? 0;
     _streakLevel = prefs.getString(keyStreakLevel) ?? 'Base';
+
     await checkStreakExpiry(
       prefs,
       onReset: (count, level) {
@@ -70,17 +84,48 @@ class _SavingsPageState extends State<SavingsPage> {
       },
       notify: (title, body) => savingsNotify(title, body),
     );
+
     _applyFilter();
     setState(() => _isLoading = false);
+
+    // ── Step 2: sync with Firestore in the background. ─────────────────────
+    unawaited(_syncInBackground());
   }
 
-  Future<void> _sync() async {
+  Future<void> _syncInBackground() async {
+    try {
+      await _sync.syncDirtyGoals();
+      await _sync.pullAndMerge();
+
+      // Refresh UI with merged data.
+      if (!mounted) return;
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getStringList(keySavings) ?? [];
+      if (!mounted) return;
+      setState(() {
+        _savings = raw.map((s) => Saving.fromMap(json.decode(s))).toList()
+          ..sort((a, b) => b.lastUpdated.compareTo(a.lastUpdated));
+        _applyFilter();
+      });
+    } catch (_) {
+      // Offline — local data already shown, nothing to do.
+    }
+  }
+
+  // ── PERSIST LOCAL ─────────────────────────────────────────────────────────
+  // Saves to SharedPreferences (instant, offline-safe) then fires Firestore
+  // sync in the background so the UI never waits on network.
+
+  Future<void> _saveLocal() async {
     _savings.sort((a, b) => b.lastUpdated.compareTo(a.lastUpdated));
     final prefs = await SharedPreferences.getInstance();
     await prefs.setStringList(
       keySavings,
       _savings.map((s) => json.encode(s.toMap())).toList(),
     );
+    // NOTE: Firestore sync is NOT triggered here.
+    // _load() → _syncInBackground() is the single sync entry point,
+    // preventing duplicate transaction writes.
   }
 
   void _applyFilter() {
@@ -97,7 +142,7 @@ class _SavingsPageState extends State<SavingsPage> {
     _filtered = list;
   }
 
-  // ── CREATE GOAL ────────────────────────────────────────────────────────────
+  // ── CREATE GOAL ───────────────────────────────────────────────────────────
   Future<void> _createGoal() async {
     final nameCtrl = TextEditingController();
     final targetCtrl = TextEditingController();
@@ -224,9 +269,7 @@ class _SavingsPageState extends State<SavingsPage> {
                             }
                             if (target <= 0) {
                               AppToast.warning(
-                                context,
-                                'Enter a valid target amount',
-                              );
+                                  context, 'Enter a valid target amount');
                               return;
                             }
                             final name = nameCtrl.text.trim();
@@ -251,15 +294,19 @@ class _SavingsPageState extends State<SavingsPage> {
                               confirmLabel: 'Create Goal',
                               confirmColor: brandGreen,
                               onConfirm: () async {
+                                // New goal: isDirty=true by default so it
+                                // syncs to Firestore when back online.
                                 _savings.add(
                                   Saving(
                                     name: name,
                                     savedAmount: 0,
                                     targetAmount: target,
                                     deadline: deadline,
+                                    isDirty: true,
                                   ),
                                 );
-                                await _sync();
+                                // Save locally — instant, offline-safe.
+                                await _saveLocal();
                                 await savingsNotify(
                                   'New Goal Created',
                                   'Goal: $name — Target: ${SavingsFmt.ksh(target)}',
@@ -282,7 +329,7 @@ class _SavingsPageState extends State<SavingsPage> {
     );
   }
 
-  // ── ADD FUNDS ──────────────────────────────────────────────────────────────
+  // ── ADD FUNDS ─────────────────────────────────────────────────────────────
   Future<void> _addFunds(Saving saving) async {
     final amountCtrl = TextEditingController();
     final costCtrl = TextEditingController();
@@ -296,7 +343,8 @@ class _SavingsPageState extends State<SavingsPage> {
         child: Container(
           decoration: BoxDecoration(
             color: Theme.of(ctx).colorScheme.surface,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+            borderRadius:
+                const BorderRadius.vertical(top: Radius.circular(24)),
           ),
           child: SingleChildScrollView(
             padding: const EdgeInsets.fromLTRB(24, 8, 24, 32),
@@ -393,7 +441,8 @@ class _SavingsPageState extends State<SavingsPage> {
                           foregroundColor: Colors.white,
                         ),
                         onPressed: () {
-                          final amount = double.tryParse(amountCtrl.text) ?? 0;
+                          final amount =
+                              double.tryParse(amountCtrl.text) ?? 0;
                           final cost = double.tryParse(costCtrl.text) ?? 0;
                           if (amount <= 0) {
                             AppToast.warning(context, 'Enter a valid amount');
@@ -401,9 +450,7 @@ class _SavingsPageState extends State<SavingsPage> {
                           }
                           if (cost < 0) {
                             AppToast.warning(
-                              context,
-                              'Transaction cost cannot be negative',
-                            );
+                                context, 'Transaction cost cannot be negative');
                             return;
                           }
                           final totalDeduct = amount + cost;
@@ -432,15 +479,19 @@ class _SavingsPageState extends State<SavingsPage> {
                             confirmLabel: 'Confirm Deposit',
                             confirmColor: brandGreen,
                             onConfirm: () async {
+                              final now = DateTime.now();
+
+                              // 1. Update local model.
                               saving.savedAmount += amount;
-                              saving.lastUpdated = DateTime.now();
+                              saving.lastUpdated = now;
+                              saving.isDirty = true;
                               saving.transactions.insert(
                                 0,
                                 SavingTransaction(
                                   type: 'deposit',
                                   amount: amount,
                                   transactionCost: cost,
-                                  date: DateTime.now(),
+                                  date: now,
                                   goalName: saving.name,
                                 ),
                               );
@@ -449,33 +500,69 @@ class _SavingsPageState extends State<SavingsPage> {
                                   !wasAchieved) {
                                 saving.achieved = true;
                                 await savingsNotify(
-                                  'Goal Achieved!',
+                                  'Goal Achieved! 🎉',
                                   'You reached ${saving.name}: ${SavingsFmt.ksh(saving.targetAmount)}!',
                                 );
                               }
-                              await _sync();
+
+                              // 2. Log to global transactions in SharedPrefs.
                               await logGlobalTransaction(
                                 'Saved for ${saving.name}',
                                 totalDeduct,
                                 'savings_deduction',
                                 transactionCost: cost,
+                                refId: saving.id,
+                                reason: 'Deposit to savings goal',
                               );
+
+                              // 3. Queue Firestore transaction write BEFORE
+                              //    _saveLocal so the pending entry exists on
+                              //    disk before any sync attempt runs.
+                              await _sync.queueTransaction(
+                                savingId: saving.id,
+                                type: 'saving_deposit',
+                                name: 'Saved for ${saving.name}',
+                                amount: totalDeduct,
+                                transactionCost: cost,
+                                goalName: saving.name,
+                                refId: saving.id,
+                              );
+
+                              // 4. Save to SharedPreferences — instant, offline-safe.
+                              //    _load() below will trigger _syncInBackground()
+                              //    which is the single path that replays pending
+                              //    transactions to Firestore (prevents duplicates).
+                              await _saveLocal();
+
                               widget.onTransactionAdded?.call(
                                 'Saved for ${saving.name}',
                                 totalDeduct,
                                 'savings_deduction',
                               );
-                              final result = await updateStreak(_streakCount);
+
+                              // 5. Update streak (writes to SharedPreferences).
+                              final result =
+                                  await updateStreak(_streakCount);
                               setState(() {
                                 _streakCount = result.count;
                                 _streakLevel = result.level;
                               });
+
+                              // 6. Sync streak to Firestore in background.
+                              unawaited(_sync.saveStreak(
+                                count: result.count,
+                                level: result.level,
+                                lastSaveDate: DateFormat('yyyy-MM-dd')
+                                    .format(now),
+                              ));
+
                               if (result.count % 7 == 0) {
                                 await savingsNotify(
                                   '🔥 Streak Milestone!',
                                   'Amazing! ${result.count} day streak at ${result.level} level!',
                                 );
                               }
+
                               await _load();
                               if (mounted) {
                                 AppToast.success(
@@ -499,7 +586,7 @@ class _SavingsPageState extends State<SavingsPage> {
     );
   }
 
-  // ── REMOVE FUNDS ───────────────────────────────────────────────────────────
+  // ── REMOVE FUNDS ──────────────────────────────────────────────────────────
   Future<void> _removeFunds(Saving saving) async {
     final amountCtrl = TextEditingController();
 
@@ -512,7 +599,8 @@ class _SavingsPageState extends State<SavingsPage> {
         child: Container(
           decoration: BoxDecoration(
             color: Theme.of(ctx).colorScheme.surface,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+            borderRadius:
+                const BorderRadius.vertical(top: Radius.circular(24)),
           ),
           child: SingleChildScrollView(
             padding: const EdgeInsets.fromLTRB(24, 8, 24, 32),
@@ -578,7 +666,8 @@ class _SavingsPageState extends State<SavingsPage> {
                   autofocus: true,
                   decoration: InputDecoration(
                     labelText: 'Amount to Withdraw (Ksh)',
-                    helperText: 'Max: ${SavingsFmt.ksh(saving.savedAmount)}',
+                    helperText:
+                        'Max: ${SavingsFmt.ksh(saving.savedAmount)}',
                     prefixIcon:
                         const Icon(Icons.remove_circle_outline_rounded),
                   ),
@@ -601,7 +690,8 @@ class _SavingsPageState extends State<SavingsPage> {
                           foregroundColor: Colors.white,
                         ),
                         onPressed: () {
-                          final amount = double.tryParse(amountCtrl.text) ?? 0;
+                          final amount =
+                              double.tryParse(amountCtrl.text) ?? 0;
                           if (amount <= 0) {
                             AppToast.warning(context, 'Enter a valid amount');
                             return;
@@ -633,30 +723,53 @@ class _SavingsPageState extends State<SavingsPage> {
                             confirmLabel: 'Confirm Withdrawal',
                             confirmColor: Colors.orange,
                             onConfirm: () async {
+                              final now = DateTime.now();
+
+                              // 1. Update local model.
                               saving.savedAmount -= amount;
-                              saving.lastUpdated = DateTime.now();
+                              saving.lastUpdated = now;
+                              saving.isDirty = true;
                               saving.transactions.insert(
                                 0,
                                 SavingTransaction(
                                   type: 'withdrawal',
                                   amount: amount,
-                                  date: DateTime.now(),
+                                  date: now,
                                   goalName: saving.name,
                                 ),
                               );
                               if (saving.savedAmount < saving.targetAmount) {
                                 saving.achieved = false;
                               }
-                              await _sync();
+
+                              // 2. Update global transactions in SharedPrefs.
                               await FinancialService.processWithdrawal(
                                 goalName: saving.name,
                                 withdrawAmount: amount,
                               );
+
+                              // 3. Queue Firestore transaction write BEFORE
+                              //    _saveLocal (same reason as deposits).
+                              await _sync.queueTransaction(
+                                savingId: saving.id,
+                                type: 'savings_withdrawal',
+                                name: 'Withdrawal from ${saving.name}',
+                                amount: amount,
+                                transactionCost: 0,
+                                goalName: saving.name,
+                                refId: saving.id,
+                              );
+
+                              // 4. Save locally — _load() triggers the single
+                              //    sync path that replays the queued write.
+                              await _saveLocal();
+
                               widget.onTransactionAdded?.call(
                                 'Withdrawal from ${saving.name}',
                                 amount,
                                 'savings_withdrawal',
                               );
+
                               await _load();
                               if (mounted) {
                                 AppToast.success(
@@ -680,7 +793,7 @@ class _SavingsPageState extends State<SavingsPage> {
     );
   }
 
-  // ── EDIT GOAL ──────────────────────────────────────────────────────────────
+  // ── EDIT GOAL ─────────────────────────────────────────────────────────────
   Future<void> _editGoal(Saving saving) async {
     final nameCtrl = TextEditingController(text: saving.name);
     final targetCtrl = TextEditingController(
@@ -807,15 +920,14 @@ class _SavingsPageState extends State<SavingsPage> {
                             }
                             if (target <= 0) {
                               AppToast.warning(
-                                context,
-                                'Enter a valid target amount',
-                              );
+                                  context, 'Enter a valid target amount');
                               return;
                             }
                             saving.name = nameCtrl.text.trim();
                             saving.targetAmount = target;
                             saving.deadline = selectedDate;
                             saving.lastUpdated = DateTime.now();
+                            saving.isDirty = true;
                             if (saving.savedAmount >= saving.targetAmount) {
                               if (!saving.achieved) {
                                 saving.achieved = true;
@@ -827,7 +939,7 @@ class _SavingsPageState extends State<SavingsPage> {
                             } else {
                               saving.achieved = false;
                             }
-                            await _sync();
+                            await _saveLocal();
                             if (ctx.mounted) Navigator.pop(ctx);
                             await _load();
                           },
@@ -845,7 +957,7 @@ class _SavingsPageState extends State<SavingsPage> {
     );
   }
 
-  // ── DELETE GOAL ────────────────────────────────────────────────────────────
+  // ── DELETE GOAL ───────────────────────────────────────────────────────────
   Future<void> _deleteGoal(Saving saving) async {
     final isAchieved = saving.achieved;
     _showConfirm(
@@ -859,15 +971,15 @@ class _SavingsPageState extends State<SavingsPage> {
       note: isAchieved
           ? 'This goal is achieved. Transaction history will be preserved. No refund will be made.'
           : saving.savedAmount > 0
-          ? '${SavingsFmt.ksh(saving.savedAmount)} (saved principal) will be refunded to your balance. Transaction fees paid on deposits are non-refundable.'
-          : 'This goal has no saved amount. It will simply be removed.',
+              ? '${SavingsFmt.ksh(saving.savedAmount)} (saved principal) will be refunded to your balance. Transaction fees paid on deposits are non-refundable.'
+              : 'This goal has no saved amount. It will simply be removed.',
       noteColor: isAchieved ? brandGreen : Colors.orange,
       confirmLabel: isAchieved ? 'Remove Goal' : 'Delete & Refund',
       confirmColor: errorColor,
       onConfirm: () async {
         if (isAchieved) {
           _savings.remove(saving);
-          await _sync();
+          await _saveLocal();
           await savingsNotify(
             'Goal Removed',
             '${saving.name} (achieved) has been removed from your goals.',
@@ -876,7 +988,7 @@ class _SavingsPageState extends State<SavingsPage> {
           await FinancialService.refundSavingsPrincipal(
               goalName: saving.name);
           _savings.remove(saving);
-          await _sync();
+          await _saveLocal();
           await savingsNotify(
             'Goal Deleted',
             saving.savedAmount > 0
@@ -884,6 +996,10 @@ class _SavingsPageState extends State<SavingsPage> {
                 : '${saving.name} deleted.',
           );
         }
+
+        // Delete from Firestore in background — offline-safe.
+        unawaited(_sync.deleteGoalRemote(saving));
+
         await _load();
         if (mounted) {
           AppToast.success(
@@ -982,7 +1098,8 @@ class _SavingsPageState extends State<SavingsPage> {
                 ),
                 Expanded(
                   child: _filtered.isEmpty
-                      ? SavingsEmptyState(filter: _filter, search: _search)
+                      ? SavingsEmptyState(
+                          filter: _filter, search: _search)
                       : RefreshIndicator(
                           onRefresh: _load,
                           child: ListView.builder(
@@ -991,7 +1108,8 @@ class _SavingsPageState extends State<SavingsPage> {
                             itemBuilder: (_, i) => SavingCard(
                               saving: _filtered[i],
                               onAddFunds: () => _addFunds(_filtered[i]),
-                              onShowOptions: () => _showOptions(_filtered[i]),
+                              onShowOptions: () =>
+                                  _showOptions(_filtered[i]),
                               onTap: () => Navigator.push(
                                 context,
                                 MaterialPageRoute(
@@ -1016,7 +1134,7 @@ class _SavingsPageState extends State<SavingsPage> {
   }
 }
 
-// ─── Reusable date picker tile (used in create & edit sheets) ─────────────────
+// ─── Reusable date picker tile ────────────────────────────────────────────────
 class _DatePickerTile extends StatelessWidget {
   final DateTime selectedDate;
   final ValueChanged<DateTime> onDatePicked;
@@ -1061,8 +1179,10 @@ class _DatePickerTile extends StatelessWidget {
                     'Due Date',
                     style: GoogleFonts.urbanist(
                       fontSize: 12,
-                      color:
-                          Theme.of(ctx).colorScheme.onSurface.withOpacity(0.6),
+                      color: Theme.of(ctx)
+                          .colorScheme
+                          .onSurface
+                          .withOpacity(0.6),
                       fontWeight: FontWeight.w600,
                     ),
                   ),

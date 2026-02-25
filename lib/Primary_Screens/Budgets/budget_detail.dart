@@ -5,6 +5,8 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:final_project/Primary_Screens/home/home_sync_service.dart';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:final_project/Components/back_button.dart';
 import 'package:final_project/Components/toast.dart';
@@ -198,7 +200,8 @@ class _BudgetDetailPageState extends State<BudgetDetailPage> {
 
   void _deleteExpense(Expense expense) {
     if (budget == null || budget!.isChecked) {
-      AppToast.warning(context, 'Budget is finalized. Toggle off to delete.');
+      AppToast.warning(
+          context, 'Budget is finalized. Toggle off to delete.');
       return;
     }
 
@@ -275,8 +278,7 @@ class _BudgetDetailPageState extends State<BudgetDetailPage> {
             highlight: true,
           ),
         ],
-        note:
-            'This will create a transaction and lock expenses. '
+        note: 'This will create a transaction and lock expenses. '
             'Toggle off to make changes.',
         noteColor: Colors.orange,
         confirmLabel: 'Finalize Budget',
@@ -287,17 +289,18 @@ class _BudgetDetailPageState extends State<BudgetDetailPage> {
           // 1. Write transaction to local SharedPreferences.
           final prefs = await SharedPreferences.getInstance();
           final txString = prefs.getString(_keyTransactions) ?? '[]';
-          final transactions = List<Map<String, dynamic>>.from(
-            json.decode(txString),
-          );
-          transactions.insert(0, {
-            'type': 'budget',
-            'name': '${budget!.name} (Finalized)',
-            'amount': budget!.totalSpent,
-            'refId': budget!.id,
-            'isLocked': true,
-            'createdAt': now.toIso8601String(),
-          });
+          final transactions =
+              List<Map<String, dynamic>>.from(json.decode(txString));
+          // Use buildTxMap for unified schema — same fields as home/savings.
+          transactions.insert(0, buildTxMap(
+            title: '${budget!.name} (Finalized)',
+            amount: budget!.totalSpent,
+            type: TxType.budget,
+            source: TxSource.budget,
+            reason: 'Budget finalized',
+            refId: budget!.id,
+            date: now,
+          )..['isLocked'] = true);
           await prefs.setString(_keyTransactions, json.encode(transactions));
 
           // 2. Update budget state and sync to Firestore.
@@ -349,11 +352,12 @@ class _BudgetDetailPageState extends State<BudgetDetailPage> {
           // 1. Remove transaction from local SharedPreferences.
           final prefs = await SharedPreferences.getInstance();
           final txString = prefs.getString(_keyTransactions) ?? '[]';
-          final transactions = List<Map<String, dynamic>>.from(
-            json.decode(txString),
-          );
+          final transactions =
+              List<Map<String, dynamic>>.from(json.decode(txString));
           transactions.removeWhere(
-            (tx) => tx['type'] == 'budget' && tx['refId'] == budget!.id,
+            (tx) =>
+                tx['type'] == 'budget' &&
+                tx['refId'] == budget!.id,
           );
           await prefs.setString(_keyTransactions, json.encode(transactions));
 
@@ -372,7 +376,10 @@ class _BudgetDetailPageState extends State<BudgetDetailPage> {
 
           setState(() {});
           if (mounted) {
-            AppToast.info(context, 'Budget unfinalized. Transaction removed.');
+            AppToast.info(
+              context,
+              'Budget unfinalized. Transaction removed.',
+            );
           }
         },
       );
@@ -449,9 +456,8 @@ class _BudgetDetailPageState extends State<BudgetDetailPage> {
               children: [
                 Text(
                   'Expenses',
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: theme.textTheme.titleLarge
+                      ?.copyWith(fontWeight: FontWeight.bold),
                 ),
                 Text(
                   '${budget!.expenses.length} items',
@@ -478,16 +484,14 @@ class _BudgetDetailPageState extends State<BudgetDetailPage> {
                         const SizedBox(height: 16),
                         Text(
                           'No expenses yet',
-                          style: theme.textTheme.bodyLarge?.copyWith(
-                            color: Colors.grey.shade600,
-                          ),
+                          style: theme.textTheme.bodyLarge
+                              ?.copyWith(color: Colors.grey.shade600),
                         ),
                         if (!budget!.isChecked)
                           Text(
                             'Tap + to add an expense',
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: Colors.grey.shade500,
-                            ),
+                            style: theme.textTheme.bodySmall
+                                ?.copyWith(color: Colors.grey.shade500),
                           ),
                       ],
                     ),

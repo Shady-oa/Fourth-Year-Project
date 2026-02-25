@@ -1,12 +1,11 @@
-// lib/Models/saving_model.dart
-// Shared model — import this in savings_page.dart, home_page.dart,
-// all_transactions.dart, analytics_page.dart, report_page.dart
-// to eliminate duplication and ensure one source of truth.
+// Primary_Screens/Savings/saving_model.dart
+
+import 'package:uuid/uuid.dart';
 
 class SavingTransaction {
   final String type; // 'deposit' | 'withdrawal'
   final double amount;
-  final double transactionCost; // only for deposits; NEVER refunded on goal deletion
+  final double transactionCost;
   final DateTime date;
   final String goalName;
 
@@ -40,6 +39,10 @@ class SavingTransaction {
 }
 
 class Saving {
+  /// Stable unique ID — generated once on creation, persisted to both
+  /// SharedPreferences and Firestore as the document ID.
+  final String id;
+
   String name;
   double savedAmount;
   double targetAmount;
@@ -48,7 +51,13 @@ class Saving {
   DateTime lastUpdated;
   List<SavingTransaction> transactions;
 
+  /// Dirty flag — true when local state has not yet been pushed to Firestore.
+  /// Persisted to SharedPreferences so pending changes survive cold restarts.
+  /// Never written to Firestore (stripped in SavingsSyncService._pushSavingDoc).
+  bool isDirty;
+
   Saving({
+    String? id,
     required this.name,
     required this.savedAmount,
     required this.targetAmount,
@@ -56,21 +65,22 @@ class Saving {
     this.achieved = false,
     DateTime? lastUpdated,
     List<SavingTransaction>? transactions,
-  })  : lastUpdated = lastUpdated ?? DateTime.now(),
+    this.isDirty = true, // new goals start dirty so they sync on next open
+  })  : id = id ?? const Uuid().v4(),
+        lastUpdated = lastUpdated ?? DateTime.now(),
         transactions = transactions ?? [];
 
-  // ── Computed props ─────────────────────────────────────────────────────────
+  // ── Computed props ────────────────────────────────────────────────────────
   double get balance => targetAmount - savedAmount;
   double get progressPercent =>
       targetAmount > 0 ? (savedAmount / targetAmount).clamp(0.0, 1.0) : 0.0;
 
-  /// Total fees paid across all deposit transactions for this goal.
-  /// These are NEVER refunded when a goal is deleted.
   double get totalFeesPaid => transactions
       .where((t) => t.type == 'deposit')
       .fold(0.0, (s, t) => s + t.transactionCost);
 
   Map<String, dynamic> toMap() => {
+        'id': id,
         'name': name,
         'savedAmount': savedAmount,
         'targetAmount': targetAmount,
@@ -78,9 +88,11 @@ class Saving {
         'achieved': achieved,
         'lastUpdated': lastUpdated.toIso8601String(),
         'transactions': transactions.map((t) => t.toMap()).toList(),
+        'isDirty': isDirty,
       };
 
   factory Saving.fromMap(Map<String, dynamic> map) => Saving(
+        id: map['id'] as String? ?? const Uuid().v4(),
         name: map['name'] ?? 'Unnamed',
         savedAmount: map['savedAmount'] is String
             ? double.tryParse(map['savedAmount']) ?? 0.0
@@ -95,12 +107,13 @@ class Saving {
         lastUpdated: map['lastUpdated'] != null
             ? DateTime.parse(map['lastUpdated'])
             : DateTime.now(),
-        // walletType / walletName silently ignored for backward compat
         transactions: map['transactions'] != null
             ? (map['transactions'] as List)
                 .map((t) =>
                     SavingTransaction.fromMap(t as Map<String, dynamic>))
                 .toList()
             : [],
+        // Existing records without isDirty default to false (already synced).
+        isDirty: map['isDirty'] as bool? ?? false,
       );
 }

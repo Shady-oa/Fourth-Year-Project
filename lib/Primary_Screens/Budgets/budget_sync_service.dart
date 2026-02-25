@@ -32,6 +32,7 @@
 import 'dart:convert';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:final_project/Primary_Screens/home/home_sync_service.dart';
 import 'package:final_project/Primary_Screens/Budgets/budget_model.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -353,12 +354,19 @@ class BudgetSyncService {
     int? month,
   }) async {
     try {
+      final now = DateTime.now();
       final ref = await _transactionsCol(year: year, month: month).add({
-        'type': 'budget',
-        'name': '${budget.name} (Finalized)',
+        // Unified schema — all fields present so UI never reads null.
+        'title': '${budget.name} (Finalized)',  // primary display field
+        'name': '${budget.name} (Finalized)',   // backwards compat
         'amount': budget.totalSpent,
+        'transactionCost': 0.0,
+        'type': TxType.budget,
+        'source': TxSource.budget,
+        'reason': 'Budget finalized',
         'refId': budget.id,
         'isLocked': true,
+        'date': now.toIso8601String(),
         'createdAt': FieldValue.serverTimestamp(),
       });
       debugPrint(

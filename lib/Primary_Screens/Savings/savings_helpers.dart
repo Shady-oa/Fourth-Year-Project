@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'package:final_project/Primary_Screens/home/home_sync_service.dart';
+
 import 'package:final_project/SecondaryScreens/Notifications/local_notification_store.dart';
 import 'package:final_project/SecondaryScreens/Notifications/notification_type.dart';
 import 'package:intl/intl.dart';
@@ -93,16 +95,22 @@ Future<void> logGlobalTransaction(
   double amount,
   String type, {
   double transactionCost = 0.0,
+  String refId = '',
+  String reason = '',
 }) async {
   final prefs = await SharedPreferences.getInstance();
   final raw = prefs.getString(keyTransactions) ?? '[]';
   final list = List<Map<String, dynamic>>.from(json.decode(raw));
-  list.insert(0, {
-    'title': title,
-    'amount': amount,
-    'transactionCost': transactionCost,
-    'type': type,
-    'date': DateTime.now().toIso8601String(),
-  });
+  // Use buildTxMap so every savings transaction has the same unified schema
+  // as home and budget transactions — no null fields when the UI reads them.
+  list.insert(0, buildTxMap(
+    title: title,
+    amount: amount,
+    type: type,
+    source: TxSource.savings,
+    transactionCost: transactionCost,
+    refId: refId,
+    reason: reason,
+  ));
   await prefs.setString(keyTransactions, json.encode(list));
 }
